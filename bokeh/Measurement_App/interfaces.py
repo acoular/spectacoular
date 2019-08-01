@@ -10,15 +10,13 @@ import sys
 import os
 from SamplesProcessor import TimeSamplesPhantom
 from acoular import MicGeom, WNoiseGenerator, PointSource,\
- Mixer, WriteH5, TimeSamples, PowerSpectra, RectGrid, SteeringVector,\
- BeamformerBase, L_p, UncorrelatedNoiseSource, \
- MovingPointSource, Trajectory, \
- BeamformerDamas,BeamformerDamasPlus
+Mixer, WriteH5, MovingPointSource, Trajectory
 from numpy import arange, cos, sin, pi
+
 APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
 
 sys.path.insert(0,os.path.join(os.path.dirname(__file__),'../../'))
-H5SAVEFILE = 'two_sources_one_moving_60s.h5'
+H5SAVEFILE = 'two_sources_one_moving_10s.h5'
 H5PATH = os.path.join(APPFOLDER,"static/",H5SAVEFILE)
 DEV_SERIAL_NUMBERS = {'tornado': ['10142', '10112', '10125', '10126'],
                         'typhoon': [
@@ -59,7 +57,7 @@ def get_interface(device,syncorder=[]):
 
 def create_three_sources_moving():
     sfreq = 51200 
-    duration = 60
+    duration = 10
     nsamples = duration*sfreq
     micgeofile = "Measurement_App/micgeom/array_64.xml"
     mg = MicGeom( from_file=micgeofile )
@@ -89,7 +87,7 @@ def create_three_sources_moving():
 
 def create_three_sources():
     sfreq = 51200 
-    duration = 60
+    duration = 10
     nsamples = duration*sfreq
     micgeofile = "Measurement_App/micgeom/array_64.xml"
     mg = MicGeom( from_file=micgeofile )
