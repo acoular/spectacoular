@@ -43,8 +43,9 @@ from bokeh.models.tickers import ContinuousTicker
 
 # acoular imports
 from acoular import TimePower, TimeAverage, L_p, MicGeom, \
-RectGrid, FiltOctave, SteeringVector, BeamformerTime, BeamformerFreqTime, \
-CSMInOut, synthetic, BeamformerBase, BeamformerCleansc, BeamformerCMF
+RectGrid, FiltOctave, SteeringVector, BeamformerTime,  \
+synthetic, BeamformerBase, BeamformerCleansc, BeamformerCMF
+from acoular_future import CSMInOut, BeamformerFreqTime
 from SamplesProcessor import SampleSplitter,WriteH5,SamplesThread,CalibHelper,\
 LastInOut,FiltOctaveLive, EventThread
 
