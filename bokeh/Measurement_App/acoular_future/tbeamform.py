@@ -10,10 +10,10 @@ from traits.api import Property, Trait, Bool, cached_property, Instance
 
 
 # acoular imports
-from .internal import digest
-
+from acoular.internal import digest
 from acoular.fbeamform import BeamformerBase
 from acoular.tbeamform import BeamformerTime
+
 from .spectra import CSMInOut, PowerSpectraSetCSM
 
                       

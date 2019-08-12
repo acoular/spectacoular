@@ -1,2 +1,7 @@
-
+# ignore files and file types:
+*.pyc
+*.pyd
 *.h5
+
+# ignore directories:
+__pycache__/
