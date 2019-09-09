@@ -15,12 +15,16 @@ from traits.traits import KindMap
 
 class TraitWidgetMapper(object):
     '''
-    Widget Factory for traits 
+    Widget Factory for trait objects 
     '''
-    
-    def factory(widget):
+        
+    def factory(widget): #TODO: add trait_name to func args
+        '''
+        returns an instance of a trait to widget mapper class that corresponds
+        to the desired widget type
+        '''
         if widget is TextInput:
-            return TextInputMapper()
+            return TextInputMapper() # add trait_name to __init__ func
         elif widget is Select:
             return SelectMapper()
         else:
@@ -87,7 +91,7 @@ class TextInputMapper(TraitWidgetMapper):
     
     def _notify_trait_changed_factory(self):
         def _callback(new):
-            self.textInput.value = str(new)
+            self.textInput.value = str(new) # TODO: single dispatch here!
         return _callback
 
 
@@ -134,13 +138,13 @@ class SelectMapper(TraitWidgetMapper):
             trait_type = get_trait_type(trait_value)
             # if not new value of widget is of same type as trait
             if not isinstance(new,trait_type):
-                new = cast_variable(new,trait_type)
+                new = cast_variable(new,trait_type)  
             setattr(obj,trait_name,new)
         return _callback
     
     def _notify_trait_changed_factory(self):
         def _callback(new):
-            self.select.value = str(new)
+            self.select.value = str(new) # TODO: single dispatch here!
         return _callback
 
 
