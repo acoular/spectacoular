@@ -22,26 +22,25 @@ rg = RectGrid(x_min=-0.6, x_max=-0.0, y_min=-0.3, y_max=0.3, z=0.68,increment=0.
 st = SteeringVector( grid = rg, mics=mg )    
 bb = BeamformerBase( freq_data=ps, steer=st )  
 
+# use additional classes for data evaluation/view
+mv = MicGeomPresenter(source=mg)
+bv = BeamformerPresenter(source=bb)
+tv = TimeSamplesPresenter(source=ts)
+cm = ColorMapperController()
+
+# get widgets to control settings
+tsWidgets = ts.get_widgets()
+mgWidgets = mg.get_widgets()
+psWidgets = ps.get_widgets()
+rgWidgets = rg.get_widgets()
+stWidgets = st.get_widgets()
+bbWidgets = bb.get_widgets()
+bvWidgets = bv.get_widgets()
+tvWidgets = tv.get_widgets()
+mvWidgets = mv.get_widgets()
+cmWidgets = cm.get_widgets()
 
 def server_doc(doc):
-
-    # use additional classes for data evaluation/view
-    mv = MicGeomPresenter(source=mg)
-    bv = BeamformerPresenter(source=bb)
-    tv = TimeSamplesPresenter(source=ts)
-    cm = ColorMapperController()
-
-    # get widgets to control settings
-    tsWidgets = ts.get_widgets()
-    mgWidgets = mg.get_widgets()
-    psWidgets = ps.get_widgets()
-    rgWidgets = rg.get_widgets()
-    stWidgets = st.get_widgets()
-    bbWidgets = bb.get_widgets()
-    bvWidgets = bv.get_widgets()
-    tvWidgets = tv.get_widgets()
-    mvWidgets = mv.get_widgets()
-    cmWidgets = cm.get_widgets()
 
 #    print(bv.cdsource.data.items())
 
@@ -50,7 +49,7 @@ def server_doc(doc):
     tsPlot.multi_line(xs='xs', ys='ys',color='color',source=tv.cdsource)
 
     #MicGeomPlot
-    mgPlot = figure(title='Microphone Geometry', tools = 'pan,wheel_zoom,reset')
+    mgPlot = figure(title='Microphone Geometry', tools = 'hover,pan,wheel_zoom,reset')
     mgPlot.circle(x='x',y='y',source=mv.cdsource)
 
     # beamformerPlot

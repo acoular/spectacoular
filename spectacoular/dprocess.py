@@ -155,7 +155,8 @@ class TimeSamplesPresenter(BasePresenter):
 
     @on_trait_change("source.numsamples")
     def change_samplesRange(self):
-        self.samplesRange.end = self.source.numsamples
+        if not self.source.numsamples == 0:
+            self.samplesRange.end = self.source.numsamples
         if self.samplesRange.value[1] > self.source.numsamples:
             self.samplesRange.value = (self.samplesRange.value[0],self.source.numsamples)
 
@@ -207,12 +208,15 @@ class MicGeomPresenter(BasePresenter):
     #: Data source; :class:`~acoular.microphones.MicGeom` or derived object.
     source = Trait(MicGeom)
     
+    tooltips = [("(x,y)", "($x, $y)")]
+
     def __init__(self,*args,**kwargs):
         self.cdsource = ColumnDataSource(data={'x':[],'y':[], 'channels':[]})
         HasPrivateTraits.__init__(self,*args,**kwargs)
 
     @on_trait_change("digest")
     def _update(self):
+        print("update micgeom")
         self.update_column_data_source()
     
     def update_column_data_source(self):
@@ -265,9 +269,6 @@ class BeamformerPresenter(BasePresenter):
         HasPrivateTraits.__init__(self,*args,**kwargs)
         self._widgets = [self.num,self.freqInput,self.syntheticButton]
         self.syntheticButton.on_click(self.update_column_data_source)
-#        color_mapper=bv.colorMapper,label_standoff=12, 
-#                         background_fill_color = '#2F2F2F',
-#                         border_line_color=None, location=(0,0)
 
     @cached_property
     def _get_digest( self ):
@@ -285,15 +286,6 @@ class BeamformerPresenter(BasePresenter):
             'dh':[dy]
             }
             
-#            if self.checkbox_autolevel_mode.active:
-#                dynamicValue = (self.dynamicSlider.value[1] - self.dynamicSlider.value[0])
-#                maxValue = self.cdsource['data'].max()
-#                self.colorMapper.high = maxValue
-#                self.colorMapper.low = maxValue-dynamicValue
-
-#    def checkbox_autolevel_mode_callback(self,arg):
-#        if not arg:
-#            (self.colorMapper.low, self.colorMapper.high) = self.dynamicSlider.value
 
 
 class ColorMapperController(BaseSpectacoular):
@@ -323,7 +315,6 @@ class ColorMapperController(BaseSpectacoular):
         self.colorBar.color_mapper = self.colorMapper
 
     def dynamicSlider_callback(self, attr, old, new):
-#        if not self.checkbox_autolevel_mode.active:
         (self.colorMapper.low, self.colorMapper.high) = self.dynamicSlider.value
 
     def change_colors_callback(self, attr, old, new):
