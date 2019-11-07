@@ -85,7 +85,7 @@ class BasePresenter(BaseSpectacoular):
     def _get_digest( self ):
         return digest(self) 
 
-    def update_column_data_source(self,attr,old,new):
+    def update(self,attr,old,new):
         """
         Function that updates the `cdsource` trait.    
         No processing since `BasePresenter` only represents a base class to derive
@@ -135,7 +135,7 @@ class TimeSamplesPresenter(BasePresenter):
         self.cdsource = ColumnDataSource(data={'xs':[],'ys':[],'color':[]})
         HasPrivateTraits.__init__(self,*args,**kwargs)
         self.selectChannel.on_change('value',self.change_color_select)
-        self.applyButton.on_click(self.update_column_data_source)
+        self.applyButton.on_click(self.update)
         self._widgets = [self.selectChannel,self.samplesRange,self.applyButton,
                          self.colorSelector]
 
@@ -173,7 +173,7 @@ class TimeSamplesPresenter(BasePresenter):
         i2 = i1+int(self.samplesRange.value[1])
         return (i1,i2)
 
-    def update_column_data_source(self):
+    def update(self):
         numSelected = len(self.selectChannel.value)
         sRange = self._get_srange()
         colors = [c.value for c in self.colorSelector.children[0].children]
@@ -217,9 +217,9 @@ class MicGeomPresenter(BasePresenter):
     @on_trait_change("digest")
     def _update(self):
         print("update micgeom")
-        self.update_column_data_source()
+        self.update()
     
-    def update_column_data_source(self):
+    def update(self):
         if self.source.num_mics > 0:
             self.cdsource.data = {
                     'x' : self.source.mpos[0,:],
@@ -268,13 +268,13 @@ class BeamformerPresenter(BasePresenter):
                 data = {'bfdata':[],'x':[],'y':[],'dw':[],'dh':[]} )
         HasPrivateTraits.__init__(self,*args,**kwargs)
         self._widgets = [self.num,self.freqInput,self.syntheticButton]
-        self.syntheticButton.on_click(self.update_column_data_source)
+        self.syntheticButton.on_click(self.update)
 
     @cached_property
     def _get_digest( self ):
         return digest(self) 
 
-    def update_column_data_source(self):
+    def update(self):
         res = self.source.synthetic(float(self.freqInput.value), int(self.num.value))
         if res.size > 0: 
             dx = self.source.grid.x_max-self.source.grid.x_min
