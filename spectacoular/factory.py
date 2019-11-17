@@ -8,7 +8,7 @@ Created on Thu Sep  5 17:32:15 2019
 
 from bokeh.models.widgets import TextInput, Select
 from traits.api import CTrait, TraitEnum, TraitMap,\
-List,TraitListObject, Bool
+List,TraitListObject, Bool, HasPrivateTraits
 from functools import singledispatch
 
 def as_str_list(func):
@@ -16,6 +16,27 @@ def as_str_list(func):
         list_ = func(*args)
         return [str(val) for val in list_]
     return wrapper
+
+
+class BaseSpectacoular(HasPrivateTraits):
+    
+
+    # shadow trait that holds a list of widgets that belong to the class
+    _widgets = List()
+
+    def get_widgets(self):
+        """ 
+        Function to access the widgets of this class.
+        
+        Returns
+        -------
+        A list of interactive control elements (widgets)
+        No output since `BasePresenter` only represents a base class to derive
+        other classes from.
+        """
+        return self._widgets
+
+
 
 class TraitWidgetMapper(object):
     '''
