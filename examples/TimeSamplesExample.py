@@ -11,7 +11,8 @@ from bokeh.plotting import figure
 from bokeh.server.server import Server
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerPresenter,TimeSamplesPresenter,\
-MicGeomPresenter, SingleChannelController,MultiChannelController
+MicGeomPresenter, SingleChannelController,MultiChannelController,\
+TimeSignalPlayback
 
 
 # build processing chain
@@ -20,12 +21,13 @@ ts = MaskedTimeSamples(
 sc = SingleChannelController()
 mc = MultiChannelController()
 tv = TimeSamplesPresenter(source=ts,controller=mc)
-
+playback = TimeSignalPlayback(source=ts,controller=mc)
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tvWidgets = tv.get_widgets()
 scWidgets = mc.get_widgets()
+plWidgets = playback.get_widgets()
 
 def server_doc(doc):
 
@@ -37,7 +39,7 @@ def server_doc(doc):
     
     # columns    
     tsWidgetsCol = column(Div(text="TimeSamples:"),row(
-            column(*tsWidgets),column(*tvWidgets,*scWidgets)))
+            column(*tsWidgets),column(*tvWidgets,*scWidgets,*plWidgets)))
 
     # Tabs
     tsTab = Panel(child=row(tsPlot,tsWidgetsCol),title='Time Signal')

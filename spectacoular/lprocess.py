@@ -19,16 +19,22 @@ from time import sleep
 from bokeh.layouts import column, row
 from bokeh.palettes import viridis, plasma, inferno, magma
 from bokeh.models.widgets import MultiSelect, TextInput, Button, RangeSlider,\
-CheckboxGroup, Select, Dropdown
+CheckboxGroup, Select, Dropdown,Toggle
 from bokeh.models import ColumnDataSource, LogColorMapper, ColorBar
 from traits.api import Trait, HasPrivateTraits, Property, \
-cached_property, on_trait_change, List,Float,Bool,Any
+cached_property, on_trait_change, List,Float,Bool,Any, Instance
+import sounddevice as sd
+
 # acoular imports
 from acoular import SamplesGenerator, TimeInOut, TimeSamples,\
 L_p,TimeAverage,FiltFiltOctave, TimePower, MaskedTimeSamples
+from acoular.internal import digest
+
 
 # 
 from .dprocess import BasePresenter
+from .controller import SingleChannelController, MultiChannelController
+
 
 def noneFunc(x): return x
 
@@ -164,3 +170,79 @@ class TimeSignalLivePresenter(TimeInOutPresenter):
             self.cdsource.stream(newData,rollover=sRange[1])
         else:
             self.cdsource.data = {'xs' :[],'ys' :[]}                
+
+
+class TimeSignalPlayback(TimeInOutPresenter):
+    """
+    In the future, this class should work in buffer mode and 
+    also write the current frame that is played to its columndatasource.
+    """
+    
+    def __init__(self,*args,**kwargs):
+        HasPrivateTraits.__init__(self,*args,**kwargs)
+        self.playButton.on_click(self.playButton_handler)
+        self._widgets = [self.playButton]
+    
+    
+    # internal identifier
+    digest = Property( depends_on = ['source.digest', '__class__'])
+
+    # if no channel is passed by the controller, the channel(s) need to be set by
+    # the user
+    channel = Property()
+    
+    # device property
+    device = Property()
+    
+    #: button widget that applies the users selection on click
+    playButton = Toggle(label="Playback Time Data", button_type="success")
+
+    #: Select channel controller; 
+    #:class:`~spectacoular.controller.SingleChannelController` or derived object.
+    controller = Instance(SingleChannelController, MultiChannelController)
+
+    # only shadow trait
+    _channel = List()
+
+    # current frame played back
+    # currentframe = Int()
+    
+    @cached_property
+    def _get_digest( self ):
+        return digest(self)
+    
+    def _get_device( self ):
+        return sd.default.device
+    
+    def _set_device( self, device ):
+        sd.default.device = device
+    
+    def _get_channel( self ):
+        if self.controller: 
+            return [int(ch) for ch in self.controller.selectChannel.value]
+        else:
+            return self._channel
+
+    def _set_channel(self, channel):
+        self._channel = channel
+    
+    def play( self ):
+        '''
+        normalized playback of channel
+        '''
+        norm = abs(self.source.data[:]).max()
+        sd.play(self.source.data[:,self.channel]/norm,
+                samplerate=self.sample_freq,
+                blocking=False)
+        
+    def stop( self ):
+        '''
+        simply stops playback of file
+        '''
+        sd.stop()
+    
+    def playButton_handler(self,arg):
+        if arg: self.play()
+        if not arg: self.stop()
+    
+    
