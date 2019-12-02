@@ -52,9 +52,10 @@ class SingleChannelController(BaseSpectacoular):
         self.selectChannel.on_change('value',self.change_color_select)
         self._widgets = [self.selectChannel,self.colorSelector]
                          
-    @on_trait_change("source")
+    @on_trait_change("source.numchannels")
     def change_channel_selector(self):
         channels = [idx for idx in range(self.source.numchannels)]
+        channels.insert(0,"") # add no data field
         if hasattr(self.source,'invalid_channels'):
             [channels.remove(idx) for idx in self.source.invalid_channels]
         self.selectChannel.options = [str(ch) for ch in channels]
@@ -73,7 +74,7 @@ class MultiChannelController(SingleChannelController):
     # read only property. Holds Select color widgets of selected channels    
     colorSelector = column(column(Select(title="Select Color")))
 
-    @on_trait_change("source")
+    @on_trait_change("source.numchannels")
     def change_channel_selector(self):
         channels = [idx for idx in range(self.source.numchannels)]
         if hasattr(self.source,'invalid_channels'):

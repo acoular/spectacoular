@@ -216,8 +216,10 @@ class TimeSamplesPresenter(BasePresenter):
     def change_samplesRange(self):
         if not self.source.numsamples == 0:
             self.samplesRange.end = self.source.numsamples
-        if self.samplesRange.value[1] > self.source.numsamples:
-            self.samplesRange.value = (self.samplesRange.value[0],self.source.numsamples)
+            self.samplesRange.value = (0,self.source.numsamples)
+        else:
+            self.samplesRange.end = 1
+            self.samplesRange.value = (0,1)
 
     def _get_srange(self):
         i1 = int(self.samplesRange.value[0])
@@ -227,20 +229,27 @@ class TimeSamplesPresenter(BasePresenter):
 
     def update(self):
         sRange = self._get_srange()
-        if not isinstance(self.controller,MultiChannelController):
-            colors = [self.controller.colorSelector.children[0].value]
-            numSelected = 1
-        else:
+        samples = list(range(sRange[0],sRange[1]))
+        if not isinstance(self.controller,MultiChannelController): # if SingleChannelController
+            if self.controller.selectChannel.value: 
+                numSelected = 1
+                colors = [self.controller.colorSelector.children[0].value]
+                ys = [list(self.source.data[sRange[0]:sRange[1],int(
+                        self.controller.selectChannel.value)])] 
+                xs = [samples]
+            else: 
+                numSelected = 0
+                colors = []
+                ys = []
+                xs = []
+        else: # if MultiCannelController
             numSelected = len(self.controller.selectChannel.value)
             colors = [c.value for c in self.controller.colorSelector.children[0].children]
+            ys = [list(self.source.data[sRange[0]:sRange[1],int(idx)]) 
+                            for idx in self.controller.selectChannel.value]
+            xs = [samples for _ in range(numSelected)]
         if self.source.numsamples > 0 and numSelected > 0:
-            samples = list(range(sRange[0],sRange[1]))
-            self.cdsource.data = {
-                'xs' : [samples for _ in range(numSelected)],
-                'ys' : [list(self.source.data[sRange[0]:sRange[1],int(idx)]) 
-                            for idx in self.controller.selectChannel.value],
-                'color':colors
-                }
+            self.cdsource.data = {'xs' : xs, 'ys' : ys, 'color':colors }
         else:
             self.cdsource.data = {'xs' :[],'ys' :[], 'colors':[]}
 

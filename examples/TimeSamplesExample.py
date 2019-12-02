@@ -14,11 +14,11 @@ RectGrid, SteeringVector, BeamformerBase, BeamformerPresenter,TimeSamplesPresent
 MicGeomPresenter, SingleChannelController,MultiChannelController,\
 TimeSignalPlayback
 
+#/home/kujawski/Dokumente/Code/acoular_workingcopy/acoular/examples/example_data.h5
 
 # build processing chain
-ts = MaskedTimeSamples(
-        name='/home/kujawski/Dokumente/Code/acoular_workingcopy/acoular/examples/example_data.h5')
-sc = SingleChannelController()
+ts = MaskedTimeSamples()
+#mc = SingleChannelController()
 mc = MultiChannelController()
 tv = TimeSamplesPresenter(source=ts,controller=mc)
 playback = TimeSignalPlayback(source=ts,controller=mc)
