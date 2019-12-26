@@ -1,0 +1,429 @@
+# -*- coding: utf-8 -*-
+#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
+#------------------------------------------------------------------------------
+# Copyright (c) 2007-2019, Acoular Development Team.
+#------------------------------------------------------------------------------
+from traits.api import HasPrivateTraits, Str, CArray, Range, Int, Float,\
+File, CLong, Long, Property, Trait, List, ListStr, ListInt, ListFloat, ListBool,\
+Bool,Tuple
+from bokeh.models.widgets import TextInput, Slider,DataTable, Select
+from spectacoular import get_widgets, TraitWidgetMapper
+from numpy import array, float64
+
+
+class Test(HasPrivateTraits):
+    
+    get_widgets = get_widgets
+
+
+class CArrayWidgetMapping(Test):
+    
+    testIntCArray = CArray( dtype=int )
+    
+    testIntCArray2 = CArray(dtype=int )
+    
+    testFloatCArray = CArray(dtype=float, shape=(3,3))
+    
+    trait_widget_mapper = {
+                'testIntCArray': TextInput,
+                'testIntCArray2': DataTable,
+                'testFloatCArray': DataTable,
+                }
+    
+    trait_widget_args = {
+                'testIntCArray' : {'disabled':False},
+                'testIntCArray2' : {'disabled':False},
+                'testFloatCArray' : {'disabled':False},
+                }
+
+    def _test_textinput(self,widget):
+        widget.value = "1,2,3"
+        assert all(self.testIntCArray == array([1,2,3]))
+        self.testIntCArray = array([10.0,2.1,3.2])
+        assert widget.value == '10, 2, 3'
+##    mappingTest.testCArrayInt[0] = 100 # does not trigger the on changed handler of traits package!
+##    assert widgetUnderTest.value == '100, 2, 3'
+
+    def _test_datatable(self,widget):
+        # One Dimensional Datatable
+        testArray = array([10.0,2.1,3.2])
+        self.testIntCArray2 = testArray
+        assert all(widget.source.data['testIntCArray2'] == array([10,2,3]))
+        widget.source.data['testIntCArray2'][0] = 100
+        assert all(self.testIntCArray2 == array([100,2,3]))
+        print(self.testIntCArray2)
+#
+#    def _test_multidim_datatable(self,widget):
+#        # Two Dimensional Datatable 
+#        testArray = array([[1,1,1],[2,2,2],[3,3,3]],dtype=float64)
+#        self.testFloatCArray = testArray
+#        print(widget.source.data)
+#        assert all(widget.source.data['testFloatCArray'] == testArray)
+    
+    def test( self ):
+        widgets = self.get_widgets()
+        self._test_textinput(widgets[0])
+        self._test_datatable(widgets[1])
+#        self._test_multidim_datatable(widgets[2])
+
+
+
+class StrWidgetMapping(Test):
+    
+    testTrait = Str('test')
+    
+    trait_widget_mapper = {
+                'testTrait': TextInput,
+                }
+    
+    trait_widget_args = {
+                'testTrait' : {'disabled':False},
+                }    
+
+    def test( self ):
+        widget = self.get_widgets()[0]
+        # assign value to widget
+        widget.value = 'newtest'
+        # prove correct change of trait value
+        assert self.testTrait == 'newtest' 
+        # assign value to trait
+        self.testTrait = 'test'
+        # prove correct change of widget value
+        assert widget.value == 'test'
+
+class IntWidgetMapping(Test):
+    
+    testTrait = Int(1)
+    
+    testCLongTrait = CLong(1)
+    
+    testLong = Long
+    
+    trait_widget_mapper = {
+                'testTrait': TextInput,
+                'testCLongTrait': TextInput,
+                'testLong': TextInput,
+
+                }
+    
+    trait_widget_args = {
+                'testTrait' : {'disabled':False},
+                'testCLongTrait' : {'disabled':False},
+                'testLong' : {'disabled':False},
+                }    
+
+    test_widget_values = {'10':10,'10.0':10}
+    
+    def test( self ):
+        widgets = self.get_widgets()
+        for value in list(self.test_widget_values.keys()):
+            for i,widget in enumerate(widgets):
+                # assign value to widget
+                widget.value = value
+            assert self.testTrait == 10
+            assert self.testCLongTrait == 10
+            assert self.testLong == 10
+        # assign value to trait
+        self.testTrait = 1
+        self.testCLongTrait = 1.0
+        self.testLong = 1
+        # prove correct change of widget value
+        for widget in widgets:
+            assert widget.value == '1'
+
+
+class FloatWidgetMapping(Test):
+    
+    testTrait = Float(1.0)
+    
+    trait_widget_mapper = {
+                'testTrait': TextInput,
+                }
+    
+    trait_widget_args = {
+                'testTrait' : {'disabled':False},
+                }    
+
+    test_widget_values = ['10','10.0']
+    
+    def test( self ):
+        widget = self.get_widgets()[0]
+        assert widget.value == '1.0'
+        for value in self.test_widget_values:
+            # assign value to widget
+            widget.value = value
+            # prove correct change of trait value
+            assert self.testTrait == 10.0
+        # assign value to trait
+        self.testTrait = 1.0
+        # prove correct change of widget value
+        assert widget.value == '1.0'
+
+
+class FileWidgetMapping(Test):
+    
+    testTrait = File(filter=['*.xml'])
+    
+    trait_widget_mapper = {
+                'testTrait': TextInput,
+                }
+    
+    trait_widget_args = {
+                'testTrait' : {'disabled':False},
+                } 
+
+    def test( self ):
+        widget = self.get_widgets()[0]
+        widget.value = 'test.xml'
+        assert self.testTrait == 'test.xml'
+
+class RangeWidgetMapping(Test):
+    
+    testTrait = Range(0.01, 1.0, 0.6)
+
+# TODO: Range to TextInput Mapping. Currently raises error     
+#    testTrait2 = Range(0.01, 1.0, 0.6)  
+    
+    trait_widget_mapper = {
+                'testTrait' : Slider,
+#                'testTrait2' : TextInput
+                }
+    
+    trait_widget_args = {
+                'testTrait' : {'disabled':False, 'step':0.01},
+#                'testTrait2' : {'disabled':False},
+                }
+    
+    def test( self ):
+        widgets = self.get_widgets()
+        # test Slider Mapping 
+        widget = widgets[0]
+        assert (widget.start, widget.end, widget.value) == (0.01, 1.0, 0.6)
+        # assign value to widget
+        widget.value = 1.0
+        # prove correct change of trait value
+        assert self.testTrait == 1.0
+        # assign value to trait
+        self.testTrait = 0.6
+        # prove widget value
+        assert widget.value == 0.6
+# test Textfield Mapping
+# widget = widgets[1]    
+# widget.value = 1.0
+
+
+class TraitWidgetMapping(Test):
+    
+    testTraitStr = Trait('1','2','3','4','5') 
+
+    testTraitInt = Trait(1,2,3,4,5) 
+
+    testTraitFloat = Trait(1.,2.,3.,4.,5.) 
+    
+    #TODO: Test Mapping of Trait with mixed datatypes
+
+    trait_widget_mapper = {
+                'testTraitStr' : Select,
+                'testTraitInt' : Select,
+                'testTraitFloat' : Select,
+                }
+    
+    trait_widget_args = {
+                'testTraitStr' : {'disabled':False},
+                'testTraitInt' : {'disabled':False},
+                'testTraitFloat' : {'disabled':False},
+                }
+    
+    def test( self ):
+        widgets = self.get_widgets()
+        # test Slider Mapping 
+        widgetStr = widgets[0]
+        widgetInt = widgets[1]
+        widgetFloat = widgets[2]
+        # assign value to widget
+        widgetStr.value = '2'
+        widgetInt.value = '2'
+        widgetFloat.value = '2'
+        # prove correct change of trait value
+        assert self.testTraitStr == '2'
+        assert self.testTraitInt == 2
+        assert self.testTraitFloat == 2.
+        # assign value to trait
+        self.testTraitStr = '1'
+        self.testTraitInt = 1
+        self.testTraitFloat = 1.
+        # prove widget value
+        assert widgetStr.value == '1'  
+        assert widgetInt.value == '1'  
+        assert widgetFloat.value == '1.0'    
+    
+
+class ListWidgetMapping(Test):
+    # TODO: Lists can be problematic: For traits of 
+    # type List, multiple dtypes are valid inputs if the input trait is not
+    # explicitly defined.
+    
+    testListStr = List(Str()) 
+    testListStr2 = ListStr(['1','2']) 
+
+    testListInt = List(Int()) 
+    testListInt2 = ListInt([1,2,3,4,5]) 
+
+    testListFloat = List(Float()) 
+    testListFloat2 = ListFloat([1.,2.,3.,4.,5.]) 
+    
+    #testListTrait?
+    #testListBool?
+    
+    #TODO: Test Mapping of List to manipulatable Datatable
+
+    trait_widget_mapper = {
+                'testListStr' : TextInput,
+                'testListStr2' : TextInput,
+                'testListInt' : TextInput,
+                'testListInt2' : TextInput,
+                'testListFloat' : TextInput,
+                'testListFloat2' : TextInput,
+                }
+    
+    trait_widget_args = {
+                'testListStr' : {'disabled':False},
+                'testListStr2' : {'disabled':False},
+                'testListInt' : {'disabled':False},
+                'testListInt2' : {'disabled':False},
+                'testListFloat' : {'disabled':False},
+                'testListFloat2' : {'disabled':False},
+                }
+    
+    def _test_textinput(self,widgets):
+        # assign value to widgets
+        test_widget_value = ' 2, 4'
+        for widget in widgets:
+            widget.value = test_widget_value
+#        # prove correct change of trait value
+#        print(self.testListStr,type(self.testListStr),type(self.testListStr[0]))
+        expectedListStr = ['2','4']
+        expectedListInt = [2,4]
+        expectedListFloat = [2.,4.]
+        assert self.testListStr == expectedListStr
+        assert self.testListStr2 == expectedListStr
+        assert self.testListInt == expectedListInt
+        assert self.testListInt2 == expectedListInt
+        assert self.testListFloat == expectedListFloat
+        assert self.testListFloat2 == expectedListFloat
+#        # assign value to trait
+        self.testListStr = ['1','2']
+        self.testListStr2 = ['1','2']
+        print(widgets[0].value)
+        assert widgets[0].value == '1, 2'  
+        assert widgets[1].value == '1, 2'  
+        self.testListInt = [1,2]
+        self.testListInt2 = [1,2]
+        assert widgets[2].value == '1, 2'  
+        assert widgets[3].value == '1, 2'  
+        self.testListFloat = [1.,2.]
+        self.testListFloat2 = [1.,2.]
+        assert widgets[4].value == '1.0, 2.0'  
+        assert widgets[5].value == '1.0, 2.0'  
+
+    def test( self ):
+        widgets = self.get_widgets()
+        self._test_textinput(widgets)
+        
+class TupleWidgetMapping(Test):
+    
+    testTuple = Tuple()
+
+    trait_widget_mapper = {
+                'testTuple' : TextInput,
+                }
+    
+    trait_widget_args = {
+                'testTuple' : {'disabled':False},
+                }
+    
+    def _test_textinput(self,widgets):
+        # assign value to widgets
+        test_widget_value = '(2, "4")'
+        for widget in widgets:
+            widget.value = test_widget_value
+        
+#        # prove correct change of trait value
+        assert self.testTuple == (2, "4")
+#        # assign value to trait
+        self.testTuple = (1,"2")
+        print(widgets[0].value)
+        assert widgets[0].value == "(1, '2')"  
+
+    def test( self ):
+        widgets = self.get_widgets()
+        self._test_textinput(widgets) 
+    
+# TODO: increment Property of RectGrid3D raises error when set!    
+#class PropertyWidgetMapping(Test):
+#    
+#    testTrait = Property()
+#    
+#    _testTrait = Trait('1','2','3','4','5') 
+#
+#    trait_widget_mapper = {
+#                'testTrait' : Select,
+#                }
+#    
+#    trait_widget_args = {
+#                'testTrait' : {'disabled':False},
+#                }
+#
+#    def _get_testTrait(self):
+#        return self._testTrait
+#
+#    def _set_testTrait(self,testTraitValue):
+#        self._testTrait = testTraitValue
+        
+if __name__ == '__main__':
+    
+    # String Trait Widget Mapping Test
+    strTest = StrWidgetMapping()
+    strTest.test()
+    
+    # Int Trait Widget Mapping Test
+    intTest = IntWidgetMapping()
+    intTest.test()
+    
+    # Float Trait Widget Mapping Test
+    floatTest = FloatWidgetMapping()
+    floatTest.test()
+    
+    # File Trait Widget Mapping Test
+    fileTest = FileWidgetMapping()
+    fileTest.test()
+    
+    # Range Trait Widget Mapping Test
+    rangeTest = RangeWidgetMapping()
+    rangeTest.test()
+
+#    # CArray Trait Widget Mapping test
+    carrayTest = CArrayWidgetMapping()
+    carrayTest.test()
+    
+    # Trait Widget Mapping Test
+    traitTest = TraitWidgetMapping()
+    traitTest.test()
+    
+    # List Widget Mapping Test
+    listTest = ListWidgetMapping()
+    listTest.test()
+    
+    # List Widget Mapping Test
+    tupleTest = TupleWidgetMapping()
+    tupleTest.test()
+    
+    print("mapping tests successfull")
+    
+    
+# =============================================================================
+# Factory Tests
+# =============================================================================
+    
+    mapper = TraitWidgetMapper(listTest,'testListStr2')
+    

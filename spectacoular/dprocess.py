@@ -17,13 +17,13 @@
 from bokeh.layouts import column, row
 from bokeh.palettes import viridis, plasma, inferno, magma
 from bokeh.models.widgets import MultiSelect, TextInput, Button, RangeSlider,\
-CheckboxGroup, Select, Dropdown
+CheckboxGroup, Select, Dropdown, Toggle
 from bokeh.models import ColumnDataSource, LogColorMapper, ColorBar
 from traits.api import Trait, HasPrivateTraits, Property, \
 cached_property, on_trait_change, List, Instance
 import numpy as np
 from acoular.internal import digest
-from acoular import TimeSamples,BeamformerBase, L_p, MicGeom
+from acoular import TimeSamples,BeamformerBase, L_p, MicGeom, Grid
 
 from .controller import SingleChannelController, MultiChannelController
 from .factory import BaseSpectacoular
@@ -121,19 +121,14 @@ class BeamformerPresenter(BasePresenter):
     This class provides data for visualization of beamformed data.
     
     The data of its ColumnDataSource fits to bokehs image glyph.
-   
-    Example: 
-                
-        >>>    import spectacoular
-        >>>    mg = MicGeom(from_file='/path/to/file.xml')
-        >>>    mv = MicGeomPresenter(source=mg)
-        >>>    
-        >>>    mgPlot = figure(title='Microphone Geometry')
-        >>>    mgPlot.circle(x='x',y='y',source=mv.cdsource)
     """
     
     #: Data source; :class:`~acoular.fbeamform.BeamformerBase` or derived object.
     source = Trait(BeamformerBase)
+    
+    #: :class:`~acoular.grids.Grid`-derived object that provides the grid locations.
+    grid = Trait(Grid, 
+        desc="beamforming grid")
     
     #: TextInput widget to set the width of the frequency bands considered.
     #: defaults to 0 (single frequency line).
@@ -142,17 +137,11 @@ class BeamformerPresenter(BasePresenter):
     #: TextInput widget to set the band center frequency to be considered.
     freqInput = TextInput(title="Center Frequency:", value='1000')
     
-    #: button widget that triggers beamformer calculation
-    syntheticButton = Button(label='Calculate Beamforming Result')
-
-#    checkbox_autolevel_mode = CheckboxGroup(labels=["auto level mode"], active=[])
-
     def __init__(self,*args,**kwargs):
         self.cdsource = ColumnDataSource(
                 data = {'bfdata':[],'x':[],'y':[],'dw':[],'dh':[]} )
         HasPrivateTraits.__init__(self,*args,**kwargs)
-        self._widgets = [self.num,self.freqInput,self.syntheticButton]
-        self.syntheticButton.on_click(self.update)
+        self._widgets = [self.num,self.freqInput]
 
     @cached_property
     def _get_digest( self ):
@@ -161,16 +150,15 @@ class BeamformerPresenter(BasePresenter):
     def update(self):
         res = self.source.synthetic(float(self.freqInput.value), int(self.num.value))
         if res.size > 0: 
-            dx = self.source.grid.x_max-self.source.grid.x_min
-            dy = self.source.grid.y_max-self.source.grid.y_min
+            dx = self.grid.x_max-self.grid.x_min
+            dy = self.grid.y_max-self.grid.y_min
             self.cdsource.data = {'bfdata' : [L_p(res).T],
-            'x':[self.source.grid.x_min], 
-            'y':[self.source.grid.y_min], 
+            'x':[self.grid.x_min], 
+            'y':[self.grid.y_min], 
             'dw':[dx], 
             'dh':[dy]
             }
             
-
 
 class TimeSamplesPresenter(BasePresenter):
     """

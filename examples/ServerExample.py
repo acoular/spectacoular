@@ -1,52 +1,106 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep  5 17:45:33 2019
-@author: kujawski
+Example that demonstrates different beamforming algorithms
 """
 
+from os import path
+import acoular
+
 from bokeh.layouts import column, row
-from bokeh.models.widgets import Panel,Tabs,Div
+from bokeh.models.widgets import Panel,Tabs,Div, Select, Toggle
 from bokeh.plotting import figure
 from bokeh.server.server import Server
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
-RectGrid, SteeringVector, BeamformerBase, BeamformerPresenter,TimeSamplesPresenter,\
-MicGeomPresenter, ColorMapperController
-
+RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
+BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
+BeamformerCleansc, BeamformerClean, BeamformerPresenter,TimeSamplesPresenter,\
+BeamformerCMF,BeamformerGIB,Environment,Calib,config,PointSource,\
+MicGeomPresenter, ColorMapperController, SingleChannelController
 
 # build processing chain
-ts = MaskedTimeSamples(name='/home/kujawski/Dokumente/Code/acoular_workingcopy/acoular/examples/example_data.h5')
-mg = MicGeom(from_file='/home/kujawski/Dokumente/Code/acoular_workingcopy/acoular/acoular/xml/array_56.xml')
+micgeofile = path.join( path.split(acoular.__file__)[0],'xml','array_56.xml')
+tdfile = 'example_data.h5'
+calibfile = 'example_calib.xml'
+ts = MaskedTimeSamples(name=tdfile)
+cal = Calib(from_file=calibfile)
+ts.start = 0 # first sample, default
+ts.stop = 16000 # last valid sample = 15999
+invalid = [1,7] # list of invalid channels (unwanted microphones etc.)
+ts.invalid_channels = invalid 
+ts.calib = cal
+mg = MicGeom(from_file=micgeofile,invalid_channels = invalid)
 ps = PowerSpectra(time_data=ts)
 rg = RectGrid(x_min=-0.6, x_max=-0.0, y_min=-0.3, y_max=0.3, z=0.68,increment=0.05)
-st = SteeringVector( grid = rg, mics=mg )    
+env = Environment(c = 346.04)
+st = SteeringVector( grid = rg, mics=mg, env=env )    
+
+# Beamforming Algorithms
 bb = BeamformerBase( freq_data=ps, steer=st )  
+bf = BeamformerFunctional( freq_data=ps, steer=st, gamma=4)
+bc = BeamformerCapon( freq_data=ps, steer=st )  
+be = BeamformerEig( freq_data=ps, steer=st, n=54)
+bm = BeamformerMusic( freq_data=ps, steer=st, n=6)   
+bd = BeamformerDamas(beamformer=bb, n_iter=100)
+bdp = BeamformerDamasPlus(beamformer=bb, n_iter=100)
+bo = BeamformerOrth(beamformer=be, eva_list=list(range(38,54)))
+bs = BeamformerCleansc(freq_data=ps, steer=st, r_diag=True)
+bl = BeamformerClean(beamformer=bb, n_iter=100)
+bcmf = BeamformerCMF(freq_data=ps, steer=st, method='LassoLarsBIC')
+bgib = BeamformerGIB(freq_data=ps, steer=st, method= 'LassoLars', n=10)
+
+beamformer_dict = {
+                    'Conventional Beamforming': bb,
+                   'Functional Beamforming': bf,
+                   'Capon Beamforming': bc,
+                   'Eigenvalue Beamforming': be,
+                   'Music Beamforming': bm,
+                   'Damas Deconvolution': bd,
+                   'DamasPlus Deconvolution' : bdp,
+                   'Orthogonal Beamforming' : bo,
+                   'CleanSC Deconvolution' : bs,
+                   'Clean Deconvolution' : bl,
+                   'CMF' : bcmf,
+                   'GIB' : bgib
+                   }
 
 # use additional classes for data evaluation/view
 mv = MicGeomPresenter(source=mg)
-bv = BeamformerPresenter(source=bb)
-tv = TimeSamplesPresenter(source=ts)
+bv = BeamformerPresenter(source=bb,grid=rg)
 cm = ColorMapperController()
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 mgWidgets = mg.get_widgets()
+envWidgets = env.get_widgets()
+calWidgets = cal.get_widgets()
 psWidgets = ps.get_widgets()
 rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 bbWidgets = bb.get_widgets()
 bvWidgets = bv.get_widgets()
-tvWidgets = tv.get_widgets()
 mvWidgets = mv.get_widgets()
 cmWidgets = cm.get_widgets()
+confWidgets = config.get_widgets()
 
 def server_doc(doc):
+    
+    beamformerSelector = Select(title="Select Beamforming Method:",
+                            options=list(beamformer_dict.keys()),
+                            value=list(beamformer_dict.keys())[0])
 
-#    print(bv.cdsource.data.items())
-
-    # TimeSignalPlot
-    tsPlot = figure(title="Time Signals")
-    tsPlot.multi_line(xs='xs', ys='ys',color='color',source=tv.cdsource)
+    calcButton = Toggle(label="Calculate",button_type="success")
+    def calc(arg):
+        if arg:
+            calcButton.label = 'Calculating ...'
+            bv.update()
+            calcButton.active = False
+            calcButton.label = 'Calculate'
+        if not arg:
+            calcButton.label = 'Calculate'
+    calcButton.on_click(calc)
+            
+    ### CREATE LAYOUT ### 
 
     #MicGeomPlot
     mgPlot = figure(title='Microphone Geometry', tools = 'hover,pan,wheel_zoom,reset')
@@ -58,28 +112,39 @@ def server_doc(doc):
                  color_mapper=cm.colorMapper,source=bv.cdsource)
     bfPlot.add_layout(cm.colorBar, 'right')
 
-    ### CREATE LAYOUT ### 
+    # Plot Tabs
+    mgPlotTab = Panel(child=row(mgPlot),title='Microphone Geometry Plot')
+    bfPlotTab = Panel(child=row(bfPlot),title='Source Plot')
+    plotTabs = Tabs(tabs=[mgPlotTab,bfPlotTab],width=600)
+
+    # Property Tabs
+    selectedBfWidgets = column(*bbWidgets)  
+    tsTab = Panel(child=column(*tsWidgets),title='Time Data')
+    mgTab = Panel(child=column(*mgWidgets),title='MicGeometry')
+    calTab = Panel(child=column(*calWidgets),title='Calibration')
+    envTab = Panel(child=column(*envWidgets),title='Environment')
+    gridTab = Panel(child=column(*rgWidgets),title='Grid')
+    stTab = Panel(child=column(*stWidgets),title='Steering')
+    psTab = Panel(child=column(*psWidgets),title='FFT')
+    bfTab = Panel(child=column(beamformerSelector,selectedBfWidgets),
+                  title='Beamforming')
+    globalTab = Panel(child=column(*confWidgets),title='Global Settings')
+
+    propertyTabs = Tabs(tabs=[tsTab,mgTab,calTab,envTab,gridTab,stTab,
+                              psTab,bfTab,globalTab],width=1000)
     
-    # columns    
-    tsWidgetsCol = column(Div(text="TimeSamples:"),*tvWidgets,*tsWidgets)
-    mgWidgetsCol = column(Div(text="MicGeom:"),*mgWidgets)
-    psWidgetsCol = column(Div(text="PowerSpectra:"),*psWidgets)
-    rgWidgetsCol = column(Div(text="Grid:"),*rgWidgets)
-    bfWidgetsCol = column(Div(text="SteeringVector:"),*stWidgets,
-                          Div(text="BeamformerBase:"),*bbWidgets,*bvWidgets,*cmWidgets)
-
-    # Tabs
-    tsTab = Panel(child=row(tsPlot,tsWidgetsCol,psWidgetsCol),title='Time Signal')
-    mgTab = Panel(child=row(mgPlot,mgWidgetsCol,column(*mvWidgets)),title='Microphone Geometry')
-    bfTab = Panel(child=row(bfPlot,rgWidgetsCol,bfWidgetsCol),title='Beamforming')
-    ControlTabs = Tabs(tabs=[tsTab,mgTab,bfTab],width=850)
-
+    calcColumn = column(calcButton,*bvWidgets,*cmWidgets)
+    
+    def beamformer_handler(attr,old,new):
+        bv.source = beamformer_dict[new]
+        selectedBfWidgets.children = beamformer_dict[new].get_widgets()
+    beamformerSelector.on_change('value',beamformer_handler)
+    
     # make Document
-    doc.add_root(ControlTabs)
+    mainlayout = row(plotTabs,calcColumn,propertyTabs)
+    doc.add_root(mainlayout)
 
-# Setting num_procs here means we can't touch the IOLoop before now, we must
-# let Server handle that. If you need to explicitly handle IOLoops then you
-# will need to use the lower level BaseServer class.
+
 server = Server({'/': server_doc}, num_procs=1)
 server.start()
 
