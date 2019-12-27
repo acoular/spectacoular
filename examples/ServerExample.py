@@ -24,11 +24,14 @@ tdfile = 'example_data.h5'
 calibfile = 'example_calib.xml'
 ts = MaskedTimeSamples(name=tdfile)
 cal = Calib(from_file=calibfile)
+#ts = MaskedTimeSamples()
+#cal = Calib()
 ts.start = 0 # first sample, default
 ts.stop = 16000 # last valid sample = 15999
 invalid = [1,7] # list of invalid channels (unwanted microphones etc.)
 ts.invalid_channels = invalid 
 ts.calib = cal
+#mg = MicGeom()
 mg = MicGeom(from_file=micgeofile,invalid_channels = invalid)
 ps = PowerSpectra(time_data=ts)
 rg = RectGrid(x_min=-0.6, x_max=-0.0, y_min=-0.3, y_max=0.3, z=0.68,increment=0.05)

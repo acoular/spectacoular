@@ -428,7 +428,7 @@ trait_widget_mapper = {'from_file': TextInput,
                        'basename': TextInput,
                        'invalid_channels': TextInput,
                        'num_mics': TextInput,
-                       'center': TextInput,
+#                       'center': TextInput,
 #                       'mpos_tot': DataTable
                        }
 
@@ -436,7 +436,7 @@ trait_widget_args = {'from_file': {'disabled':False},
                      'basename': {'disabled':True},
                      'invalid_channels':  {'disabled':False},
                      'num_mics':  {'disabled':True},
-                     'center':  {'disabled':True},
+#                     'center':  {'disabled':True},
 #                     'mpos_tot':  {'disabled':False,'editable':False},
                      }
 
