@@ -386,6 +386,7 @@ trait_widget_args = {'x_min': {'disabled':False},
 add_bokeh_attr(RectGrid,trait_widget_mapper,trait_widget_args)
 
 
+# currently, bokeh library does not support 3D plotting capabilities
 from acoular import RectGrid3D
 
 trait_widget_mapper = {'x_min': TextInput,
@@ -395,7 +396,7 @@ trait_widget_mapper = {'x_min': TextInput,
                        'z_min' : TextInput,
                        'z_max' : TextInput,
                        'z': TextInput,
-                       'increment': TextInput,
+                       '_increment': TextInput,
                        'nxsteps':TextInput,
                        'nysteps' : TextInput,
                        'nzsteps' : TextInput,
@@ -409,7 +410,7 @@ trait_widget_args = {'x_min': {'disabled':False},
                      'z_min':  {'disabled':False},
                      'z_max':  {'disabled':False},
                      'z':  {'disabled':False},
-                     'increment':  {'disabled':False},
+                     '_increment':  {'disabled':False},
                      'nxsteps': {'disabled':True},
                      'nysteps': {'disabled':True},
                      'nzsteps': {'disabled':True},
@@ -428,7 +429,7 @@ trait_widget_mapper = {'from_file': TextInput,
                        'basename': TextInput,
                        'invalid_channels': TextInput,
                        'num_mics': TextInput,
-#                       'center': TextInput,
+                       'center': TextInput,
 #                       'mpos_tot': DataTable
                        }
 
@@ -436,7 +437,7 @@ trait_widget_args = {'from_file': {'disabled':False},
                      'basename': {'disabled':True},
                      'invalid_channels':  {'disabled':False},
                      'num_mics':  {'disabled':True},
-#                     'center':  {'disabled':True},
+                     'center':  {'disabled':True},
 #                     'mpos_tot':  {'disabled':False,'editable':False},
                      }
 

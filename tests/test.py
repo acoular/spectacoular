@@ -5,9 +5,9 @@
 #------------------------------------------------------------------------------
 from traits.api import HasPrivateTraits, Str, CArray, Range, Int, Float,\
 File, CLong, Long, Property, Trait, List, ListStr, ListInt, ListFloat, ListBool,\
-Bool,Tuple
+Bool,Tuple, Any
 from bokeh.models.widgets import TextInput, Slider,DataTable, Select
-from spectacoular import get_widgets, TraitWidgetMapper
+from spectacoular import get_widgets, TraitWidgetMapper, traitdispatcher
 from numpy import array, float64
 
 
@@ -67,21 +67,31 @@ class CArrayWidgetMapping(Test):
 #        self._test_multidim_datatable(widgets[2])
 
 
+testOptions = ['test','test1','test2']
 
 class StrWidgetMapping(Test):
     
     testTrait = Str('test')
     
+    testTraitSelect = Str('test')
+    
+    testTraitSelectWithOptions = Str('test')
+
+    
     trait_widget_mapper = {
                 'testTrait': TextInput,
+                'testTraitSelect': Select,
+                'testTraitSelectWithOptions': Select,
                 }
     
     trait_widget_args = {
                 'testTrait' : {'disabled':False},
+                'testTraitSelect' : {'disabled':False},
+                'testTraitSelectWithOptions' : {'options':testOptions},
                 }    
 
-    def test( self ):
-        widget = self.get_widgets()[0]
+    def _textinput_test(self, widgets):
+        widget = widgets[0]
         # assign value to widget
         widget.value = 'newtest'
         # prove correct change of trait value
@@ -90,6 +100,21 @@ class StrWidgetMapping(Test):
         self.testTrait = 'test'
         # prove correct change of widget value
         assert widget.value == 'test'
+        
+    def _select_test(self, widgets):
+        print(widgets[1].options,widgets[2].options)
+        assert widgets[1].options == ['test']    
+        assert widgets[2].options == testOptions   
+        # assign value to widget
+        widgets[2].value = 'test1'
+        assert self.testTraitSelectWithOptions == 'test1'
+
+    def test( self ):
+        widgets = self.get_widgets()
+        self._textinput_test(widgets)
+        self._select_test(widgets)
+
+
 
 class IntWidgetMapping(Test):
     
@@ -359,26 +384,57 @@ class TupleWidgetMapping(Test):
         widgets = self.get_widgets()
         self._test_textinput(widgets) 
     
-# TODO: increment Property of RectGrid3D raises error when set!    
-#class PropertyWidgetMapping(Test):
-#    
-#    testTrait = Property()
-#    
-#    _testTrait = Trait('1','2','3','4','5') 
-#
-#    trait_widget_mapper = {
-#                'testTrait' : Select,
-#                }
-#    
-#    trait_widget_args = {
+class PropertyWidgetMapping(Test):
+    '''
+    Property is special! In contrast to type Any it returns not an instance 
+    (if the trait attribute of the Property function is not set)!
+    
+    Property: mapper.obj.trait('testTrait').trait_type
+    Returns -> traits.trait_types.Any
+    
+    Any: mapper.obj.trait('_testTrait').trait_type
+    Returns instance ->  <traits.trait_types.Any at 0x7f18f6c79208>
+    
+    Further -> on trait change handler works only on shadow traits, thus ->
+    widget value is not set when trait value changes
+    '''
+    
+    testTrait = Property(Any)
+    #testTrait = Property() # does not work!
+    
+    _testTrait = Any(0.1)
+
+    trait_widget_mapper = {
+#                'testTrait' : TextInput,
+                '_testTrait' : TextInput,
+                }
+    
+    trait_widget_args = {
 #                'testTrait' : {'disabled':False},
-#                }
-#
-#    def _get_testTrait(self):
-#        return self._testTrait
-#
-#    def _set_testTrait(self,testTraitValue):
-#        self._testTrait = testTraitValue
+                '_testTrait' : {'disabled':False},
+                }
+
+    def _get_testTrait(self):
+        return self._testTrait
+
+    def _set_testTrait(self,testTraitValue):
+        self._testTrait = testTraitValue
+        
+    def test( self ):
+        widgets = self.get_widgets()
+        assert widgets[0].value == '0.1'
+        # assign value to widget
+        widgets[0].value = '1.0'
+        # prove correct change of trait value
+        assert self.testTrait == 1.0
+#        # assign value to trait
+        self.testTrait = 0.1
+#        # prove correct change of widget value
+        print(widgets[0].value) # TODO: solution for missing trait change?
+        assert widgets[0].value == '0.1'
+        
+
+        
         
 if __name__ == '__main__':
     
@@ -418,6 +474,12 @@ if __name__ == '__main__':
     tupleTest = TupleWidgetMapping()
     tupleTest.test()
     
+    propertyTest = PropertyWidgetMapping()
+    propertyTest.test()
+    mapper = TraitWidgetMapper(propertyTest,'testTrait')
+    cast_func = traitdispatcher.get_trait_cast_func(mapper)
+
+    
     print("mapping tests successfull")
     
     
@@ -425,5 +487,13 @@ if __name__ == '__main__':
 # Factory Tests
 # =============================================================================
     
-    mapper = TraitWidgetMapper(listTest,'testListStr2')
+    mapper = TraitWidgetMapper(propertyTest,'testTrait')
+    mapper2 = TraitWidgetMapper(propertyTest,'_testTrait')
+
+#    intTest.testTrait = 
+    
+#    from spectacoular import MicGeom
+#    
+#    mg = MicGeom()
+#    mg.get_widgets()
     
