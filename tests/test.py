@@ -6,15 +6,27 @@
 from traits.api import HasPrivateTraits, Str, CArray, Range, Int, Float,\
 File, CLong, Long, Property, Trait, List, ListStr, ListInt, ListFloat, ListBool,\
 Bool,Tuple, Any
+from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import TextInput, Slider,DataTable, Select,TableColumn
-from spectacoular import get_widgets, TraitWidgetMapper, traitdispatcher
+from spectacoular import get_widgets, set_widgets, TraitWidgetMapper, traitdispatcher
 from numpy import array, float64
+
+#TODO: see below:
+# List mapping to ColumnDataSource/DataTable/...
+# TraitMapping Test
+# Delegate Mapping Test
+# Enum Mapping Test
+# trait description implementation
+# BeamformerTime/Sequence Example
+# three sources gui example
+# 2. trait notification handling for CArrays
 
 
 class Test(HasPrivateTraits):
     
     get_widgets = get_widgets
 
+    set_widgets = set_widgets
 
 columns = [TableColumn(field='x', title='x'),
            TableColumn(field='y', title='y'),
@@ -63,12 +75,21 @@ class CArrayWidgetMapping(Test):
         # change table
         widget.source.data['x'] = [4.0,4.0,4.0] # if only one value is changed -> callback is not triggered
         assert all(self.testFloatCArray[:,0] == array([4.0,4.0,4.0]))
+
+
+    def _test_set_widgets(self,widgets):
+        # test DataTable
+        cds = ColumnDataSource(data={'testIntCArray2':[4]})
+        dt = DataTable(source=cds,columns=[TableColumn(field='testIntCArray2', title='testIntCArray2')])
+        self.set_widgets(**{'testIntCArray2':dt})
     
     def test( self ):
         widgets = self.get_widgets()
         self._test_textinput(widgets['testIntCArray'])
         self._test_datatable(widgets['testIntCArray2'])
         self._test_multidim_datatable(widgets['testFloatCArray'])
+        self._test_set_widgets(widgets)
+
 
 
 testOptions = ['test','test1','test2']
@@ -155,6 +176,27 @@ class IntWidgetMapping(Test):
         # prove correct change of widget value
         for widget in widgets.values():
             assert widget.value == '1'
+
+    def test_set_widgets( self ):
+        # test TextInput
+        ti = TextInput(value='10')
+        self.set_widgets(**{'testTrait':ti})
+        assert self.testTrait == 10
+        self.testTrait = 1
+        assert ti.value == '1'
+        # test Select
+        sl = Select(value='2',options=['1','2','3','4'])
+        self.set_widgets(**{'testTrait':sl})
+        assert self.testTrait == 2
+        assert ti.value == '2'
+        self.testTrait = 4
+        assert sl.value == '4'
+        # test Slider
+        sr = Slider(value=3, start=1, end=4)
+        self.set_widgets(**{'testTrait':sr})
+        assert self.testTrait == 3
+        assert ti.value == '3' and sl.value == '3'
+
 
 
 class FloatWidgetMapping(Test):
@@ -466,6 +508,7 @@ if __name__ == '__main__':
     # Int Trait Widget Mapping Test
     intTest = IntWidgetMapping()
     intTest.test()
+    intTest.test_set_widgets()
     
     # Float Trait Widget Mapping Test
     floatTest = FloatWidgetMapping()

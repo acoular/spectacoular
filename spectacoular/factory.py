@@ -158,6 +158,14 @@ class TextInputMapper(TraitWidgetMapper):
         self._set_callbacks()
         return self.widget
 
+    def set_widget(self, widget):
+        '''
+        sets a bokeh TextInput instance 
+        '''
+        self.widget = widget
+        cast_func = traitdispatcher.get_trait_cast_func(self)
+        self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
+        self._set_callbacks()
 
 
 class SelectMapper(TraitWidgetMapper):
@@ -172,6 +180,15 @@ class SelectMapper(TraitWidgetMapper):
         self._set_options()
         self._set_callbacks()
         return self.widget
+
+    def set_widget(self, widget):
+        '''
+        sets a bokeh Select widget instance 
+        '''
+        self.widget = widget
+        cast_func = traitdispatcher.get_trait_cast_func(self)
+        self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
+        self._set_callbacks()
 
     def _set_options(self):
         ''' sets the options of a select widget '''
@@ -205,6 +222,15 @@ class SliderMapper(TraitWidgetMapper):
         self._set_callbacks()
         return self.widget
     
+    def set_widget(self, widget):
+        '''
+        sets a bokeh Slider widget instance 
+        '''
+        self.widget = widget
+        cast_func = traitdispatcher.get_trait_cast_func(self)
+        self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
+        self._set_callbacks()
+
     def _set_range(self):
         if not self.widget.start:
             if self.traittype._low:
@@ -245,6 +271,15 @@ class DataTableMapper(TraitWidgetMapper):
         self._set_widgetvalue(self.traitvalue)
         self._set_callbacks()
         return self.widget
+
+    def set_widget(self, widget):
+        '''
+        sets a bokeh DataTable widget instance 
+        '''
+        self.widget = widget
+        cast_func = traitdispatcher.get_trait_cast_func(self)
+        self._set_traitvalue(cast_func(self.widget.source.data)) # set traitvalue to widgetvalue
+        self._set_callbacks()
 
     def initialize_column_data_source( self ):
         ''' create keys of DataTables ColumnDataSource '''
@@ -471,7 +506,6 @@ class TraitCastDispatcher(object):
             return cast_to_str
         elif isinstance(traittype, CArray): 
             return self.get_cast_to_array_func(traittype.dtype) 
-#            return self.get_cast_to_list_func()
         else:
             raise NotImplementedError('No sequence cast function for type "{}".'.format(
                     traittype.__class__))     

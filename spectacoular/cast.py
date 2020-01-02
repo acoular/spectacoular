@@ -24,6 +24,13 @@ except:
 def cast_to_int(value):
     return int(value)    
 
+@cast_to_int.register(list)
+def _(list_):
+    if len(list_) == 1:
+        return int(list_[0])
+    else:
+        raise ValueError("can not cast a list with {} values to int".format(
+                                                                    len(list_)))
 @cast_to_int.register(str)
 def _(str_):
     if str_:
@@ -102,7 +109,7 @@ def _(str_):
 @singledispatch        
 def cast_to_array(value):
 #    print("cast from value")
-    return array(value)
+    return array([value])
 
 @cast_to_array.register(dict)
 def _(dict_):

@@ -7,7 +7,7 @@ import os
 from os import path
 import acoular
 from bokeh.layouts import column, row
-from bokeh.models.widgets import Panel,Tabs, Select, Toggle
+from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider
 from bokeh.models import LogColorMapper, ColorBar, PointDrawTool
 from bokeh.plotting import figure
 from bokeh.palettes import viridis
@@ -18,6 +18,7 @@ from pylab import ravel_multi_index, array
 
 acoular.config.global_caching = 'none' # no result cachings
 
+# define selectable microphone geometries
 micgeofiles = path.join( path.split(acoular.__file__)[0],'xml')
 options = [path.join(micgeofiles,name) for name in os.listdir(micgeofiles)]
 options.append('')
@@ -29,13 +30,21 @@ st = SteeringVector(mics = mg, grid = rg)
 psf = PointSpreadFunction(steer=st,freq=1000.0)
 psfPresenter = PointSpreadFunctionPresenter(source=psf)
            
-# get widgets                       
-mg.trait_widget_mapper['from_file'] = Select # Replace TextInput with Select Widget
+# create Select widget to choose Microphone Geometry
+micGeomSelect = Select(title='Geometry',value=options[0],options=options) 
+# create Slider widget to choose Frequency of PSF
+psfFreqSlider = Slider(title='Frequency [Hz]',value=1000.0, start=10.0, end=20000.0)
+
+# get widgets from acoular objects                      
+# mg.trait_widget_mapper['from_file'] = Select # Replace TextInput with Select Widget
+# mgWidgets['from_file'].options = options # add options to Select File Widget
 mgWidgets = mg.get_widgets()
-mgWidgets['from_file'].options = options # add options to Select File Widget
+mg.set_widgets(**{'from_file':micGeomSelect}) # set from file attribute with select widget
+mgWidgets['from_file'] = micGeomSelect
 rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 psfWidgets = psf.get_widgets()
+psf.set_widgets(**{'freq':psfFreqSlider}) # set from file attribute with select widget
 
 # Tooltips for additional information
 PSF_TOOLTIPS = [
@@ -87,7 +96,8 @@ def server_doc(doc):
     ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab],width=850)
 
     # make Document
-    doc.add_root(row(mgPlot,psfPlot,column(calcButton,ControlTabs)))
+    doc.add_root(row(mgPlot,psfPlot,column(
+                                    calcButton,psfFreqSlider,ControlTabs)))
 
 server = Server({'/': server_doc}, num_procs=1,port=5101)
 server.start()
