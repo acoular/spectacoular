@@ -7,7 +7,8 @@
 Implements widget mappings for acoular classes
 """
 
-from bokeh.models.widgets import TextInput, Select, Slider, DataTable
+from bokeh.models.widgets import TextInput, Select, Slider, DataTable,\
+TableColumn, NumberEditor
 from .factory import TraitWidgetMapper
 
 def get_widgets(self):
@@ -356,6 +357,24 @@ trait_widget_args = {
 
 add_bokeh_attr(BeamformerGIB,trait_widget_mapper,trait_widget_args)
 
+
+from acoular import PointSpreadFunction
+
+trait_widget_mapper = {
+                        'calcmode' : Select,
+                        'precision' : Select,
+                        'freq' : TextInput,
+
+                       }
+trait_widget_args = {
+                    'calcmode' : {'disabled':False},
+                    'precision' : {'disabled':False},
+                    'freq' : {'disabled':False},
+                     }
+
+add_bokeh_attr(PointSpreadFunction,trait_widget_mapper,trait_widget_args)
+
+
 #%% grids.py
 
 from acoular import RectGrid
@@ -424,13 +443,16 @@ add_bokeh_attr(RectGrid3D,trait_widget_mapper,trait_widget_args)
 
 from acoular import MicGeom
 
+columns = [TableColumn(field='x', title='X', editor=NumberEditor()),
+           TableColumn(field='y', title='Y', editor=NumberEditor()),
+           TableColumn(field='z', title='Z', editor=NumberEditor())]
 
 trait_widget_mapper = {'from_file': TextInput,
                        'basename': TextInput,
                        'invalid_channels': TextInput,
                        'num_mics': TextInput,
                        'center': TextInput,
-#                       'mpos_tot': DataTable
+                       'mpos_tot': DataTable
                        }
 
 trait_widget_args = {'from_file': {'disabled':False},
@@ -438,7 +460,7 @@ trait_widget_args = {'from_file': {'disabled':False},
                      'invalid_channels':  {'disabled':False},
                      'num_mics':  {'disabled':True},
                      'center':  {'disabled':True},
-#                     'mpos_tot':  {'disabled':False,'editable':False},
+                     'mpos_tot':  {'editable':True,'columns':columns},
                      }
 
 add_bokeh_attr(MicGeom,trait_widget_mapper,trait_widget_args)
@@ -526,7 +548,7 @@ trait_widget_mapper = {
                        'start_t' : TextInput,
                        'start' : TextInput,
                        'up' : TextInput,
-#                       'numsamples': TextInput,
+#                       'numsamples': TextInput, # is a Delegate -> currently raises error 
 #                       'sample_freq': TextInput,
 #                       'numchannels' : TextInput
                        }

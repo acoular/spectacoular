@@ -6,7 +6,7 @@
 from traits.api import HasPrivateTraits, Str, CArray, Range, Int, Float,\
 File, CLong, Long, Property, Trait, List, ListStr, ListInt, ListFloat, ListBool,\
 Bool,Tuple, Any
-from bokeh.models.widgets import TextInput, Slider,DataTable, Select
+from bokeh.models.widgets import TextInput, Slider,DataTable, Select,TableColumn
 from spectacoular import get_widgets, TraitWidgetMapper, traitdispatcher
 from numpy import array, float64
 
@@ -16,13 +16,17 @@ class Test(HasPrivateTraits):
     get_widgets = get_widgets
 
 
+columns = [TableColumn(field='x', title='x'),
+           TableColumn(field='y', title='y'),
+           TableColumn(field='z', title='z')]
+
 class CArrayWidgetMapping(Test):
     
     testIntCArray = CArray( dtype=int )
     
     testIntCArray2 = CArray(dtype=int )
     
-    testFloatCArray = CArray(dtype=float, shape=(3,3))
+    testFloatCArray = CArray(dtype=int, shape=(3,3))
     
     trait_widget_mapper = {
                 'testIntCArray': TextInput,
@@ -32,8 +36,8 @@ class CArrayWidgetMapping(Test):
     
     trait_widget_args = {
                 'testIntCArray' : {'disabled':False},
-                'testIntCArray2' : {'disabled':False},
-                'testFloatCArray' : {'disabled':False},
+                'testIntCArray2' : {'editable':True},
+                'testFloatCArray' : {'editable':True,'columns':columns}, #TODO: when editable=True -> on change callback of CDS does not trigger
                 }
 
     def _test_textinput(self,widget):
@@ -46,25 +50,30 @@ class CArrayWidgetMapping(Test):
 
     def _test_datatable(self,widget):
         # One Dimensional Datatable
-        testArray = array([10.0,2.1,3.2])
-        self.testIntCArray2 = testArray
-        assert all(widget.source.data['testIntCArray2'] == array([10,2,3]))
-        widget.source.data['testIntCArray2'][0] = 100
-        assert all(self.testIntCArray2 == array([100,2,3]))
+        self.testIntCArray2 = array([11.0,2.1,3.2])
+        assert all(widget.source.data['testIntCArray2'] == array([11,2,3]))
+        widget.source.data['testIntCArray2'] = array([100,2,3])
         print(self.testIntCArray2)
+        print(self.testIntCArray2.T == array([100,2,3]))
+        assert not False in self.testIntCArray2.T == array([100,2,3])
+#        print(self.testIntCArray2)
 #
-#    def _test_multidim_datatable(self,widget):
-#        # Two Dimensional Datatable 
-#        testArray = array([[1,1,1],[2,2,2],[3,3,3]],dtype=float64)
-#        self.testFloatCArray = testArray
-#        print(widget.source.data)
-#        assert all(widget.source.data['testFloatCArray'] == testArray)
+    def _test_multidim_datatable(self,widget):
+        # Two Dimensional Datatable 
+        testArray = array([[1,2,3],[1,2,3],[1,2,3]],dtype=float64)
+        self.testFloatCArray = testArray
+        print(widget.source.data)
+        assert all(widget.source.data['x'] == testArray[:,0])
+        # change table
+        widget.source.data['x'] = [4.0,4.0,4.0] # if only one value is changed -> callback is not triggered
+        print(self.testFloatCArray)
+        assert all(self.testFloatCArray[:,0] == array([4.0,4.0,4.0]))
     
     def test( self ):
         widgets = self.get_widgets()
         self._test_textinput(widgets[0])
         self._test_datatable(widgets[1])
-#        self._test_multidim_datatable(widgets[2])
+        self._test_multidim_datatable(widgets[2])
 
 
 testOptions = ['test','test1','test2']
@@ -434,6 +443,28 @@ class PropertyWidgetMapping(Test):
         assert widgets[0].value == '0.1'
         
 
+# =============================================================================
+# Test explicit Mapping
+# =============================================================================
+
+class DataTableMapping(Test):
+    
+    testCArrayInt = CArray( dtype=int )
+    
+    testListInt = ListInt()
+    
+    
+    trait_widget_mapper = {
+                'testCArrayInt': DataTable,
+                'testListInt': DataTable,
+                }
+    
+    trait_widget_args = {
+                'testCArrayInt' : {'editable':True},
+                'testListInt' : {'editable':True},
+#                'testFloatCArray' : {'editable':True,'columns':columns}, #TODO: when editable=True -> on change callback of CDS does not trigger
+                }
+
         
         
 if __name__ == '__main__':
@@ -479,6 +510,10 @@ if __name__ == '__main__':
     mapper = TraitWidgetMapper(propertyTest,'testTrait')
     cast_func = traitdispatcher.get_trait_cast_func(mapper)
 
+    # DataTableMapping Test    
+    datatableTest = DataTableMapping()
+    widgets = datatableTest.get_widgets()
+    datatableTest.testListInt = [1,2,3,4]
     
     print("mapping tests successfull")
     
@@ -487,11 +522,9 @@ if __name__ == '__main__':
 # Factory Tests
 # =============================================================================
     
-    mapper = TraitWidgetMapper(propertyTest,'testTrait')
-    mapper2 = TraitWidgetMapper(propertyTest,'_testTrait')
+#    mapper = TraitWidgetMapper(carrayTest,'testIntCArray')
+#    mapper2 = TraitWidgetMapper(propertyTest,'_testTrait')
 
-#    intTest.testTrait = 
-    
 #    from spectacoular import MicGeom
 #    
 #    mg = MicGeom()

@@ -1,37 +1,34 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
+#------------------------------------------------------------------------------
+# Copyright (c) 2007-2019, Acoular Development Team.
+#------------------------------------------------------------------------------
 """
 Example that demonstrates different beamforming algorithms
 """
-
 from os import path
-import acoular
-
 from bokeh.layouts import column, row
-from bokeh.models.widgets import Panel,Tabs,Div, Select, Toggle
+from bokeh.models.widgets import Panel,Tabs,Select, Toggle
 from bokeh.plotting import figure
 from bokeh.server.server import Server
+import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
 BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
-BeamformerCleansc, BeamformerClean, BeamformerPresenter,TimeSamplesPresenter,\
-BeamformerCMF,BeamformerGIB,Environment,Calib,config,PointSource,\
-MicGeomPresenter, ColorMapperController, SingleChannelController
-
+BeamformerCleansc, BeamformerClean, BeamformerPresenter,ColorMapperController,\
+BeamformerCMF,BeamformerGIB,Environment,Calib,config
+ 
 # build processing chain
 micgeofile = path.join( path.split(acoular.__file__)[0],'xml','array_56.xml')
 tdfile = 'example_data.h5'
 calibfile = 'example_calib.xml'
 ts = MaskedTimeSamples(name=tdfile)
 cal = Calib(from_file=calibfile)
-#ts = MaskedTimeSamples()
-#cal = Calib()
 ts.start = 0 # first sample, default
 ts.stop = 16000 # last valid sample = 15999
 invalid = [1,7] # list of invalid channels (unwanted microphones etc.)
 ts.invalid_channels = invalid 
 ts.calib = cal
-#mg = MicGeom()
 mg = MicGeom(from_file=micgeofile,invalid_channels = invalid)
 ps = PowerSpectra(time_data=ts)
 rg = RectGrid(x_min=-0.6, x_max=-0.0, y_min=-0.3, y_max=0.3, z=0.68,increment=0.05)
@@ -67,9 +64,14 @@ beamformer_dict = {
                    'GIB' : bgib
                    }
 
+# create Select Button to select Beamforming Algorithm
+beamformerSelector = Select(title="Select Beamforming Method:",
+                        options=list(beamformer_dict.keys()),
+                        value=list(beamformer_dict.keys())[0])
+
+
 # use additional classes for data evaluation/view
-mv = MicGeomPresenter(source=mg)
-bv = BeamformerPresenter(source=bb,grid=rg)
+bv = BeamformerPresenter(source=bb)
 cm = ColorMapperController()
 
 # get widgets to control settings
@@ -82,32 +84,27 @@ rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 bbWidgets = bb.get_widgets()
 bvWidgets = bv.get_widgets()
-mvWidgets = mv.get_widgets()
 cmWidgets = cm.get_widgets()
 confWidgets = config.get_widgets()
 
-def server_doc(doc):
-    
-    beamformerSelector = Select(title="Select Beamforming Method:",
-                            options=list(beamformer_dict.keys()),
-                            value=list(beamformer_dict.keys())[0])
+# create Button to trigger beamforming result calculation
+calcButton = Toggle(label="Calculate",button_type="success")
+def calc(arg):
+    if arg:
+        calcButton.label = 'Calculating ...'
+        bv.update()
+        calcButton.active = False
+        calcButton.label = 'Calculate'
+    if not arg:
+        calcButton.label = 'Calculate'
+calcButton.on_click(calc)
 
-    calcButton = Toggle(label="Calculate",button_type="success")
-    def calc(arg):
-        if arg:
-            calcButton.label = 'Calculating ...'
-            bv.update()
-            calcButton.active = False
-            calcButton.label = 'Calculate'
-        if not arg:
-            calcButton.label = 'Calculate'
-    calcButton.on_click(calc)
-            
-    ### CREATE LAYOUT ### 
+# create server doc func
+def server_doc(doc):
 
     #MicGeomPlot
     mgPlot = figure(title='Microphone Geometry', tools = 'hover,pan,wheel_zoom,reset')
-    mgPlot.circle(x='x',y='y',source=mv.cdsource)
+    mgPlot.circle(x='x',y='y',source=mgWidgets[-1].source)
 
     # beamformerPlot
     bfPlot = figure(title='Beamforming Result', tools = 'pan,wheel_zoom,reset')
@@ -132,7 +129,6 @@ def server_doc(doc):
     bfTab = Panel(child=column(beamformerSelector,selectedBfWidgets),
                   title='Beamforming')
     globalTab = Panel(child=column(*confWidgets),title='Global Settings')
-
     propertyTabs = Tabs(tabs=[tsTab,mgTab,calTab,envTab,gridTab,stTab,
                               psTab,bfTab,globalTab],width=1000)
     
@@ -147,13 +143,11 @@ def server_doc(doc):
     mainlayout = row(plotTabs,calcColumn,propertyTabs)
     doc.add_root(mainlayout)
 
-
 server = Server({'/': server_doc}, num_procs=1)
 server.start()
 
-
 if __name__ == '__main__':
-    print('Opening Bokeh application on http://localhost:5006/')
+    print('Opening beamforming result explorer application on http://localhost:5006/')
 
     server.io_loop.add_callback(server.show, "/")
     server.io_loop.start()
