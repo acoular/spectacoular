@@ -19,7 +19,6 @@ class Test(HasPrivateTraits):
 columns = [TableColumn(field='x', title='x'),
            TableColumn(field='y', title='y'),
            TableColumn(field='z', title='z')]
-
 class CArrayWidgetMapping(Test):
     
     testIntCArray = CArray( dtype=int )
@@ -53,8 +52,6 @@ class CArrayWidgetMapping(Test):
         self.testIntCArray2 = array([11.0,2.1,3.2])
         assert all(widget.source.data['testIntCArray2'] == array([11,2,3]))
         widget.source.data['testIntCArray2'] = array([100,2,3])
-        print(self.testIntCArray2)
-        print(self.testIntCArray2.T == array([100,2,3]))
         assert not False in self.testIntCArray2.T == array([100,2,3])
 #        print(self.testIntCArray2)
 #
@@ -62,22 +59,19 @@ class CArrayWidgetMapping(Test):
         # Two Dimensional Datatable 
         testArray = array([[1,2,3],[1,2,3],[1,2,3]],dtype=float64)
         self.testFloatCArray = testArray
-        print(widget.source.data)
         assert all(widget.source.data['x'] == testArray[:,0])
         # change table
         widget.source.data['x'] = [4.0,4.0,4.0] # if only one value is changed -> callback is not triggered
-        print(self.testFloatCArray)
         assert all(self.testFloatCArray[:,0] == array([4.0,4.0,4.0]))
     
     def test( self ):
         widgets = self.get_widgets()
-        self._test_textinput(widgets[0])
-        self._test_datatable(widgets[1])
-        self._test_multidim_datatable(widgets[2])
+        self._test_textinput(widgets['testIntCArray'])
+        self._test_datatable(widgets['testIntCArray2'])
+        self._test_multidim_datatable(widgets['testFloatCArray'])
 
 
 testOptions = ['test','test1','test2']
-
 class StrWidgetMapping(Test):
     
     testTrait = Str('test')
@@ -86,7 +80,6 @@ class StrWidgetMapping(Test):
     
     testTraitSelectWithOptions = Str('test')
 
-    
     trait_widget_mapper = {
                 'testTrait': TextInput,
                 'testTraitSelect': Select,
@@ -100,7 +93,7 @@ class StrWidgetMapping(Test):
                 }    
 
     def _textinput_test(self, widgets):
-        widget = widgets[0]
+        widget = widgets['testTrait']
         # assign value to widget
         widget.value = 'newtest'
         # prove correct change of trait value
@@ -111,18 +104,16 @@ class StrWidgetMapping(Test):
         assert widget.value == 'test'
         
     def _select_test(self, widgets):
-        print(widgets[1].options,widgets[2].options)
-        assert widgets[1].options == ['test']    
-        assert widgets[2].options == testOptions   
+        assert widgets['testTraitSelect'].options == ['test']    
+        assert widgets['testTraitSelectWithOptions'].options == testOptions   
         # assign value to widget
-        widgets[2].value = 'test1'
+        widgets['testTraitSelectWithOptions'].value = 'test1'
         assert self.testTraitSelectWithOptions == 'test1'
 
     def test( self ):
         widgets = self.get_widgets()
         self._textinput_test(widgets)
         self._select_test(widgets)
-
 
 
 class IntWidgetMapping(Test):
@@ -151,7 +142,7 @@ class IntWidgetMapping(Test):
     def test( self ):
         widgets = self.get_widgets()
         for value in list(self.test_widget_values.keys()):
-            for i,widget in enumerate(widgets):
+            for i,widget in enumerate(widgets.values()):
                 # assign value to widget
                 widget.value = value
             assert self.testTrait == 10
@@ -162,7 +153,7 @@ class IntWidgetMapping(Test):
         self.testCLongTrait = 1.0
         self.testLong = 1
         # prove correct change of widget value
-        for widget in widgets:
+        for widget in widgets.values():
             assert widget.value == '1'
 
 
@@ -181,7 +172,8 @@ class FloatWidgetMapping(Test):
     test_widget_values = ['10','10.0']
     
     def test( self ):
-        widget = self.get_widgets()[0]
+        widgets = self.get_widgets()
+        widget = widgets['testTrait']
         assert widget.value == '1.0'
         for value in self.test_widget_values:
             # assign value to widget
@@ -207,7 +199,8 @@ class FileWidgetMapping(Test):
                 } 
 
     def test( self ):
-        widget = self.get_widgets()[0]
+        widgets = self.get_widgets()
+        widget = widgets['testTrait']
         widget.value = 'test.xml'
         assert self.testTrait == 'test.xml'
 
@@ -231,7 +224,7 @@ class RangeWidgetMapping(Test):
     def test( self ):
         widgets = self.get_widgets()
         # test Slider Mapping 
-        widget = widgets[0]
+        widget = widgets['testTrait']
         assert (widget.start, widget.end, widget.value) == (0.01, 1.0, 0.6)
         # assign value to widget
         widget.value = 1.0
@@ -271,9 +264,9 @@ class TraitWidgetMapping(Test):
     def test( self ):
         widgets = self.get_widgets()
         # test Slider Mapping 
-        widgetStr = widgets[0]
-        widgetInt = widgets[1]
-        widgetFloat = widgets[2]
+        widgetStr = widgets['testTraitStr']
+        widgetInt = widgets['testTraitInt']
+        widgetFloat = widgets['testTraitFloat']
         # assign value to widget
         widgetStr.value = '2'
         widgetInt.value = '2'
@@ -332,7 +325,7 @@ class ListWidgetMapping(Test):
     def _test_textinput(self,widgets):
         # assign value to widgets
         test_widget_value = ' 2, 4'
-        for widget in widgets:
+        for widget in widgets.values():
             widget.value = test_widget_value
 #        # prove correct change of trait value
 #        print(self.testListStr,type(self.testListStr),type(self.testListStr[0]))
@@ -348,17 +341,16 @@ class ListWidgetMapping(Test):
 #        # assign value to trait
         self.testListStr = ['1','2']
         self.testListStr2 = ['1','2']
-        print(widgets[0].value)
-        assert widgets[0].value == '1, 2'  
-        assert widgets[1].value == '1, 2'  
+        assert widgets['testListStr'].value == '1, 2'  
+        assert widgets['testListStr2'].value == '1, 2'  
         self.testListInt = [1,2]
         self.testListInt2 = [1,2]
-        assert widgets[2].value == '1, 2'  
-        assert widgets[3].value == '1, 2'  
+        assert widgets['testListInt'].value == '1, 2'  
+        assert widgets['testListInt2'].value == '1, 2'  
         self.testListFloat = [1.,2.]
         self.testListFloat2 = [1.,2.]
-        assert widgets[4].value == '1.0, 2.0'  
-        assert widgets[5].value == '1.0, 2.0'  
+        assert widgets['testListFloat'].value == '1.0, 2.0'  
+        assert widgets['testListFloat2'].value == '1.0, 2.0'  
 
     def test( self ):
         widgets = self.get_widgets()
@@ -379,15 +371,14 @@ class TupleWidgetMapping(Test):
     def _test_textinput(self,widgets):
         # assign value to widgets
         test_widget_value = '(2, "4")'
-        for widget in widgets:
+        for widget in widgets.values():
             widget.value = test_widget_value
         
 #        # prove correct change of trait value
         assert self.testTuple == (2, "4")
 #        # assign value to trait
         self.testTuple = (1,"2")
-        print(widgets[0].value)
-        assert widgets[0].value == "(1, '2')"  
+        assert widgets['testTuple'].value == "(1, '2')"  
 
     def test( self ):
         widgets = self.get_widgets()
@@ -431,39 +422,38 @@ class PropertyWidgetMapping(Test):
         
     def test( self ):
         widgets = self.get_widgets()
-        assert widgets[0].value == '0.1'
+        assert widgets['_testTrait'].value == '0.1'
         # assign value to widget
-        widgets[0].value = '1.0'
+        widgets['_testTrait'].value = '1.0'
         # prove correct change of trait value
         assert self.testTrait == 1.0
 #        # assign value to trait
         self.testTrait = 0.1
 #        # prove correct change of widget value
-        print(widgets[0].value) # TODO: solution for missing trait change?
-        assert widgets[0].value == '0.1'
+        assert widgets['_testTrait'].value == '0.1'
         
 
 # =============================================================================
 # Test explicit Mapping
 # =============================================================================
 
-class DataTableMapping(Test):
+# class DataTableMapping(Test):
     
-    testCArrayInt = CArray( dtype=int )
+#     testCArrayInt = CArray( dtype=int )
     
-    testListInt = ListInt()
+#     testListInt = ListInt()
     
     
-    trait_widget_mapper = {
-                'testCArrayInt': DataTable,
-                'testListInt': DataTable,
-                }
+#     trait_widget_mapper = {
+#                 'testCArrayInt': DataTable,
+#                 'testListInt': DataTable,
+#                 }
     
-    trait_widget_args = {
-                'testCArrayInt' : {'editable':True},
-                'testListInt' : {'editable':True},
-#                'testFloatCArray' : {'editable':True,'columns':columns}, #TODO: when editable=True -> on change callback of CDS does not trigger
-                }
+#     trait_widget_args = {
+#                 'testCArrayInt' : {'editable':True},
+#                 'testListInt' : {'editable':True},
+# #                'testFloatCArray' : {'editable':True,'columns':columns}, #TODO: when editable=True -> on change callback of CDS does not trigger
+#                 }
 
         
         
@@ -510,10 +500,10 @@ if __name__ == '__main__':
     mapper = TraitWidgetMapper(propertyTest,'testTrait')
     cast_func = traitdispatcher.get_trait_cast_func(mapper)
 
-    # DataTableMapping Test    
-    datatableTest = DataTableMapping()
-    widgets = datatableTest.get_widgets()
-    datatableTest.testListInt = [1,2,3,4]
+    # # DataTableMapping Test    
+    # datatableTest = DataTableMapping()
+    # widgets = datatableTest.get_widgets()
+    # datatableTest.testListInt = [1,2,3,4]
     
     print("mapping tests successfull")
     

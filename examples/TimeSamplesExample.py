@@ -1,8 +1,10 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
+#------------------------------------------------------------------------------
+# Copyright (c) 2007-2019, Acoular Development Team.
+#------------------------------------------------------------------------------
 """
-Created on Thu Sep  5 17:45:33 2019
-@author: kujawski
+Example how to plot TimeData
 """
 
 from bokeh.layouts import column, row
@@ -13,8 +15,6 @@ from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerPresenter,TimeSamplesPresenter,\
 MicGeomPresenter, SingleChannelController,MultiChannelController,\
 TimeSignalPlayback
-
-#/home/kujawski/Dokumente/Code/acoular_workingcopy/acoular/examples/example_data.h5
 
 # build processing chain
 ts = MaskedTimeSamples()
@@ -39,7 +39,8 @@ def server_doc(doc):
     
     # columns    
     tsWidgetsCol = column(Div(text="TimeSamples:"),row(
-            column(*tsWidgets),column(*tvWidgets,*scWidgets,*plWidgets)))
+            column(*tsWidgets.values()),column(
+                *tvWidgets.values(),*scWidgets.values(),*plWidgets.values())))
 
     # Tabs
     tsTab = Panel(child=row(tsPlot,tsWidgetsCol),title='Time Signal')
@@ -56,7 +57,7 @@ server.start()
 
 
 if __name__ == '__main__':
-    print('Opening Bokeh application on http://localhost:5006/')
+    print('Opening TimeSamples application on http://localhost:5006/')
 
     server.io_loop.add_callback(server.show, "/")
     server.io_loop.start()

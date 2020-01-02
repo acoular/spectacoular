@@ -1,8 +1,10 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
+#------------------------------------------------------------------------------
+# Copyright (c) 2007-2019, Acoular Development Team.
+#------------------------------------------------------------------------------
 """
-Created on Thu Sep  5 17:45:33 2019
-@author: kujawski
+Example how to process data 
 """
 
 from bokeh.layouts import column, row
@@ -15,12 +17,8 @@ MicGeomPresenter, TimeAveragePresenter
 from acoular import TimeAverage, TimePower
 import threading
 
-BlockSize = 4096
-
 # build processing chain
-ts = TimeSamplesPhantom(
-#        name='/home/kujawski/Dokumente/Vorbeifahrtsmessung/Vorbeifahrtmessung/td/2012-06-12_10-53-10_125000.h5',
-        time_delay=.3)
+ts = TimeSamplesPhantom(time_delay=.3)
 tp = TimePower(source=ts)
 ta = TimeAverage(source=tp,naverage=256)
 tpp = TimeAveragePresenter(source=ta)
@@ -35,10 +33,8 @@ def get_data():
     while getattr(ct, "do_run", True):
         print("get block: ",i)
         next(gen)
-        
 
 def server_doc(doc):
-
     bttn = Toggle(label="start") 
     def toggle_handler(arg):
         global periodic_plot_callback,thread # need to be global
@@ -51,20 +47,17 @@ def server_doc(doc):
             doc.remove_periodic_callback(periodic_plot_callback)
     bttn.on_click(toggle_handler) 
 
-
     ampPlot = figure(title="Amplitudes")
     ampPlot.vbar(x='x', width=0.5, bottom=0,top='y', source=tpp.cdsource)
 
     ### CREATE LAYOUT ### 
-    
     # columns    
     tsWidgetsCol = column(Div(text="TimeSamples:"),row(bttn,
-            column(*tsWidgets)))
+            column(*tsWidgets.values())))
 
     # Tabs
     tsTab = Panel(child=row(ampPlot,tsWidgetsCol),title='Time Signal')
     ControlTabs = Tabs(tabs=[tsTab],width=850)
-
 
     # make Document
     doc.add_root(ControlTabs)
@@ -75,10 +68,8 @@ def server_doc(doc):
 server = Server({'/': server_doc}, num_procs=1)
 server.start()
 
-
 if __name__ == '__main__':
-    print('Opening Bokeh application on http://localhost:5006/')
-
+    print('Opening LiveView application on http://localhost:5006/')
     server.io_loop.add_callback(server.show, "/")
     server.io_loop.start()
 

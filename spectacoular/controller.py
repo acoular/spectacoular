@@ -50,7 +50,8 @@ class SingleChannelController(BaseSpectacoular):
     def __init__(self,*args,**kwargs):
         HasPrivateTraits.__init__(self,*args,**kwargs)
         self.selectChannel.on_change('value',self.change_color_select)
-        self._widgets = [self.selectChannel,self.colorSelector]
+        self._widgets = {'selectChannel' : self.selectChannel,
+                         'colorSelector' : self.colorSelector}
                          
     @on_trait_change("source.numchannels")
     def change_channel_selector(self):
@@ -115,7 +116,9 @@ class ColorMapperController(BaseSpectacoular):
     colorBar = ColorBar()
     
     def __init__(self):
-        self._widgets = [self.dynamicSlider,self.numColors,self.palette]
+        self._widgets = {'dynamicSlider': self.dynamicSlider,
+                         'numColors' : self.numColors,
+                         'palette' : self.palette}
         self.dynamicSlider.value = (self.colorMapper.low,self.colorMapper.high)
         self.dynamicSlider.on_change('value', self.dynamicSlider_callback)   
         self.numColors.on_change('value', self.change_colors_callback)

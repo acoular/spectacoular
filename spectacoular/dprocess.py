@@ -52,7 +52,7 @@ class BasePresenter(BaseSpectacoular):
     def __init__(self,*args,**kwargs):
         self.cdsource = ColumnDataSource(data={})
         HasPrivateTraits.__init__(self,*args,**kwargs)
-        self._widgets = []
+        self._widgets = {}
 
     @cached_property
     def _get_digest( self ):
@@ -125,20 +125,20 @@ class BeamformerPresenter(BasePresenter):
     num = TextInput(title="Frequency Band Width:", value='0')
 
     #: TextInput widget to set the band center frequency to be considered.
-    freqInput = TextInput(title="Center Frequency:", value='1000')
+    freq = TextInput(title="Center Frequency:", value='1000')
     
     def __init__(self,*args,**kwargs):
         self.cdsource = ColumnDataSource(
                 data = {'bfdata':[],'x':[],'y':[],'dw':[],'dh':[]} )
         HasPrivateTraits.__init__(self,*args,**kwargs)
-        self._widgets = [self.num,self.freqInput]
+        self._widgets = {'num': self.num,'freq':self.freq}
 
     @cached_property
     def _get_digest( self ):
         return digest(self) 
 
     def update(self):
-        res = self.source.synthetic(float(self.freqInput.value), int(self.num.value))
+        res = self.source.synthetic(float(self.freq.value), int(self.num.value))
         if res.size > 0: 
             dx = self.source.grid.x_max-self.source.grid.x_min
             dy = self.source.grid.y_max-self.source.grid.y_min
@@ -158,7 +158,7 @@ class PointSpreadFunctionPresenter(BasePresenter):
         self.cdsource = ColumnDataSource(
                 data = {'psf':[],'x':[],'y':[],'dw':[],'dh':[]} )
         HasPrivateTraits.__init__(self,*args,**kwargs)
-        self._widgets = []
+        self._widgets = {}
 
     @cached_property
     def _get_digest( self ):
@@ -210,7 +210,8 @@ class TimeSamplesPresenter(BasePresenter):
         self.cdsource = ColumnDataSource(data={'xs':[],'ys':[],'color':[]})
         HasPrivateTraits.__init__(self,*args,**kwargs)
         self.applyButton.on_click(self.update)
-        self._widgets = [self.samplesRange,self.applyButton]
+        self._widgets = {'samplesRange' : self.samplesRange,
+                         'applyButton' : self.applyButton}
 
     @on_trait_change('source, controller')
     def pass_source(self):

@@ -30,7 +30,6 @@ from acoular import SamplesGenerator, TimeInOut, TimeSamples,\
 L_p,TimeAverage,FiltFiltOctave, TimePower, MaskedTimeSamples
 from acoular.internal import digest
 
-
 # 
 from .dprocess import BasePresenter
 from .controller import SingleChannelController, MultiChannelController
@@ -147,7 +146,7 @@ class TimeSignalLivePresenter(TimeInOutPresenter):
         self.cdsource = ColumnDataSource(data={'xs':[],'ys':[]})
         HasPrivateTraits.__init__(self,*args,**kwargs)
 #        self.selectChannel.on_change('value',self.change_color_select)
-        self._widgets = [self.selectChannel]
+        self._widgets = {'selectChannel' : self.selectChannel}
 
     @on_trait_change("digest")
     def change_channel_selector(self):
@@ -181,7 +180,7 @@ class TimeSignalPlayback(TimeInOutPresenter):
     def __init__(self,*args,**kwargs):
         HasPrivateTraits.__init__(self,*args,**kwargs)
         self.playButton.on_click(self.playButton_handler)
-        self._widgets = [self.playButton]
+        self._widgets = {'playButton':self.playButton}
     
     
     # internal identifier

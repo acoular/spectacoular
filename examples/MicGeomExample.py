@@ -32,7 +32,7 @@ psfPresenter = PointSpreadFunctionPresenter(source=psf)
 # get widgets                       
 mg.trait_widget_mapper['from_file'] = Select # Replace TextInput with Select Widget
 mgWidgets = mg.get_widgets()
-mgWidgets[0].options = options # add options to Select File Widget
+mgWidgets['from_file'].options = options # add options to Select File Widget
 rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 psfWidgets = psf.get_widgets()
@@ -63,25 +63,27 @@ def server_doc(doc):
                     tools = 'pan,wheel_zoom,reset,lasso_select',
                     match_aspect=True,)
     micRenderer = mgPlot.circle_cross(x='x',y='y',size=10,fill_alpha=0.2,
-                                      source=mgWidgets[-1].source)
+                                      source=mgWidgets['mpos_tot'].source)
     drawtool = PointDrawTool(renderers=[micRenderer])
     mgPlot.add_tools(drawtool)
     mgPlot.toolbar.active_tap = drawtool
     
     # PSF Plot
     psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
-                     tooltips=PSF_TOOLTIPS,match_aspect=True, )
+                     tooltips=PSF_TOOLTIPS,match_aspect=True)
+    psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
     cm = LogColorMapper(low=74, high=94,palette=viridis(100))
     psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
                  source=psfPresenter.cdsource, color_mapper=cm)
-    psfPlot.add_layout(ColorBar(color_mapper=cm),
-                        'right')
+    psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Level [dB]",\
+                                title_standoff=10),'right')
+                        
     ### CREATE LAYOUT ### 
     # Tabs
-    mgTab = Panel(child=column(*mgWidgets),title='Microphone Geometry')
-    psfTab = Panel(child=column(*psfWidgets),title='Point-Spread Function')
-    gridTab = Panel(child=column(*rgWidgets),title='Grid')
-    stTab = Panel(child=column(*stWidgets),title='Steering')
+    mgTab = Panel(child=column(*mgWidgets.values()),title='Microphone Geometry')
+    psfTab = Panel(child=column(*psfWidgets.values()),title='Point-Spread Function')
+    gridTab = Panel(child=column(*rgWidgets.values()),title='Grid')
+    stTab = Panel(child=column(*stWidgets.values()),title='Steering')
     ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab],width=850)
 
     # make Document

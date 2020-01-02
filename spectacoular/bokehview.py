@@ -4,7 +4,7 @@
 # Copyright (c) 2007-2019, Acoular Development Team.
 #------------------------------------------------------------------------------
 """
-Implements widget mappings for acoular classes
+Implements widget mappings for spectAcoular classes
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable,\
@@ -13,17 +13,15 @@ from .factory import TraitWidgetMapper
 
 def get_widgets(self):
     '''
-    This function is implemented for acoular classes. It builds widgets to
-    corresponding traits defined in bokehview.py
-
-    widgetlist might be better a dictionary! translate trait name to widgets
+    This function is implemented in all spectAcoular classes. It builds widgets 
+    from corresponding traits defined in bokehview.py
     '''
-    widgetlist = []
+    widgetdict = {}
     for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
         widgetMapper = TraitWidgetMapper.factory(self,traitname,widgetType)
-        widget = widgetMapper.create_widget(**self.trait_widget_args[traitname])
-        widgetlist.append(widget)
-    return widgetlist
+        widgetdict[traitname] = widgetMapper.create_widget(
+                                        **self.trait_widget_args[traitname])
+    return widgetdict
 
 def add_bokeh_attr(cls,trait_widget_mapper,trait_widget_args):
     ''' 

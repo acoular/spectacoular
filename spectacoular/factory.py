@@ -23,7 +23,7 @@ from bokeh.models import ColumnDataSource
 from traits.api import CTrait, TraitEnum, TraitMap, CArray, Any, \
 List,Float, Str, Int, Enum, Range, TraitListObject, Bool, Tuple, Long,\
 CLong, HasPrivateTraits, TraitCoerceType, File, BaseRange, TraitCompound,\
-Complex
+Complex,Dict
 from numpy import array, ndarray,newaxis,isscalar,nan_to_num
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
@@ -49,7 +49,7 @@ class BaseSpectacoular(HasPrivateTraits):
     
 
     # shadow trait that holds a list of widgets that belong to the class
-    _widgets = List()
+    _widgets = Dict()
 
     def get_widgets(self):
         """ 
@@ -270,12 +270,10 @@ class DataTableMapper(TraitWidgetMapper):
     def _set_widgetvalue(self,traitvalue):
         ''' changes data in ColumnDataSource of DataTable widget '''
         newData = self.cast_to_dict(traitvalue)
-        isSame = [new==old for (new,old) in 
-                  zip(newData.values(),self.widget.source.data.values())]
-#        print(self.widget.source.data.values())
-#        print(isSame)
-        if len(isSame) > 0 and False in isSame:
-            self.widget.source.data = newData
+        # isSame = [new==old for (new,old) in 
+        #           zip(newData.values(),self.widget.source.data.values())]
+        # if len(isSame) > 0 and False in isSame:
+        self.widget.source.data = newData
         return
 
     def _set_callbacks( self ):
