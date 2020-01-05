@@ -70,7 +70,6 @@ def _(list_):
     return cast_list_to_str(list_)
 
 @cast_to_str.register(ndarray)
-@cast_to_str.register(array)
 @cast_to_str.register(CArray)
 def _(ndarray_):
     if len(ndarray_.squeeze().shape) == 1:
