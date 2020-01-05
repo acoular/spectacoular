@@ -7,16 +7,16 @@
 from traits.api import CArray,  TraitListObject
 from numpy import array, ndarray
 from functools import singledispatch, update_wrapper
-try:
-    from funtools import singledispatchmethod # only for python >= 3.8
-except:
-    def singledispatchmethod(func):
-        dispatcher = singledispatch(func)
-        def wrapper(*args, **kw):
-            return dispatcher.dispatch(args[1].__class__)(*args, **kw)
-        wrapper.register = dispatcher.register
-        update_wrapper(wrapper, func)
-        return wrapper
+# try:
+#     from funtools import singledispatchmethod # only for python >= 3.8
+# except:
+def singledispatchmethod(func):
+    dispatcher = singledispatch(func)
+    def wrapper(*args, **kw):
+        return dispatcher.dispatch(args[1].__class__)(*args, **kw)
+    wrapper.register = dispatcher.register
+    update_wrapper(wrapper, func)
+    return wrapper
 
 #%% cast to int type
         
