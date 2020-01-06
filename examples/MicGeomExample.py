@@ -6,7 +6,7 @@
 import os
 from os import path
 import acoular
-from bokeh.layouts import column, row
+from bokeh.layouts import column, row,widgetbox
 from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider
 from bokeh.models import LogColorMapper, ColorBar, PointDrawTool
 from bokeh.plotting import figure
@@ -17,6 +17,7 @@ PointSpreadFunctionPresenter
 from pylab import ravel_multi_index, array
 
 acoular.config.global_caching = 'none' # no result cachings
+PALETTE = viridis(100)
 
 # define selectable microphone geometries
 micgeofiles = path.join( path.split(acoular.__file__)[0],'xml')
@@ -36,8 +37,6 @@ micGeomSelect = Select(title='Geometry',value=options[0],options=options)
 psfFreqSlider = Slider(title='Frequency [Hz]',value=1000.0, start=10.0, end=20000.0)
 
 # get widgets from acoular objects                      
-# mg.trait_widget_mapper['from_file'] = Select # Replace TextInput with Select Widget
-# mgWidgets['from_file'].options = options # add options to Select File Widget
 mgWidgets = mg.get_widgets()
 mg.set_widgets(**{'from_file':micGeomSelect}) # set from file attribute with select widget
 mgWidgets['from_file'] = micGeomSelect
@@ -45,11 +44,6 @@ rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 psfWidgets = psf.get_widgets()
 psf.set_widgets(**{'freq':psfFreqSlider}) # set from file attribute with select widget
-
-# Tooltips for additional information
-PSF_TOOLTIPS = [
-    ("Level", "@psf"),
-("(x,y)", "($x, $y)"),]
 
 # create Button to trigger PSF calculation
 calcButton = Toggle(label="Calculate PSF",button_type="success")
@@ -78,10 +72,14 @@ def server_doc(doc):
     mgPlot.toolbar.active_tap = drawtool
     
     # PSF Plot
+    # Tooltips for additional information
+    PSF_TOOLTIPS = [
+        ("Level [dB]", "@psf"),
+    ("(x,y)", "($x, $y)"),]
     psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
                      tooltips=PSF_TOOLTIPS,match_aspect=True)
     psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
-    cm = LogColorMapper(low=74, high=94,palette=viridis(100))
+    cm = LogColorMapper(low=74, high=94,palette=PALETTE)
     psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
                  source=psfPresenter.cdsource, color_mapper=cm)
     psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Level [dB]",\
@@ -93,13 +91,13 @@ def server_doc(doc):
     psfTab = Panel(child=column(*psfWidgets.values()),title='Point-Spread Function')
     gridTab = Panel(child=column(*rgWidgets.values()),title='Grid')
     stTab = Panel(child=column(*stWidgets.values()),title='Steering')
-    ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab],width=850)
+    ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab],width=500)
 
     # make Document
-    doc.add_root(row(mgPlot,psfPlot,column(
-                                    calcButton,psfFreqSlider,ControlTabs)))
-
-server = Server({'/': server_doc}, num_procs=1,port=5101)
+    doc.add_root(row(mgPlot,psfPlot,widgetbox(
+        calcButton,psfFreqSlider,ControlTabs,width=500)))
+    
+server = Server({'/': server_doc}, num_procs=1)
 server.start()
 
 if __name__ == '__main__':

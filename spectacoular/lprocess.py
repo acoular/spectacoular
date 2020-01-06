@@ -10,7 +10,6 @@
 
     TimeSamplesPhantom
     TimeInOutPresenter
-    TimeAveragePresenter
 """
  
 from numpy import delete, arange,shape, concatenate, where,logical_and,savetxt,\
@@ -33,17 +32,43 @@ from acoular.internal import digest
 # 
 from .dprocess import BasePresenter
 from .controller import SingleChannelController, MultiChannelController
+from .bokehview import get_widgets, set_widgets
 
 
-def noneFunc(x): return x
 
 class TimeSamplesPhantom(MaskedTimeSamples):
 
-    time_delay = Float()        
+    time_delay = Float()     
     
     # Indicates if samples are collected, helper trait to break result loop
     collectsamples = Bool(True,
         desc="Indicates if samples are collected")
+
+    get_widgets = get_widgets
+    
+    set_widgets = set_widgets
+    
+    trait_widget_mapper = {'name': TextInput,
+                           'basename': TextInput,
+                           'start' : TextInput,
+                           'stop' : TextInput,
+                           'numsamples': TextInput,
+                           'sample_freq': TextInput,
+                           'invalid_channels':TextInput,
+                           'numchannels' : TextInput,
+                       'time_delay': TextInput,
+                       }
+
+    trait_widget_args = {'name': {'disabled':False},
+                         'basename': {'disabled':True},
+                         'start':  {'disabled':False},
+                         'stop':  {'disabled':False},
+                         'numsamples':  {'disabled':True},
+                         'sample_freq':  {'disabled':True},
+                         'invalid_channels': {'disabled':False},
+                         'numchannels': {'disabled':True},
+                         'time_delay': {'disabled':False},
+                         }
     
     def result(self, num=128):
         """
@@ -103,27 +128,6 @@ class TimeInOutPresenter(TimeInOut,BasePresenter):
             yield temp
 
                 
-class TimeAveragePresenter(TimeInOutPresenter):
-    
-    #: Data source; :class:`~acoular.sources.TimeAverage` or derived object.
-    source = Trait(TimeAverage)
-    
-    y_transform = Trait('L_p', 
-        {'L_p':L_p, 
-        'None':noneFunc})
-    
-    def __init__(self,*args,**kwargs):
-        self.cdsource = ColumnDataSource(data={'x':[],'y':[]})
-        HasPrivateTraits.__init__(self,*args,**kwargs)
-
-    def update(self):
-        numchannels = self.data.data['data'].shape[1]
-        if self.data.data['data'].shape[0] > 0:
-            newData = {'x':list(range(0,numchannels)),
-                       'y':self.y_transform_(self.data.data['data'][0])}  
-            self.cdsource.stream(newData,rollover=self.numchannels)
-#            self.cdsource.data = newData     
-
 
 class TimeSignalLivePresenter(TimeInOutPresenter):
     """
@@ -135,13 +139,7 @@ class TimeSignalLivePresenter(TimeInOutPresenter):
     
     #: MultiSelect widget to select one or multiple channels to be plotted
     selectChannel = Select(title="Select Channel:", options=[])
-
-#    # read only property. Holds Select color widgets of selected channels    
-#    colorSelector = column(column())
-#    
-#    #: a list of possible colors that can be assigned to selected channels
-#    lineColors = List(viridis(10))
-    
+   
     def __init__(self,*args,**kwargs):
         self.cdsource = ColumnDataSource(data={'xs':[],'ys':[]})
         HasPrivateTraits.__init__(self,*args,**kwargs)

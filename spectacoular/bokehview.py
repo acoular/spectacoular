@@ -580,3 +580,22 @@ trait_widget_args = {
                      }
 
 add_bokeh_attr(PointSource,trait_widget_mapper,trait_widget_args)
+
+
+#%% tprocess.py
+
+from acoular import TimeAverage
+
+trait_widget_mapper = {'naverage' : TextInput,
+                        'numsamples': TextInput,
+                        'sample_freq': TextInput,
+                       # 'numchannels' : TextInput
+                       }
+trait_widget_args = {'naverage':  {'disabled':False},
+                      'numsamples':  {'disabled':True},
+                      'sample_freq':  {'disabled':True},
+                     # 'numchannels': {'disabled':True},
+                     }
+
+add_bokeh_attr(TimeAverage,trait_widget_mapper,trait_widget_args)
+
