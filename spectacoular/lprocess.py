@@ -21,7 +21,7 @@ from bokeh.models.widgets import MultiSelect, TextInput, Button, RangeSlider,\
 CheckboxGroup, Select, Dropdown,Toggle
 from bokeh.models import ColumnDataSource, LogColorMapper, ColorBar
 from traits.api import Trait, HasPrivateTraits, Property, \
-cached_property, on_trait_change, List,Float,Bool,Any, Instance
+cached_property, on_trait_change, List,Float,Bool,Any, Instance, ListInt
 import sounddevice as sd
 
 # acoular imports
@@ -31,8 +31,8 @@ from acoular.internal import digest
 
 # 
 from .dprocess import BasePresenter
-from .controller import SingleChannelController, MultiChannelController
 from .bokehview import get_widgets, set_widgets
+from .factory import BaseSpectacoular
 
 
 
@@ -56,7 +56,7 @@ class TimeSamplesPhantom(MaskedTimeSamples):
                            'sample_freq': TextInput,
                            'invalid_channels':TextInput,
                            'numchannels' : TextInput,
-                       'time_delay': TextInput,
+                           'time_delay': TextInput,
                        }
 
     trait_widget_args = {'name': {'disabled':False},
@@ -129,81 +129,32 @@ class TimeInOutPresenter(TimeInOut,BasePresenter):
 
                 
 
-class TimeSignalLivePresenter(TimeInOutPresenter):
-    """
-            
-    """
-
-    #: Data source; :class:`~acoular.sources.TimeSamples` or derived object.
-    source = Trait(TimeSamples)
-    
-    #: MultiSelect widget to select one or multiple channels to be plotted
-    selectChannel = Select(title="Select Channel:", options=[])
-   
-    def __init__(self,*args,**kwargs):
-        self.cdsource = ColumnDataSource(data={'xs':[],'ys':[]})
-        HasPrivateTraits.__init__(self,*args,**kwargs)
-#        self.selectChannel.on_change('value',self.change_color_select)
-        self._widgets = {'selectChannel' : self.selectChannel}
-
-    @on_trait_change("digest")
-    def change_channel_selector(self):
-        channels = [idx for idx in range(self.source.numchannels)]
-        if hasattr(self.source,'invalid_channels'):
-            [channels.remove(idx) for idx in self.source.invalid_channels]
-        channels = [str(ch) for ch in channels]
-        self.selectChannel.options = channels
-        self.selectChannel.value = channels[0]
-
-    def update(self):
-        if self.data.data['data'].shape[0] > 0:
-            sRange = (0,self.data.data['data'].shape[0])
-            samples = list(range(sRange[0],sRange[1]))
-            idx = int(self.selectChannel.value)
-            newData = {
-                'xs' : samples,
-                'ys' : list(self.data.data['data'][sRange[0]:sRange[1],int(idx)]),
-                }
-            self.cdsource.stream(newData,rollover=sRange[1])
-        else:
-            self.cdsource.data = {'xs' :[],'ys' :[]}                
-
-
-class TimeSignalPlayback(TimeInOutPresenter):
+class TimeSignalPlayback(TimeInOut,BaseSpectacoular):
     """
     In the future, this class should work in buffer mode and 
     also write the current frame that is played to its columndatasource.
     """
     
-    def __init__(self,*args,**kwargs):
-        HasPrivateTraits.__init__(self,*args,**kwargs)
-        self.playButton.on_click(self.playButton_handler)
-        self._widgets = {'playButton':self.playButton}
-    
-    
     # internal identifier
     digest = Property( depends_on = ['source.digest', '__class__'])
 
-    # if no channel is passed by the controller, the channel(s) need to be set by
-    # the user
-    channel = Property()
+    #: index of the channel to play
+    channels = ListInt([])
     
     # device property
     device = Property()
     
-    #: button widget that applies the users selection on click
-    playButton = Toggle(label="Playback Time Data", button_type="success")
-
-    #: Select channel controller; 
-    #:class:`~spectacoular.controller.SingleChannelController` or derived object.
-    controller = Instance(SingleChannelController, MultiChannelController)
-
-    # only shadow trait
-    _channel = List()
-
     # current frame played back
     # currentframe = Int()
     
+    trait_widget_mapper = {'channels': TextInput,
+                           'device' : TextInput
+                       }
+
+    trait_widget_args = {'channels': {'disabled':False},
+                         'device': {'disabled':False}
+                     }
+
     @cached_property
     def _get_digest( self ):
         return digest(self)
@@ -214,21 +165,15 @@ class TimeSignalPlayback(TimeInOutPresenter):
     def _set_device( self, device ):
         sd.default.device = device
     
-    def _get_channel( self ):
-        if self.controller: 
-            return [int(ch) for ch in self.controller.selectChannel.value]
-        else:
-            return self._channel
-
-    def _set_channel(self, channel):
-        self._channel = channel
-    
     def play( self ):
         '''
         normalized playback of channel
         '''
-        norm = abs(self.source.data[:]).max()
-        sd.play(self.source.data[:,self.channel]/norm,
+        sig = zeros((self.source.numsamples))
+        for idx in self.channels:
+            sig += self.source.data[:,idx]
+        norm = abs(sig).max()
+        sd.play(sig/norm,
                 samplerate=self.sample_freq,
                 blocking=False)
         
@@ -237,9 +182,5 @@ class TimeSignalPlayback(TimeInOutPresenter):
         simply stops playback of file
         '''
         sd.stop()
-    
-    def playButton_handler(self,arg):
-        if arg: self.play()
-        if not arg: self.stop()
     
     

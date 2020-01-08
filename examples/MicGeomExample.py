@@ -60,6 +60,11 @@ def calc(arg):
         calcButton.label = 'Calculate'
 calcButton.on_click(calc)
 
+# calculate psf on change of:
+psf_update = lambda attr, old, new: psfPresenter.update()        
+psfFreqSlider.on_change('value',psf_update) # change psf plot when frequency changes
+# mgWidgets['mpos_tot'].source.on_change('data',psf_update)
+
 def server_doc(doc):
     #MicGeomPlot
     mgPlot = figure(title='Microphone Geometry', 

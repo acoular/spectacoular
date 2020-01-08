@@ -9,36 +9,7 @@ Implements widget mappings for spectAcoular classes
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable,\
 TableColumn, NumberEditor
-from .factory import TraitWidgetMapper
-
-def get_widgets(self): # TODO: maybe rename to 'create_widgets(self)'
-    '''
-    This function is implemented in all spectAcoular classes. It builds widgets 
-    from corresponding traits defined in bokehview.py
-    '''
-    widgetdict = {}
-    for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
-        widgetMapper = TraitWidgetMapper.factory(self,traitname,widgetType)
-        widgetdict[traitname] = widgetMapper.create_widget(
-                                        **self.trait_widget_args[traitname])
-    return widgetdict
-
-
-def set_widgets(self,**kwargs):
-    '''
-    This function allows to link an existing widget to a certain class trait.
-    Expects a dictionary with the traitname as key and the widget instance as 
-    value. For example: 
-        $ widgetmapping = {'traitname' : Slider(), ... }
-        $ set_widgets(**widgetmapping)
-    
-    The value of the trait attribute changes to the widgets value when it is 
-    different.
-    '''
-    for traitname, widget in kwargs.items():
-        widgetMapper = TraitWidgetMapper.factory(self,traitname,widget.__class__)
-        widgetMapper.set_widget(widget)
-
+from .factory import get_widgets, set_widgets
 
 def add_bokeh_attr(cls,trait_widget_mapper,trait_widget_args):
     ''' 

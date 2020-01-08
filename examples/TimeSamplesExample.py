@@ -6,48 +6,63 @@
 """
 Example how to plot TimeData
 """
-
 from bokeh.layouts import column, row
-from bokeh.models.widgets import Panel,Tabs,Div
+from bokeh.models.widgets import Toggle, Select
 from bokeh.plotting import figure
 from bokeh.server.server import Server
-from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
-RectGrid, SteeringVector, BeamformerBase, BeamformerPresenter,TimeSamplesPresenter,\
-MicGeomPresenter, SingleChannelController,MultiChannelController,\
-TimeSignalPlayback
+from spectacoular import MaskedTimeSamples, TimeSamplesPresenter,TimeSignalPlayback
 
 # build processing chain
-ts = MaskedTimeSamples()
-#mc = SingleChannelController()
-mc = MultiChannelController()
-tv = TimeSamplesPresenter(source=ts,controller=mc)
-playback = TimeSignalPlayback(source=ts,controller=mc)
+ts = MaskedTimeSamples(name='example_data.h5')
+tv = TimeSamplesPresenter(source=ts)
+playback = TimeSignalPlayback(source=ts)
+
+# create widget to select the channel that should be plotted
+msWidget = Select(title="Select Channel:", value="",
+                       options=[str(i) for i in range(ts.numchannels)])
+# button widget to playback the selected time data
+playButton = Toggle(label="Playback Time Data", button_type="success")
+# create Button to trigger plot
+applyButton = Toggle(label="Plot Time Data",button_type="success")
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tvWidgets = tv.get_widgets()
-scWidgets = mc.get_widgets()
+pbWidgets = playback.get_widgets()
+tv.set_widgets(**{'channels': msWidget})
+playback.set_widgets(**{'channels': msWidget})
 plWidgets = playback.get_widgets()
 
+def plot(arg):
+    if arg:
+        applyButton.label = 'Plotting ...'
+        tv.update()
+        applyButton.active = False
+        applyButton.label = 'Plot Time Data'
+    if not arg:
+        applyButton.label = 'Plot Time Data'
+applyButton.on_click(plot)
+
+def change_selectable_channels():
+    channels = [str(idx) for idx in range(ts.numchannels)]
+    channels.insert(0,"") # add no data field
+    msWidget.options = channels
+ts.on_trait_change( change_selectable_channels, "numchannels")
+
+def playButton_handler(arg):
+    if arg: playback.play()
+    if not arg: playback.stop()
+playButton.on_click(playButton_handler)
+
 def server_doc(doc):
-
     # TimeSignalPlot
-    tsPlot = figure(title="Time Signals")
-    tsPlot.multi_line(xs='xs', ys='ys',color='color',source=tv.cdsource)
-
-    ### CREATE LAYOUT ### 
-    
-    # columns    
-    tsWidgetsCol = column(Div(text="TimeSamples:"),row(
-            column(*tsWidgets.values()),column(
-                *tvWidgets.values(),*scWidgets.values(),*plWidgets.values())))
-
-    # Tabs
-    tsTab = Panel(child=row(tsPlot,tsWidgetsCol),title='Time Signal')
-    ControlTabs = Tabs(tabs=[tsTab],width=850)
-
-    # make Document
-    doc.add_root(ControlTabs)
+    tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800)
+    tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
+    #create layout
+    tsWidgetsCol = column(applyButton,*tsWidgets.values())
+    pbWidgetCol = column(playButton,*pbWidgets.values())
+    allWidgetsLayout = column(msWidget,row(tsWidgetsCol,pbWidgetCol))
+    doc.add_root(row(tsPlot,allWidgetsLayout))
 
 # Setting num_procs here means we can't touch the IOLoop before now, we must
 # let Server handle that. If you need to explicitly handle IOLoops then you
@@ -55,10 +70,7 @@ def server_doc(doc):
 server = Server({'/': server_doc}, num_procs=1)
 server.start()
 
-
 if __name__ == '__main__':
     print('Opening TimeSamples application on http://localhost:5006/')
-
     server.io_loop.add_callback(server.show, "/")
     server.io_loop.start()
-

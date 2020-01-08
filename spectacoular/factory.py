@@ -23,10 +23,11 @@ from bokeh.models import ColumnDataSource
 from traits.api import CTrait, TraitEnum, TraitMap, CArray, Any, \
 List,Float, Str, Int, Enum, Range, TraitListObject, Bool, Tuple, Long,\
 CLong, HasPrivateTraits, TraitCoerceType, File, BaseRange, TraitCompound,\
-Complex,Dict
+Complex,Dict, Function
 from numpy import array, ndarray,newaxis,isscalar,nan_to_num
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
+# from .bokehview import get_widgets, set_widgets
 
 NUMERIC_TYPES = (Int,Long,CLong,int, # Complex Numbers Missing at the Moment
                  Float,float, 
@@ -45,23 +46,46 @@ def as_str_list(func):
     return wrapper
 
 
+def get_widgets(self): # TODO: maybe rename to 'create_widgets(self)'
+    '''
+    This function is implemented in all spectAcoular classes. It builds widgets 
+    from corresponding traits defined in bokehview.py
+    '''
+    widgetdict = {}
+    for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
+        widgetMapper = TraitWidgetMapper.factory(self,traitname,widgetType)
+        widgetdict[traitname] = widgetMapper.create_widget(
+                                        **self.trait_widget_args[traitname])
+    return widgetdict
+
+
+def set_widgets(self,**kwargs):
+    '''
+    This function allows to link an existing widget to a certain class trait.
+    Expects a dictionary with the traitname as key and the widget instance as 
+    value. For example: 
+        $ widgetmapping = {'traitname' : Slider(), ... }
+        $ set_widgets(**widgetmapping)
+    
+    The value of the trait attribute changes to the widgets value when it is 
+    different.
+    '''
+    for traitname, widget in kwargs.items():
+        widgetMapper = TraitWidgetMapper.factory(self,traitname,widget.__class__)
+        widgetMapper.set_widget(widget)
+        
+
 class BaseSpectacoular(HasPrivateTraits):
     
+    trait_widget_mapper = {
+                       }
 
-    # shadow trait that holds a list of widgets that belong to the class
-    _widgets = Dict()
-
-    def get_widgets(self):
-        """ 
-        Function to access the widgets of this class.
-        
-        Returns
-        -------
-        A list of interactive control elements (widgets)
-        No output since `BasePresenter` only represents a base class to derive
-        other classes from.
-        """
-        return self._widgets
+    trait_widget_args = {
+                     }
+    
+    get_widgets = get_widgets
+    
+    set_widgets = set_widgets
 
 
 
@@ -453,7 +477,7 @@ class TraitCastDispatcher(object):
         or isinstance(traitwidgetmapper.traittype,(Str,File)):
             return [traitwidgetmapper.traitvalue]
         else:
-            raise ValueError('can not determine Select options for trait "{}" of class "{}" which is type "{}"'.format(
+            raise NotImplementedError('can not determine Select options for trait "{}" of class "{}" which is type "{}"'.format(
                     traitwidgetmapper.traitname,
                     traitwidgetmapper.obj.__class__.__name__,
                     traitwidgetmapper.traittype.__class__))

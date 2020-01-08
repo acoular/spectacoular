@@ -34,7 +34,9 @@ def _(list_):
 @cast_to_int.register(str)
 def _(str_):
     if str_:
-        return int(float(eval(str_)))
+        str_ = eval(str_)
+        if str_: return int(float(str_))
+        else: return
     else:
         return 0
     

@@ -13,14 +13,14 @@
     PointSpreadFunctionPresenter
     TimeSamplesPresenter
 """
-from bokeh.models.widgets import TextInput, Button, RangeSlider
+from bokeh.models.widgets import TextInput, Button, RangeSlider,Select
 from bokeh.models import ColumnDataSource
-from traits.api import Trait, HasPrivateTraits, Property, \
-cached_property, on_trait_change, Instance
+from traits.api import Trait, HasPrivateTraits, Property, Int, Float, \
+cached_property, on_trait_change, Instance, ListInt
 import numpy as np
 from acoular.internal import digest
-from acoular import TimeSamples,BeamformerBase, L_p, MicGeom, PointSpreadFunction
-from .controller import SingleChannelController, MultiChannelController
+from acoular import TimeSamples,BeamformerBase, L_p, MicGeom, SteeringVector,\
+PointSpreadFunction
 from .factory import BaseSpectacoular
 
 
@@ -44,19 +44,10 @@ class BasePresenter(BaseSpectacoular):
     source = Trait()
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = Trait(ColumnDataSource)
+    cdsource = ColumnDataSource()
 
-    # internal identifier
-    digest = Property( depends_on = ['source.digest'])
-
-    def __init__(self,*args,**kwargs):
-        self.cdsource = ColumnDataSource(data={})
-        HasPrivateTraits.__init__(self,*args,**kwargs)
-        self._widgets = {}
-
-    @cached_property
-    def _get_digest( self ):
-        return digest(self) 
+    # # internal identifier
+    # digest = Property( depends_on = ['source.digest'])
 
     def update(self,attr,old,new):
         """
@@ -87,11 +78,8 @@ class MicGeomPresenter(BasePresenter):
     #: Data source; :class:`~acoular.microphones.MicGeom` or derived object.
     source = Trait(MicGeom)
     
-    tooltips = [("(x,y)", "($x, $y)")]
-
-    def __init__(self,*args,**kwargs):
-        self.cdsource = ColumnDataSource(data={'x':[],'y':[], 'channels':[]})
-        HasPrivateTraits.__init__(self,*args,**kwargs)
+    #: ColumnDataSource that holds data that can be consumed by plots and glyphs
+    cdsource = ColumnDataSource(data={'x':[],'y':[], 'channels':[]})
 
     @on_trait_change("digest")
     def _update(self):
@@ -120,49 +108,50 @@ class BeamformerPresenter(BasePresenter):
     #: Data source; :class:`~acoular.fbeamform.BeamformerBase` or derived object.
     source = Trait(BeamformerBase)
     
-    #: TextInput widget to set the width of the frequency bands considered.
+    #: ColumnDataSource that holds data that can be consumed by plots and glyphs
+    cdsource = ColumnDataSource(data={'bfdata':[],'x':[],'y':[],'dw':[],'dh':[]})
+
+    #: :class:`~acoular.fbeamform.SteeringVector` or derived object. 
+    steer = Instance(SteeringVector)
+
+    #: Trait to set the width of the frequency bands considered.
     #: defaults to 0 (single frequency line).
-    num = TextInput(title="Frequency Band Width:", value='0')
+    num = Int(0, 
+              desc="Controls the width of the frequency bands considered;\
+              defaults to 0 (single frequency line).")
 
-    #: TextInput widget to set the band center frequency to be considered.
-    freq = TextInput(title="Center Frequency:", value='1000')
+    #: Trait to set the band center frequency to be considered.
+    freq = Float(None,
+                 desc="Band center frequency. ")
     
-    def __init__(self,*args,**kwargs):
-        self.cdsource = ColumnDataSource(
-                data = {'bfdata':[],'x':[],'y':[],'dw':[],'dh':[]} )
-        HasPrivateTraits.__init__(self,*args,**kwargs)
-        self._widgets = {'num': self.num,'freq':self.freq}
+    trait_widget_mapper = {'num': TextInput,
+                           'freq': TextInput,
+                       }
 
-    @cached_property
-    def _get_digest( self ):
-        return digest(self) 
-
+    trait_widget_args = {'num': {'disabled':False},
+                         'freq': {'disabled':False},
+                     }
+    
     def update(self):
-        res = self.source.synthetic(float(self.freq.value), int(self.num.value))
+        res = self.source.synthetic(float(self.freq), int(self.num))
         if res.size > 0: 
-            dx = self.source.grid.x_max-self.source.grid.x_min
-            dy = self.source.grid.y_max-self.source.grid.y_min
+            dx = self.steer.grid.x_max-self.steer.grid.x_min
+            dy = self.steer.grid.y_max-self.steer.grid.y_min
             self.cdsource.data = {'bfdata' : [L_p(res).T],
-            'x':[self.source.grid.x_min], 
-            'y':[self.source.grid.y_min], 
+            'x':[self.steer.grid.x_min], 
+            'y':[self.steer.grid.y_min], 
             'dw':[dx], 
             'dh':[dy]
             }
+
 
 class PointSpreadFunctionPresenter(BasePresenter):
     
     #: Data source; :class:`~acoular.fbeamform.PointSpreadFunction` or derived object.
     source = Trait(PointSpreadFunction)
     
-    def __init__(self,*args,**kwargs):
-        self.cdsource = ColumnDataSource(
-                data = {'psf':[],'x':[],'y':[],'dw':[],'dh':[]} )
-        HasPrivateTraits.__init__(self,*args,**kwargs)
-        self._widgets = {}
-
-    @cached_property
-    def _get_digest( self ):
-        return digest(self) 
+    #: ColumnDataSource that holds data that can be consumed by plots and glyphs
+    cdsource = ColumnDataSource(data={'psf':[],'x':[],'y':[],'dw':[],'dh':[]})
 
     def update(self):
         data = self.source.psf.reshape(self.source.grid.shape)
@@ -175,6 +164,7 @@ class PointSpreadFunctionPresenter(BasePresenter):
         'dw':[dx], 
         'dh':[dy]
             }            
+        
 
 class TimeSamplesPresenter(BasePresenter):
     """
@@ -189,72 +179,31 @@ class TimeSamplesPresenter(BasePresenter):
         >>>    tv = spectacoular.TimeSamplesPresenter(source=ts)  
         >>>    
         >>>    tsPlot = figure(title="Channel Data") 
-        >>>    tsPlot.multi_line(xs='xs', ys='ys',color='color',source=tv.cdsource)
+        >>>    tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
         
     """
 
     #: Data source; :class:`~acoular.sources.TimeSamples` or derived object.
     source = Trait(TimeSamples)
     
-    #: Select channel controller; :class:`~spectacoular.controller.SingleChannelController` or derived object.
-    controller = Instance(SingleChannelController, MultiChannelController)
+    #: ColumnDataSource that holds data that can be consumed by plots and glyphs
+    cdsource = ColumnDataSource(data={'xs':[],'ys':[]})
     
-    #: RangeSlider widget to control the amount of samples to be plotted
-    samplesRange = RangeSlider(start=0, end=1, value=(0,1), step=1, 
-                               title="Show Samples:")
+    channels = ListInt([])
+    
+    trait_widget_mapper = {'channels': TextInput,
+                       }
 
-    #: button widget that applies the users selection on click
-    applyButton = Button(label="Plot Time Data", button_type="success")
-
-    def __init__(self,*args,**kwargs):
-        self.cdsource = ColumnDataSource(data={'xs':[],'ys':[],'color':[]})
-        HasPrivateTraits.__init__(self,*args,**kwargs)
-        self.applyButton.on_click(self.update)
-        self._widgets = {'samplesRange' : self.samplesRange,
-                         'applyButton' : self.applyButton}
-
-    @on_trait_change('source, controller')
-    def pass_source(self):
-        self.controller.source = self.source
-
-    @on_trait_change("source.numsamples")
-    def change_samplesRange(self):
-        if not self.source.numsamples == 0:
-            self.samplesRange.end = self.source.numsamples
-            self.samplesRange.value = (0,self.source.numsamples)
-        else:
-            self.samplesRange.end = 1
-            self.samplesRange.value = (0,1)
-
-    def _get_srange(self):
-        i1 = int(self.samplesRange.value[0])
-        if hasattr(self.source,'start'): i1 += self.source.start
-        i2 = i1+int(self.samplesRange.value[1])
-        return (i1,i2)
+    trait_widget_args = {'channels': {'disabled':False},
+                     }
 
     def update(self):
-        sRange = self._get_srange()
-        samples = list(range(sRange[0],sRange[1]))
-        if not isinstance(self.controller,MultiChannelController): # if SingleChannelController
-            if self.controller.selectChannel.value: 
-                numSelected = 1
-                colors = [self.controller.colorSelector.children[0].value]
-                ys = [list(self.source.data[sRange[0]:sRange[1],int(
-                        self.controller.selectChannel.value)])] 
-                xs = [samples]
-            else: 
-                numSelected = 0
-                colors = []
-                ys = []
-                xs = []
-        else: # if MultiCannelController
-            numSelected = len(self.controller.selectChannel.value)
-            colors = [c.value for c in self.controller.colorSelector.children[0].children]
-            ys = [list(self.source.data[sRange[0]:sRange[1],int(idx)]) 
-                            for idx in self.controller.selectChannel.value]
-            xs = [samples for _ in range(numSelected)]
+        samples = list(range(0,self.source.numsamples))
+        numSelected = len(self.channels)
+        ys = [list(self.source.data[:,int(idx)]) for idx in self.channels]
+        xs = [samples for _ in range(numSelected)]
         if self.source.numsamples > 0 and numSelected > 0:
-            self.cdsource.data = {'xs' : xs, 'ys' : ys, 'color':colors }
+            self.cdsource.data = {'xs' : xs, 
+                                  'ys' : ys}
         else:
-            self.cdsource.data = {'xs' :[],'ys' :[], 'colors':[]}
-
+            self.cdsource.data = {'xs' :[],'ys' :[]}

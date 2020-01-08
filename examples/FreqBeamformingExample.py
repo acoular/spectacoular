@@ -8,14 +8,16 @@ Example that demonstrates different beamforming algorithms
 """
 from os import path
 from bokeh.layouts import column, row
-from bokeh.models.widgets import Panel,Tabs,Select, Toggle
+from bokeh.models import LogColorMapper,ColorBar
+from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider
 from bokeh.plotting import figure
+from bokeh.palettes import viridis, plasma, inferno, magma
 from bokeh.server.server import Server
 import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
 BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
-BeamformerCleansc, BeamformerClean, BeamformerPresenter,ColorMapperController,\
+BeamformerCleansc, BeamformerClean, BeamformerPresenter,\
 BeamformerCMF,BeamformerGIB,Environment,Calib,config
  
 # build processing chain
@@ -71,8 +73,7 @@ beamformerSelector = Select(title="Select Beamforming Method:",
 
 
 # use additional classes for data evaluation/view
-bv = BeamformerPresenter(source=bb)
-cm = ColorMapperController()
+bv = BeamformerPresenter(source=bb,steer=st)
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -84,8 +85,18 @@ rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 bbWidgets = bb.get_widgets()
 bvWidgets = bv.get_widgets()
-cmWidgets = cm.get_widgets()
+bvWidgets['freq'].value = "4000.0"
+bvWidgets['num'].value = "3"
 confWidgets = config.get_widgets()
+
+
+colorMapper = LogColorMapper(palette=viridis(100), 
+                              low=30, high=50 ,low_color=(1,1,1,0))
+dynamicSlider = RangeSlider(start=0, end=120, step=1., value=(30,50),
+                            title="Dynamic Range")
+def dynamicSlider_callback(attr, old, new):
+    (colorMapper.low, colorMapper.high) = dynamicSlider.value
+dynamicSlider.on_change("value",dynamicSlider_callback)
 
 # create Button to trigger beamforming result calculation
 calcButton = Toggle(label="Calculate",button_type="success")
@@ -109,8 +120,10 @@ def server_doc(doc):
     # beamformerPlot
     bfPlot = figure(title='Beamforming Result', tools = 'pan,wheel_zoom,reset')
     bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',
-                 color_mapper=cm.colorMapper,source=bv.cdsource)
-    bfPlot.add_layout(cm.colorBar, 'right')
+                 color_mapper=colorMapper,source=bv.cdsource)
+    bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
+                               title="Level [dB]",
+                                title_standoff=10),'right')
 
     # Plot Tabs
     mgPlotTab = Panel(child=row(mgPlot),title='Microphone Geometry Plot')
@@ -132,11 +145,11 @@ def server_doc(doc):
     propertyTabs = Tabs(tabs=[tsTab,mgTab,calTab,envTab,gridTab,stTab,
                               psTab,bfTab,globalTab],width=1000)
     
-    calcColumn = column(calcButton,*bvWidgets.values(),*cmWidgets.values())
+    calcColumn = column(calcButton,*bvWidgets.values(),dynamicSlider)
     
     def beamformer_handler(attr,old,new):
-        bv.source = beamformer_dict[new]
-        selectedBfWidgets.children = beamformer_dict[new].get_widgets().values()
+        bv.source = beamformer_dict.get(new)
+        selectedBfWidgets.children = list(beamformer_dict.get(new).get_widgets().values())
     beamformerSelector.on_change('value',beamformer_handler)
     
     # make Document
