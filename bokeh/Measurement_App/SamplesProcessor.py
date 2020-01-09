@@ -49,17 +49,6 @@ class ThreadsafeGenerator():
         with self.lock:
             return self.it.__next__()
         
-
-class TimeSideChain(TimeInOut):
-       
-    source = Trait(SamplesGenerator)
-    
-    data = Array([])
-    
-    def result(self,num):
-        for temp in self.source.result(num):
-            self.data = temp
-            yield temp
             
 
 class CalibHelper(TimeInOut):
