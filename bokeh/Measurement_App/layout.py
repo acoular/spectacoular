@@ -24,10 +24,6 @@ IMPATH = "Measurement_App/static/Acoular_logo_grey.png"
 bfColorMapper = LogColorMapper(palette="Spectral11", low=70, high=90,low_color=(1,1,1,0))
 ampColorMapper = LinearColorMapper(palette=[COLOR[0],COLOR[0]], low=0.,high=180)
 
-# Text Inputs
-ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
-ti_savename = TextInput(value="", title="Filename:",disabled=True)
-
 # Buttons
 settings_button = Button(label="load settings",disabled=False)
 select_all_channels_button = Button(label="select all channels")

@@ -35,7 +35,7 @@ from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
 from bokeh.models import ColumnDataSource,HoverTool, ColorBar
-from bokeh.models.widgets import PreText, Div, Select,\
+from bokeh.models.widgets import PreText, Div, Select,TextInput,\
 CheckboxGroup, DataTable, TableColumn,Tabs,Panel,StringFormatter, Slider
 from bokeh.layouts import column,row
 from bokeh.models.ranges import Range1d
@@ -55,7 +55,7 @@ from spectacoular import RectGrid, MicGeom
 from interfaces import get_interface
 from layout import MODE_COLORS, micgeom_fig,amp_fig,buffer_bar,aclogo,\
 selectPerCallPeriod, checkbox_use_current_time, \
-select_setting, select_calib, bfColorMapper,ampColorMapper, ti_msmtime,ti_savename,\
+select_setting, select_calib, bfColorMapper,ampColorMapper, \
 settings_button,select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,\
 calib_toggle,text_user_info, dynamicSlider,checkbox_use_camera,  \
 selectBf, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider
@@ -168,6 +168,11 @@ micGeo.set_widgets(**{'from_file':select_micgeom})
 # =============================================================================
 # bokeh
 # =============================================================================
+
+# Text Inputs
+ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
+ti_savename = TextInput(value="", title="Filename:",disabled=True)
+
 NUMCHANNELS = inputSignalGen.numchannels
 print(NUMCHANNELS, inputSignalGen.sample_freq)
 
