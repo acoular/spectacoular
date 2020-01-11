@@ -540,6 +540,7 @@ class TraitCastDispatcher(object):
         elif type(traitwidgetmapper.traitvalue) == float: return cast_to_float
         elif type(traitwidgetmapper.traitvalue) == bool: return cast_to_bool
         elif type(traitwidgetmapper.traitvalue) == list: return cast_to_list
+        elif isinstance(traitwidgetmapper.traittype,TraitCompound): return lambda x: eval(x) # TODO: only ugly temporary workaround  
         else:
             raise NotImplementedError('No cast function for "{}"-trait of class "{}" with value {} which is type "{}" defined.'.format(
                         traitwidgetmapper.traitname,
