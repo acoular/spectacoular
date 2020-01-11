@@ -536,18 +536,18 @@ trait_widget_mapper = {
                        'start_t' : TextInput,
                        'start' : TextInput,
                        'up' : TextInput,
-#                       'numsamples': TextInput, # is a Delegate -> currently raises error 
-#                       'sample_freq': TextInput,
-#                       'numchannels' : TextInput
+                      'numsamples': TextInput, # is a Delegate -> currently raises error 
+                      'sample_freq': TextInput,
+                      'numchannels' : TextInput
                        }
 trait_widget_args = {
                     'loc':  {'disabled':False},
                     'start_t':  {'disabled':False},
                     'start':  {'disabled':False},
                     'up':  {'disabled':False},
-#                     'numsamples':  {'disabled':True},
-#                     'sample_freq':  {'disabled':True},
-#                     'numchannels': {'disabled':True},
+                    'numsamples':  {'disabled':True},
+                    'sample_freq':  {'disabled':True},
+                    'numchannels': {'disabled':True},
                      }
 
 add_bokeh_attr(PointSource,trait_widget_mapper,trait_widget_args)

@@ -14,20 +14,20 @@
     SelectMapper
     SliderMapper
     DataTableMapper
-    TraitCastDispatcher
+    TraitDispatch
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
 TableColumn, NumberEditor, StringEditor
 from bokeh.models import ColumnDataSource
-from traits.api import CTrait, TraitEnum, TraitMap, CArray, Any, \
-List,Float, Str, Int, Enum, Range, TraitListObject, Bool, Tuple, Long,\
-CLong, HasPrivateTraits, TraitCoerceType, File, BaseRange, TraitCompound,\
-Complex,Dict, Function
+from traits.api import TraitEnum, TraitMap, CArray, Any, \
+List,Float, Str, Int, Enum, Range, Bool, Tuple, Long,\
+CLong, HasPrivateTraits, TraitCoerceType, File, TraitCompound,\
+Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
+BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate
 from numpy import array, ndarray,newaxis,isscalar,nan_to_num
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
-# from .bokehview import get_widgets, set_widgets
 
 NUMERIC_TYPES = (Int,Long,CLong,int, # Complex Numbers Missing at the Moment
                  Float,float, 
@@ -105,11 +105,17 @@ class TraitWidgetMapper(object):
 
     widget = object()
     
+    traitdispatcher = object()
+    
     def __init__(self,obj,traitname):
         self.obj = obj
         self.traitname = traitname
         self.traittype = obj.trait(traitname).trait_type
-        self.traitvalue = getattr(obj,traitname)
+        try:
+            self.traitvalue = getattr(obj,traitname)
+        except AttributeError: # in case of Delegate
+            self.traitvalue = None
+        self.traitdispatcher = traitdispatcher.factory(self,self.traittype)
         
     def factory(obj,traitname,widgetType): 
         '''
@@ -141,7 +147,7 @@ class TraitWidgetMapper(object):
         traitvalues can be of arbitrary dtype. Thus, widgetvalues are casted to
         traits dtype before. 
         '''
-        cast_func = traitdispatcher.get_trait_cast_func(self)
+        cast_func = self.traitdispatcher.get_trait_cast_func()
         def callback(attr, old, new):
 #            print(self.obj,self.traitname,new)
             if not self.traittype.is_valid(self.obj,self.traitname,new): 
@@ -187,7 +193,7 @@ class TextInputMapper(TraitWidgetMapper):
         sets a bokeh TextInput instance 
         '''
         self.widget = widget
-        cast_func = traitdispatcher.get_trait_cast_func(self)
+        cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
         self._set_callbacks()
 
@@ -210,7 +216,7 @@ class SelectMapper(TraitWidgetMapper):
         sets a bokeh Select widget instance 
         '''
         self.widget = widget
-        cast_func = traitdispatcher.get_trait_cast_func(self)
+        cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
         self._set_callbacks()
 
@@ -225,7 +231,7 @@ class SelectMapper(TraitWidgetMapper):
         get settable trait values as options for Select Widget
         returns options as string list
         '''
-        return traitdispatcher.get_settable_trait_values(self)
+        return self.traitdispatcher.get_settable_trait_values()
 
 
 
@@ -251,7 +257,7 @@ class SliderMapper(TraitWidgetMapper):
         sets a bokeh Slider widget instance 
         '''
         self.widget = widget
-        cast_func = traitdispatcher.get_trait_cast_func(self)
+        cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
         self._set_callbacks()
 
@@ -301,7 +307,7 @@ class DataTableMapper(TraitWidgetMapper):
         sets a bokeh DataTable widget instance 
         '''
         self.widget = widget
-        cast_func = traitdispatcher.get_trait_cast_func(self)
+        cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.source.data)) # set traitvalue to widgetvalue
         self._set_callbacks()
 
@@ -351,7 +357,7 @@ class DataTableMapper(TraitWidgetMapper):
         traitvalues can be of arbitrary dtype. Thus, widgetvalues are casted to
         traits dtype before. 
         '''
-        cast_func = traitdispatcher.get_trait_cast_func(self)
+        cast_func = self.traitdispatcher.get_trait_cast_func()
         def callback(attr, old, new): # any how old and new are always the same when the callback is triggered
             old = getattr(self.obj,self.traitname) # 
             new = cast_func(new)
@@ -420,144 +426,241 @@ class DataTableMapper(TraitWidgetMapper):
                 data[column.field] = []
         return data
 
+
+# =============================================================================
+# Trait Dispatch classes
+# =============================================================================
         
-class TraitCastDispatcher(object):
+class TraitDispatch(object):
     '''
-    This class dynamically returns a function for casting widget values to 
-    a given trait type.
+    This class is an abstract factory that returns a class for casting widget values to 
+    an allowed trait type.
     '''
-    def is_numeric(self, traittype):
-        return isinstance(traittype,NUMERIC_TYPES)
-
-    def is_boolean(self, traittype):
-        return isinstance(traittype,BOOLEAN_TYPES)
-
-    def is_sequence(self, traittype):
-        return isinstance(traittype,SEQUENCE_TYPES)
+    traitwidgetmapper = object()
     
-    def is_special(self,traittype):
-        return isinstance(traittype,SPECIAL_TYPES)
-    
-    def get_trait_cast_func(self,traitwidgetmapper):
-        '''
-        returns a function to cast widgetvalues into dtype of a certain trait
-        '''
-        traittype = traitwidgetmapper.traittype
-        if isinstance(traittype,CTrait): # if CTrait get trait_type of CTrait 
-            traittype = traittype.trait_type
+    def __init__(self,traitwidgetmapper=None):
+        self.traitwidgetmapper = traitwidgetmapper
 
-        if self.is_numeric(traittype):
-            return self.get_numeric_cast_func(traittype)
-        elif self.is_boolean(traittype):
-            return self.get_boolean_cast_func(traittype)
-        elif self.is_sequence(traittype):
-            return self.get_sequence_cast_func(traittype)
-        elif self.is_special(traittype):
-            return self.get_special_cast_func(traitwidgetmapper)
+    def factory(self,traitwidgetmapper,traittype): 
+        '''
+        returns an instance of a TraitDispatch class that corresponds
+        to the desired trait type.
+        '''
+        if isinstance(traittype,(BaseInt,BaseLong)): 
+            return IntDispatch(traitwidgetmapper)
+        elif isinstance(traittype,BaseFloat): 
+            return FloatDispatch(traitwidgetmapper)
+        elif isinstance(traittype,BaseBool): 
+            return BoolDispatch(traitwidgetmapper)
+        elif isinstance(traittype,(BaseStr,BaseFile)): 
+            return StrDispatch(traitwidgetmapper)
+        elif isinstance(traittype,BaseRange):
+            return RangeDispatch(traitwidgetmapper)
+        elif isinstance(traittype,List):
+            return ListDispatch(traitwidgetmapper)
+        elif isinstance(traittype,BaseTuple):
+            return TupleDispatch(traitwidgetmapper)
+        elif isinstance(traittype,CArray):
+            return ArrayDispatch(traitwidgetmapper)
+        elif isinstance(traittype,(BaseEnum,TraitEnum)):
+            return EnumDispatch(traitwidgetmapper)
         elif isinstance(traittype,Any) or (traittype is Any): # is Any can be True for Property() function
-#            print(traitwidgetmapper.traitname, traitwidgetmapper.traittype,traitwidgetmapper.traitvalue)
-            return lambda x: eval(x) # alternative: eval strings, identity map others
+            return AnyDispatch(traitwidgetmapper)
+        elif isinstance(traittype,TraitCompound):
+            return TraitCompoundDispatch(traitwidgetmapper)
+        elif isinstance(traittype,TraitMap):
+            return TraitMapDispatch(traitwidgetmapper)
+        elif isinstance(traittype,Delegate):
+            return
         else:
-            raise NotImplementedError('No cast function for "{}"-trait of class "{}" which is type "{}" defined.'.format(
+            raise NotImplementedError('No Dispatcher class defined for "{}"-trait of class "{}" which is type "{}" defined.'.format(
                     traitwidgetmapper.traitname,
                     traitwidgetmapper.obj.__class__.__name__,
-                    traittype.__class__))            
-        
-    def get_settable_trait_values(self,traitwidgetmapper):
-        '''
-        takes trait_type of trait object and returns list with settable values
-        '''
-        if isinstance(traitwidgetmapper.traittype,(TraitEnum,Enum)):
-            return list(traitwidgetmapper.traittype.values)
-        elif isinstance(traitwidgetmapper.traittype, TraitMap):
-            return list(traitwidgetmapper.traittype.map.keys())
-        elif isinstance(traitwidgetmapper.traittype, Bool):
-            return [True,False]
-        elif isinstance(traitwidgetmapper.traittype,NUMERIC_TYPES) \
-        or isinstance(traitwidgetmapper.traittype,(Str,File)):
-            return [traitwidgetmapper.traitvalue]
-        else:
-            raise NotImplementedError('can not determine Select options for trait "{}" of class "{}" which is type "{}"'.format(
-                    traitwidgetmapper.traitname,
-                    traitwidgetmapper.obj.__class__.__name__,
-                    traitwidgetmapper.traittype.__class__))
+                    traittype)) 
 
-    def get_item_type_cast_func( self, traittype ):
-        itemType = traittype.item_trait.trait_type
-        if isinstance(itemType,TraitCoerceType): # in case of ListStr, ListInt,...
-            itemType = itemType.aType # returns basic type str, float, ...
-            return itemType
-        if self.is_numeric(itemType):
-            return self.get_numeric_cast_func(itemType)
-        elif self.is_boolean(itemType):
-            return self.get_boolean_cast_func(itemType)
-        elif isinstance(itemType,(Str,File,str)):
-            return cast_to_str
-        elif isinstance(itemType, Any) or (isinstance is Any):
-            return lambda x: x # simple identity mapping
-        else:
-            raise NotImplementedError("currently unsupported traititemtype {} for \
-                             trait of type {}".format(
-                             itemType, 
-                             traittype)
-                             )
-#        elif self.is_special(itemType):
-#            return self.get_special_cast_func(traitwidgetmapper)
-
-    def get_numeric_cast_func(self,traittype):
-        if isinstance(traittype,(Int,Long,CLong,int)):
-            return cast_to_int
-        elif isinstance(traittype,(Float,float)):
-            return cast_to_float
-        else:
-            raise NotImplementedError('No cast numeric function for type "{}".'.format(
-                    traittype.__class__))
-            
-    def get_boolean_cast_func(self,traittype):
-        if isinstance(traittype,(Bool,bool)):
-            return cast_to_bool
-        else:
-            raise NotImplementedError('No boolean cast function for type "{}".'.format(
-                    traittype.__class__))        
-        
-    def get_sequence_cast_func(self,traittype):
-        if isinstance(traittype, List):
-            item_cast_func = self.get_item_type_cast_func(traittype)
-            return self.get_cast_to_list_func(item_cast_func)
-        elif isinstance(traittype, Tuple):
-            return lambda x: eval(x)
-        elif isinstance(traittype,(Str,File,str)):
-            return cast_to_str
-        elif isinstance(traittype, CArray): 
-            return self.get_cast_to_array_func(traittype.dtype) 
-        else:
-            raise NotImplementedError('No sequence cast function for type "{}".'.format(
-                    traittype.__class__))     
-
-    def get_special_cast_func(self,traitwidgetmapper):
-        if type(traitwidgetmapper.traitvalue) == str: return cast_to_str
-        elif type(traitwidgetmapper.traitvalue) == int: return cast_to_int
-        elif type(traitwidgetmapper.traitvalue) == float: return cast_to_float
-        elif type(traitwidgetmapper.traitvalue) == bool: return cast_to_bool
-        elif type(traitwidgetmapper.traitvalue) == list: return cast_to_list
-        elif isinstance(traitwidgetmapper.traittype,TraitCompound): return lambda x: eval(x) # TODO: only ugly temporary workaround  
+    def get_undefined_cast_func(self):
+        if type(self.traitwidgetmapper.traitvalue) == str: return cast_to_str
+        elif type(self.traitwidgetmapper.traitvalue) == int: return cast_to_int
+        elif type(self.traitwidgetmapper.traitvalue) == float: return cast_to_float
+        elif type(self.traitwidgetmapper.traitvalue) == bool: return cast_to_bool
+        elif type(self.traitwidgetmapper.traitvalue) == list: return cast_to_list
+        elif isinstance(self.traitwidgetmapper.traittype,(Any,TraitCompound)) or \
+        self.traitwidgetmapper.traittype is Any: return lambda x: eval(x) # TODO: only ugly temporary workaround  
         else:
             raise NotImplementedError('No cast function for "{}"-trait of class "{}" with value {} which is type "{}" defined.'.format(
-                        traitwidgetmapper.traitname,
-                        traitwidgetmapper.obj.__class__.__name__,
-                        traitwidgetmapper.traitvalue,
-                        traitwidgetmapper.traittype.__class__))     
+                        self.traitwidgetmapper.traitname,
+                        self.traitwidgetmapper.obj.__class__.__name__,
+                        self.traitwidgetmapper.traitvalue,
+                        self.traitwidgetmapper.traittype.__class__))   
+
+traitdispatcher = TraitDispatch()
+
+
+class IntDispatch(TraitDispatch):
+    
+    def get_trait_cast_func(self): 
+        return cast_to_int
+    
+    def get_settable_trait_values(self):
+        return [self.traitwidgetmapper.traitvalue]
+        
+    
+    
+class FloatDispatch(TraitDispatch):
+    
+    def get_trait_cast_func(self): 
+        return cast_to_float
+
+    def get_settable_trait_values(self): 
+        return [self.traitwidgetmapper.traitvalue]
+
+
+
+class StrDispatch(TraitDispatch):
+    
+    def get_trait_cast_func(self): 
+        return cast_to_str
+
+    def get_settable_trait_values(self): 
+        return [self.traitwidgetmapper.traitvalue]
+    
+    
+
+class BoolDispatch(TraitDispatch):
+    
+    def get_trait_cast_func(self): 
+        return cast_to_bool
+
+    def get_settable_trait_values(self): 
+        return [True,False]
+        
+
+
+class RangeDispatch(TraitDispatch):
+
+    def get_trait_cast_func(self):
+        if type(self.traitwidgetmapper.traitvalue) == float: return cast_to_float
+        elif type(self.traitwidgetmapper.traitvalue) == int: return cast_to_int
+        else: raise ValueError('No cast function for "{}"-trait of class "{}" with value {} which is type "{}" defined.'.format(
+                        self.traitwidgetmapper.traitname,
+                        self.traitwidgetmapper.obj.__class__.__name__,
+                        self.traitwidgetmapper.traitvalue,
+                        self.traitwidgetmapper.traittype.__class__))    
             
-    def get_cast_to_list_func(self, item_cast_func=None):
-        if not item_cast_func: 
-            item_cast_func = cast_to_float
+    def get_settable_trait_values(self):
+        return [self.traitwidgetmapper.traitvalue]
+    
+
+
+class ListDispatch(TraitDispatch):
+    '''
+    Depending on List definition in class, items can be of different trait
+    types.
+    '''
+    def get_trait_cast_func(self): 
+        item_cast_func = self.get_item_type_cast_func()
         def cast_func(var):
             return [item_cast_func(val) for val in cast_to_list(var)]
-        return cast_func 
-                 
+        return cast_func
+
+    def get_settable_trait_values(self): 
+        return [self.traitwidgetmapper.traitvalue]
+
+    def get_item_type_cast_func( self ):
+        itemType = self.traitwidgetmapper.traittype.item_trait.trait_type
+        if isinstance(itemType,TraitCoerceType): # in case of ListStr, ListInt, List(['xyz']),...
+            itemType = itemType.aType # returns basic type str, float, ...
+            return itemType
+        else: # in case no item defined -> List(Str())
+            dispatch = traitdispatcher.factory(self.traitwidgetmapper,itemType)
+            return dispatch.get_trait_cast_func()
+
+
+
+class TupleDispatch(TraitDispatch):
+    
+    def get_trait_cast_func(self): 
+        if isinstance(self.traitwidgetmapper, (TextInputMapper,SelectMapper)): 
+            return lambda x: eval(x)
+        else:
+            raise NotImplementedError("function not defined for class {}".format(
+                self.traitwidgetmapper.__class__))
+
+    def get_settable_trait_values(self): 
+        return [self.traitwidgetmapper.traitvalue]
+
+
+     
+class ArrayDispatch(TraitDispatch):
+    
+    def get_trait_cast_func(self): 
+        return self.get_cast_to_array_func(self.traitwidgetmapper.traittype.dtype) 
+
+    def get_settable_trait_values(self):
+        return [self.traitwidgetmapper.traitvalue]
+    
     def get_cast_to_array_func(self,dtype):
         def cast_func(var):
             return nan_to_num(cast_to_array(var).astype(dtype))
         return cast_func 
-        
-traitdispatcher = TraitCastDispatcher()
+
+
+
+class EnumDispatch(TraitDispatch):
+    
+    def get_trait_cast_func(self): 
+        if isinstance(self.traitwidgetmapper, (TextInputMapper,SelectMapper)): 
+            return self.get_undefined_cast_func()
+        else:
+            raise NotImplementedError("function not defined for class {}".format(
+                self.traitwidgetmapper.__class__))
+
+    def get_settable_trait_values(self): 
+        return list(self.traitwidgetmapper.traittype.values)
+
+
+
+class AnyDispatch(TraitDispatch):
+    
+    def get_trait_cast_func(self): 
+        if isinstance(self.traitwidgetmapper, (TextInputMapper,SelectMapper)): 
+            return self.get_undefined_cast_func()
+        else:
+            raise NotImplementedError("function not defined for class {}".format(
+                self.traitwidgetmapper.__class__))
+
+    def get_settable_trait_values(self): 
+        return list(self.traitwidgetmapper.traittype.values)
+    
+    
+    
+class TraitCompoundDispatch(TraitDispatch):
+    '''
+    for example: Trait(None,None,CLong) -> multiple handlers
+    '''
+    def get_trait_cast_func(self): 
+        if isinstance(self.traitwidgetmapper, (TextInputMapper,SelectMapper)): 
+            return self.get_undefined_cast_func()
+        else:
+            raise NotImplementedError("function not defined for class {}".format(
+                self.traitwidgetmapper.__class__))
+
+    def get_settable_trait_values(self): 
+        return list(self.traitwidgetmapper.traittype.values)    
+    
+    
+    
+class TraitMapDispatch(TraitDispatch):
+                 
+    def get_trait_cast_func(self): 
+        if isinstance(self.traitwidgetmapper, (TextInputMapper,SelectMapper)): 
+            return lambda x: eval(x)
+        else:
+            raise NotImplementedError("function not defined for class {}".format(
+                self.traitwidgetmapper.__class__))
+
+    def get_settable_trait_values(self): 
+        return list(self.traitwidgetmapper.traittype.map.keys())
+
+
+ 
