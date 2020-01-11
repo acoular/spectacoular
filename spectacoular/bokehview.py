@@ -55,21 +55,6 @@ trait_widget_args = {'from_file': {'disabled':False},
 
 add_bokeh_attr(Calib,trait_widget_mapper,trait_widget_args)
 
-#%% configuration.py
-
-from acoular import Config
-
-trait_widget_mapper = {'_global_caching': Select,
-                       '_h5library' : Select
-                       }
-trait_widget_args = {'_global_caching': {'disabled':False},
-                     '_h5library': {'disabled':False},
-                     }
-
-add_bokeh_attr(Config,trait_widget_mapper,trait_widget_args)
-
-from acoular import config
-
 #%% environments.py
 
 from acoular import Environment

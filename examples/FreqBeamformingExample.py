@@ -18,7 +18,7 @@ from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
 BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
 BeamformerCleansc, BeamformerClean, BeamformerPresenter,\
-BeamformerCMF,BeamformerGIB,Environment,Calib,config
+BeamformerCMF,BeamformerGIB,Environment,Calib
  
 # build processing chain
 micgeofile = path.join( path.split(acoular.__file__)[0],'xml','array_56.xml')
@@ -87,7 +87,6 @@ bbWidgets = bb.get_widgets()
 bvWidgets = bv.get_widgets()
 bvWidgets['freq'].value = "4000.0"
 bvWidgets['num'].value = "3"
-confWidgets = config.get_widgets()
 
 
 colorMapper = LogColorMapper(palette=viridis(100), 
@@ -141,9 +140,8 @@ def server_doc(doc):
     psTab = Panel(child=column(*psWidgets.values()),title='FFT')
     bfTab = Panel(child=column(beamformerSelector,selectedBfWidgets),
                   title='Beamforming')
-    globalTab = Panel(child=column(*confWidgets.values()),title='Global Settings')
     propertyTabs = Tabs(tabs=[tsTab,mgTab,calTab,envTab,gridTab,stTab,
-                              psTab,bfTab,globalTab],width=1000)
+                              psTab,bfTab],width=1000)
     
     calcColumn = column(calcButton,*bvWidgets.values(),dynamicSlider)
     
