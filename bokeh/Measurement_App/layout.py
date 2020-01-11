@@ -31,7 +31,6 @@ ti_savename = TextInput(value="", title="Filename:",disabled=True)
 # Buttons
 settings_button = Button(label="load settings",disabled=False)
 select_all_channels_button = Button(label="select all channels")
-gridButton = Button(label="change grid")
 
 # Toggle Buttons 
 msm_toggle = Toggle(label="START MEASUREMENT", active=False,disabled=True,button_type="primary")
@@ -43,7 +42,6 @@ beamf_toggle = Toggle(label="start beamforming", active=False,disabled=True)
 
 # Select Widgets
 selectPerCallPeriod = Select(title="Select Update Period [ms]", value=str(50), options=["25","50","100", "200", "400","800"])
-select_micgeom = Select(title="Select MicGeom:", value="None")
 select_setting = Select(title="Select Settings:", value="None")
 select_calib = Select(title="Select Calibration Value:", value="114", options=['114', '104','94'])
 selectBf = Select(title="Select Beamformer", 

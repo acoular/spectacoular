@@ -29,13 +29,13 @@ except:
     cam_enabled=False
 from datetime import datetime
 from time import time
-from threading import Event
+from threading import Event, currentThread
 from functools import partial
 from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
 from bokeh.models import ColumnDataSource,HoverTool, ColorBar
-from bokeh.models.widgets import PreText, Div,\
+from bokeh.models.widgets import PreText, Div, Select,\
 CheckboxGroup, DataTable, TableColumn,Tabs,Panel,StringFormatter, Slider
 from bokeh.layouts import column,row
 from bokeh.models.ranges import Range1d
@@ -43,19 +43,21 @@ from bokeh.models.tickers import ContinuousTicker
 
 # acoular imports
 from acoular import TimePower, TimeAverage, L_p, MicGeom, \
-RectGrid, FiltOctave, SteeringVector, BeamformerTime,  \
-synthetic, BeamformerBase, BeamformerCleansc, BeamformerCMF
+FiltOctave, SteeringVector, BeamformerTime,  \
+synthetic, BeamformerBase, BeamformerCleansc, BeamformerCMF, WriteH5
 from acoular_future import CSMInOut, BeamformerFreqTime
-from SamplesProcessor import SampleSplitter,WriteH5,SamplesThread,CalibHelper,\
+from SamplesProcessor import SampleSplitter,SamplesThread,CalibHelper,\
 LastInOut,FiltOctaveLive, EventThread
+
+from spectacoular import RectGrid, MicGeom
 
 #local imports
 from interfaces import get_interface
 from layout import MODE_COLORS, micgeom_fig,amp_fig,buffer_bar,aclogo,\
-selectPerCallPeriod, select_micgeom,checkbox_use_current_time, \
+selectPerCallPeriod, checkbox_use_current_time, \
 select_setting, select_calib, bfColorMapper,ampColorMapper, ti_msmtime,ti_savename,\
 settings_button,select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,\
-calib_toggle,text_user_info, dynamicSlider,checkbox_use_camera, gridButton, \
+calib_toggle,text_user_info, dynamicSlider,checkbox_use_camera,  \
 selectBf, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider
 
 parser = argparse.ArgumentParser()
@@ -138,7 +140,6 @@ ch = CalibHelper(source = ta_cal)
 # procesampSpliting rec Mode
 wh5 = WriteH5(source=sampSplit)
 
-#micGeo.invalid_channels = list(range(40))
 
 # procesampSpliting beamforming Mode
 
@@ -153,27 +154,27 @@ bb = BeamformerBase(steer=stVec, r_diag=True, cached = False)
 #bb = BeamformerCleansc(steer=stVec, r_diag=True, cached = False, damp=0.9)
 #bb = BeamformerCMF(steer=stVec, r_diag=True, cached = False, method='NNLS')
 
-
 bfFreq = BeamformerFreqTime(source=f, beamformer = bb)
-
 bfTime = BeamformerTime(source=lastOut, steer=stVec) 
 bfFilt = FiltOctaveLive(source=bfTime, band=CFREQ)
 bfPow = TimePower(source=bfFilt)
 bfAvg = TimeAverage(source=bfPow, naverage = BLOCKSIZE)
-
-# which bf to use
-#global bf_used
 bf_used = bfFreq
-#bf_used = bfAvg
 
-#def select_beamformer(attr, old, new):
-#    global bf_used
-#    if new == "Beamformer Freq":
-#        bf_used = bfFreq
-#    if new == "Beamformer Time":
-#        bf_used = bfAvg
-#        
-#selectBf.on_change('value',select_beamformer)
+# =============================================================================
+# spectacoular widgets
+# =============================================================================
+
+# get widgets of acoular objects
+rgWidgets = grid.get_widgets()
+zSlider = Slider(start=0.01, end=10.0, value=grid.z, step=.02, title="z",disabled=False)
+grid.set_widgets(**{'z':zSlider})
+rgWidgets['z'] = zSlider # replace textfield with slider
+
+micgeomfiles = [os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]
+select_micgeom = Select(title="Select MicGeom:", value=os.path.join(MGEOMPATH,mg_file),
+                                options=micgeomfiles+["None"])
+micGeo.set_widgets(**{'from_file':select_micgeom})
 
 # =============================================================================
 # bokeh
@@ -197,8 +198,6 @@ BufferBarCDS = ColumnDataSource({'y':['buffer'],'filling':np.zeros(1)})
 cameraCDS = ColumnDataSource({'image_data':[]})
 
 # Widgets     
-select_micgeom.value = mg_file
-select_micgeom.options=["None"]+os.listdir(MGEOMPATH)
 select_setting.options=["None"]+os.listdir(CONFPATH)
 #
 freqSlider = Slider(start=50, end=10000, value=CFREQ, 
@@ -375,10 +374,7 @@ def checkbox_paint_mode_callback(arg):
         f.accumulate = True
 checkbox_paint_mode.on_click(checkbox_paint_mode_callback)
   
-gridButton.on_click(lambda: grid.configure_traits())
-
 def select_micgeom_callback(attr, old, new):
-    micGeo.from_file=os.path.join(MGEOMPATH,new)
     MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
                        'sizes':np.array([MICSCALE]*micGeo.num_mics),
                        'channels':get_active_channels()}
@@ -503,11 +499,16 @@ def beamftoggle_handler(arg):
 
 beamf_toggle.on_click(beamftoggle_handler)
 
+def write_data(num):
+    ct = currentThread()
+    gen = wh5.result(num)
+    while getattr(ct, "do_run", True):
+        yield next(gen)
+
 def msmtoggle_handler(arg):
     global wh5_thread
     if arg: # button is presampSplited 
         if checkbox_use_current_time.active == [0]: ti_savename.value = current_time()
-        wh5.collectsamples = True
         wh5_event = Event()
         wh5_consumer = EventThread(
                 post_callback=partial(change_mode,msm_toggle,'msm',False),
@@ -515,14 +516,14 @@ def msmtoggle_handler(arg):
                 doc = doc,
                 event=wh5_event)
         wh5_thread = SamplesThread(
-                samplesGen=wh5.result(BLOCKSIZE, samples=get_numsamples()),
+                samplesGen=write_data(BLOCKSIZE),
                 splitterObj=sampSplit,
                 splitterDestination=wh5,
                 event = wh5_event)
         wh5_thread.start()
         wh5_consumer.start()
     if not arg:
-        wh5.collectsamples = False
+        wh5_thread.do_run = False
         wh5_thread.join()
     
 msm_toggle.on_click(msmtoggle_handler)
@@ -673,9 +674,11 @@ amplitudesTab = Panel(child=row(amp_fig),
 micgeomTab = Panel(child=column(row(micgeom_fig,select_micgeom)),
                    title='Microphone Geometry')
 
+
+gridCol = column(*rgWidgets.values())
+
 beamformTab = Panel(child=column(
-                        row(beam_fig,column(
-                        gridButton,
+                        row(beam_fig,gridCol,column(
                          freqSlider,
                          wtimeSlider,
                          dynamicSlider,
