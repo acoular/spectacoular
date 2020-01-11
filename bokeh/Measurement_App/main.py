@@ -78,14 +78,11 @@ parser.add_argument(
   nargs='+', # accepts more than one argument   
   help='Synchronization order of PCI cards')
 
-
 args = parser.parse_args()
 DEVICE = args.device
 BLOCKSIZE = args.blocksize
 SYNCORDER = args.syncorder
-#APPFOLDER ="Measurement_App/"
 APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
-print(APPFOLDER)
 MGEOMPATH = os.path.join(APPFOLDER,"micgeom/")
 CONFPATH = os.path.join(APPFOLDER,"config_files/")
 TDPATH = os.path.join(APPFOLDER,"td/")
@@ -119,7 +116,6 @@ elif DEVICE == 'tornado' or DEVICE == 'typhoon':
     iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,SYNCORDER)
     ch_names = inputSignalGen.inchannels_
     micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,mg_file)) 
-#    grid = RectGrid( x_min=-0.5, x_max=0.5, y_min=-0.375, y_max=0.375, z=1.3, increment=0.015)
     grid = RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
 
 micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,mg_file))
@@ -140,20 +136,13 @@ ch = CalibHelper(source = ta_cal)
 # procesampSpliting rec Mode
 wh5 = WriteH5(source=sampSplit)
 
-
 # procesampSpliting beamforming Mode
-
 stVec = SteeringVector(grid=grid, mics=micGeo, steer_type = 'true location')
 lastOut = LastInOut(source=sampSplit)
-
 #f = CSMInOut(source=lastOut, block_size=BLOCKSIZE)
 f = CSMInOut(source=lastOut, block_size=BLOCKSIZE, center_freq= CFREQ, 
              band_width=BANDWIDTH, weight_time=WTIME)
-
 bb = BeamformerBase(steer=stVec, r_diag=True, cached = False)
-#bb = BeamformerCleansc(steer=stVec, r_diag=True, cached = False, damp=0.9)
-#bb = BeamformerCMF(steer=stVec, r_diag=True, cached = False, method='NNLS')
-
 bfFreq = BeamformerFreqTime(source=f, beamformer = bb)
 bfTime = BeamformerTime(source=lastOut, steer=stVec) 
 bfFilt = FiltOctaveLive(source=bfTime, band=CFREQ)
@@ -343,7 +332,9 @@ def get_active_channels():
     return ch
 
 def get_numsamples():
-    return int(float(ti_msmtime.value)*inputSignalGen.sample_freq)
+    if ti_msmtime.value:
+        return int(float(ti_msmtime.value)*inputSignalGen.sample_freq)
+
 
 # callback functions
 
@@ -502,8 +493,15 @@ beamf_toggle.on_click(beamftoggle_handler)
 def write_data(num):
     ct = currentThread()
     gen = wh5.result(num)
-    while getattr(ct, "do_run", True):
-        yield next(gen)
+    smax = get_numsamples()
+    if smax: # user provided samples
+        scount = 0
+        while getattr(ct, "do_run", True) and scount < smax:
+            yield next(gen)
+            scount += num
+    else: # run until the user stops
+        while getattr(ct, "do_run", True):
+            yield next(gen)
 
 def msmtoggle_handler(arg):
     global wh5_thread
