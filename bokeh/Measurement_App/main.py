@@ -164,6 +164,8 @@ micgeomfiles = [os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)
 select_micgeom = Select(title="Select MicGeom:", value=os.path.join(MGEOMPATH,mg_file),
                                 options=micgeomfiles+["None"])
 micGeo.set_widgets(**{'from_file':select_micgeom})
+mgWidgets = micGeo.get_widgets()
+mgWidgets['from_file'] = select_micgeom
 
 # =============================================================================
 # bokeh
@@ -213,10 +215,10 @@ calib_table = DataTable(source=CalValsCDS, columns=calib_columns, width=500,
                         height=280,editable=True)
 calib_table.header_row = False
 
-# checkboxes
+# checkboxes # inline=True -> arange horizontally, False-> vertically
 checkbox_micgeom = CheckboxGroup(labels=ch_names,
                                  active=[_ for _ in range(NUMCHANNELS)],
-                                 width=500,inline=True)
+                                 width=100,height=100,inline=False)
 
 # Figures 
 amp_bar = amp_fig.vbar(x='channels', width=0.5, bottom=0,top='level', 
@@ -666,7 +668,8 @@ if DEVICE == 'tornado' or DEVICE == 'typhoon':
 
 # Tabs
 logTab = Panel(child=text_user_info, title="Log")
-channelsTab = Panel(child=column(select_all_channels_button,checkbox_micgeom), title="Array Channels")
+channelsTab = Panel(child=column(select_all_channels_button,checkbox_micgeom,
+                                 width=400,height=400),title="Array Channels")
 calibrationTab = Panel(child=column(select_calib,calib_table), title="Calibration")
 controlTabs = Tabs(tabs=[logTab,channelsTab,calibrationTab])
 
@@ -674,7 +677,9 @@ controlTabs = Tabs(tabs=[logTab,channelsTab,calibrationTab])
 amplitudesTab = Panel(child=row(amp_fig),
                       title='Channel Levels')
 
-micgeomTab = Panel(child=column(row(micgeom_fig,select_micgeom)),
+mgWidgetCol = column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
+                     mgWidgets['num_mics'])
+micgeomTab = Panel(child=column(row(micgeom_fig,mgWidgetCol)),
                    title='Microphone Geometry')
 
 
