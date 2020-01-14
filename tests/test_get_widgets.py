@@ -11,7 +11,7 @@ classes = (SampleSplitter, Calib, Environment,SteeringVector,BeamformerBase,
            BeamformerDamas, BeamformerDamasPlus,BeamformerOrth,BeamformerCleansc,
            BeamformerClean,BeamformerCMF,BeamformerGIB,PointSpreadFunction,
            RectGrid,RectGrid3D,MicGeom,PowerSpectra,TimeSamples,MaskedTimeSamples,
-           PointSource,TimeAverage)
+           PointSource,TimeAverage,WriteH5)
 
 for c in classes:
     print(c)
