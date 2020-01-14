@@ -55,21 +55,6 @@ trait_widget_args = {'from_file': {'disabled':False},
 
 add_bokeh_attr(Calib,trait_widget_mapper,trait_widget_args)
 
-#%% configuration.py
-
-from acoular import Config
-
-trait_widget_mapper = {'_global_caching': Select,
-                       '_h5library' : Select
-                       }
-trait_widget_args = {'_global_caching': {'disabled':False},
-                     '_h5library': {'disabled':False},
-                     }
-
-add_bokeh_attr(Config,trait_widget_mapper,trait_widget_args)
-
-from acoular import config
-
 #%% environments.py
 
 from acoular import Environment
@@ -536,18 +521,18 @@ trait_widget_mapper = {
                        'start_t' : TextInput,
                        'start' : TextInput,
                        'up' : TextInput,
-#                       'numsamples': TextInput, # is a Delegate -> currently raises error 
-#                       'sample_freq': TextInput,
-#                       'numchannels' : TextInput
+                      'numsamples': TextInput, # is a Delegate -> currently raises error 
+                      'sample_freq': TextInput,
+                      'numchannels' : TextInput
                        }
 trait_widget_args = {
                     'loc':  {'disabled':False},
                     'start_t':  {'disabled':False},
                     'start':  {'disabled':False},
                     'up':  {'disabled':False},
-#                     'numsamples':  {'disabled':True},
-#                     'sample_freq':  {'disabled':True},
-#                     'numchannels': {'disabled':True},
+                    'numsamples':  {'disabled':True},
+                    'sample_freq':  {'disabled':True},
+                    'numchannels': {'disabled':True},
                      }
 
 add_bokeh_attr(PointSource,trait_widget_mapper,trait_widget_args)

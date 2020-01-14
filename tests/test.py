@@ -540,8 +540,8 @@ if __name__ == '__main__':
     
     propertyTest = PropertyWidgetMapping()
     propertyTest.test()
-    mapper = TraitWidgetMapper(propertyTest,'testTrait')
-    cast_func = traitdispatcher.get_trait_cast_func(mapper)
+    # mapper = TraitWidgetMapper(propertyTest,'testTrait')
+    # cast_func = traitdispatcher.get_trait_cast_func(mapper)
 
     # # DataTableMapping Test    
     # datatableTest = DataTableMapping()
