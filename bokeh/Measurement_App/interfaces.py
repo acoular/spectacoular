@@ -8,7 +8,7 @@ Created on Wed May 15 16:21:22 2019
 
 import sys 
 import os
-from SamplesProcessor import TimeSamplesPhantom
+from spectacoular import TimeSamplesPhantom
 from acoular import MicGeom, WNoiseGenerator, PointSource,\
 Mixer, WriteH5, MovingPointSource, Trajectory
 from numpy import arange, cos, sin, pi

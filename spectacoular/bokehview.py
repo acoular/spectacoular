@@ -555,3 +555,14 @@ trait_widget_args = {'naverage':  {'disabled':False},
 
 add_bokeh_attr(TimeAverage,trait_widget_mapper,trait_widget_args)
 
+
+from acoular import WriteH5
+
+trait_widget_mapper = {'name': TextInput,
+                        'precision' : Select
+                       }
+trait_widget_args = {'name': {'disabled':False},
+                       'precision': {'disabled':False},
+                     }
+
+add_bokeh_attr(WriteH5,trait_widget_mapper,trait_widget_args)
