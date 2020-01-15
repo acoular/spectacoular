@@ -129,7 +129,7 @@ class TimeInOutPresenter(TimeInOut,BasePresenter):
 
                 
 
-class TimeSignalPlayback(TimeInOut,BaseSpectacoular):
+class TimeSamplesPlayback(TimeInOut,BaseSpectacoular):
     """
     In the future, this class should work in buffer mode and 
     also write the current frame that is played to its columndatasource.
@@ -139,7 +139,7 @@ class TimeSignalPlayback(TimeInOut,BaseSpectacoular):
     digest = Property( depends_on = ['source.digest', '__class__'])
 
     #: index of the channel to play
-    channels = ListInt([])
+    channels = ListInt()
     
     # device property
     device = Property()
@@ -148,11 +148,9 @@ class TimeSignalPlayback(TimeInOut,BaseSpectacoular):
     # currentframe = Int()
     
     trait_widget_mapper = {'channels': TextInput,
-                           'device' : TextInput
                        }
 
     trait_widget_args = {'channels': {'disabled':False},
-                         'device': {'disabled':False}
                      }
 
     @cached_property
@@ -160,7 +158,7 @@ class TimeSignalPlayback(TimeInOut,BaseSpectacoular):
         return digest(self)
     
     def _get_device( self ):
-        return sd.default.device
+        return list(sd.default.device)
     
     def _set_device( self, device ):
         sd.default.device = device
@@ -169,13 +167,14 @@ class TimeSignalPlayback(TimeInOut,BaseSpectacoular):
         '''
         normalized playback of channel
         '''
-        sig = zeros((self.source.numsamples))
-        for idx in self.channels:
-            sig += self.source.data[:,idx]
-        norm = abs(sig).max()
-        sd.play(sig/norm,
-                samplerate=self.sample_freq,
-                blocking=False)
+        if self.channels:
+            sig = zeros((self.source.numsamples))
+            for idx in self.channels:
+                sig += self.source.data[self.source.start:self.source.stop,idx]
+            norm = abs(sig).max()
+            sd.play(sig/norm,
+                    samplerate=self.sample_freq,
+                    blocking=False)
         
     def stop( self ):
         '''
