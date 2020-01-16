@@ -168,9 +168,11 @@ class TimeSamplesPlayback(TimeInOut,BaseSpectacoular):
         normalized playback of channel
         '''
         if self.channels:
-            sig = zeros((self.source.numsamples))
-            for idx in self.channels:
-                sig += self.source.data[self.source.start:self.source.stop,idx]
+            if isinstance(self.source,MaskedTimeSamples):
+                sig = self.source.data[
+                    self.source.start:self.source.stop,self.channels].sum(1)
+            else:
+                sig = self.source.data[:,self.channels].sum(1)
             norm = abs(sig).max()
             sd.play(sig/norm,
                     samplerate=self.sample_freq,
