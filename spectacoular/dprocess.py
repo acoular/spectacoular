@@ -182,6 +182,7 @@ class TimeSamplesPresenter(BasePresenter):
         >>>    tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
         
     """
+    #: Number of samples to appear in the plot, best practice is to use the width of the plot
     nsamples_plot = Int(-1)
     
     #: Data source; :class:`~acoular.sources.TimeSamples` or derived object.
@@ -211,13 +212,13 @@ class TimeSamplesPresenter(BasePresenter):
             stop = None
         
         plotlen = self.nsamples_plot 
-        if plotlen < self.source.numsamples:
+        if plotlen>0 and plotlen < self.source.numsamples:
             used_samples = self.source.numsamples//plotlen * plotlen
             newstop = start + used_samples
             sigraw = self.source.data[start:newstop,self.channels].reshape(plotlen,-1, numSelected)
-            sig = np.reshape(np.array([sigraw.min(1), sigraw.max(1)]), (2*plotlen, numSelected), order='F')
+            sig = np.reshape(np.array([sigraw.min(1), sigraw.max(1)]), (2*plotlen, numSelected), order='F') # use min/max of each plot block
             samples = list(np.linspace(start, newstop, 2*plotlen))
-            #sig = sigraw[:,0,:]
+            #sig = sigraw[:,0,:] # only use first sample
             #samples = list(np.linspace(start, newstop, plotlen))
         else:
             samples = list(range(0,self.source.numsamples))
