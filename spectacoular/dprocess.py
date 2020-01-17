@@ -20,7 +20,7 @@ cached_property, on_trait_change, Instance, ListInt
 import numpy as np
 from acoular.internal import digest
 from acoular import TimeSamples,BeamformerBase, L_p, MicGeom, SteeringVector,\
-PointSpreadFunction
+PointSpreadFunction, MaskedTimeSamples
 from .factory import BaseSpectacoular
 
 
@@ -182,7 +182,8 @@ class TimeSamplesPresenter(BasePresenter):
         >>>    tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
         
     """
-
+    nsamples_plot = Int(-1)
+    
     #: Data source; :class:`~acoular.sources.TimeSamples` or derived object.
     source = Trait(TimeSamples)
     
@@ -198,9 +199,31 @@ class TimeSamplesPresenter(BasePresenter):
                      }
 
     def update(self):
-        samples = list(range(0,self.source.numsamples))
+        
         numSelected = len(self.channels)
-        ys = [list(self.source.data[:,int(idx)]) for idx in self.channels]
+
+        
+        if isinstance(self.source,MaskedTimeSamples):
+            start = self.source.start
+            stop = self.source.stop
+        else:
+            start = 0
+            stop = None
+        
+        plotlen = self.nsamples_plot 
+        if plotlen < self.source.numsamples:
+            used_samples = self.source.numsamples//plotlen * plotlen
+            newstop = start + used_samples
+            sigraw = self.source.data[start:newstop,self.channels].reshape(plotlen,-1, numSelected)
+            sig = np.reshape(np.array([sigraw.min(1), sigraw.max(1)]), (2*plotlen, numSelected), order='F')
+            samples = list(np.linspace(start, newstop, 2*plotlen))
+            #sig = sigraw[:,0,:]
+            #samples = list(np.linspace(start, newstop, plotlen))
+        else:
+            samples = list(range(0,self.source.numsamples))
+            sig = self.source.data[start:stop,self.channels]
+        
+        ys = [list(_) for _ in sig.T]
         xs = [samples for _ in range(numSelected)]
         if self.source.numsamples > 0 and numSelected > 0:
             self.cdsource.data = {'xs' : xs, 
