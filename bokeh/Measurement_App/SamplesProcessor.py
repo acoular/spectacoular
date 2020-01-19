@@ -6,99 +6,101 @@ Created on Mon Feb  5 13:23:25 2018
 @author: adamkujawski
 """
 
-
-from traits.api import Dict, Int, Instance, Property,cached_property, Delegate,\
-on_trait_change, Trait,List,HasTraits,Str,Bool, Float, CLong,File,Array  
-from collections import deque
-from inspect import currentframe
-import threading
+from traits.api import Int, Instance, on_trait_change, Bool, Float, \
+Dict, File
 from threading import Thread
-from functools import partial
-from tornado import gen
-from numpy import delete, arange,shape, concatenate, where,logical_and,savetxt,\
-mean,array,newaxis, zeros
-import warnings
-from six import next
-from traitsui.api import View, Item
-from traitsui.menu import OKCancelButtons
-from os import path
-import tables
+from numpy import shape,logical_and,savetxt,mean,array,newaxis,zeros
 from datetime import datetime
 from time import time,sleep
-from scipy.signal import butter, lfilter, filtfilt
+from scipy.signal import lfilter
 
 # acoular imports
-from acoular import SamplesGenerator, TimeInOut, TimeSamples,\
+from acoular import TimeInOut, TimeSamples,\
 L_p,TimeAverage,FiltFiltOctave, SampleSplitter
-from acoular.internal import digest
-from acoular.h5cache import td_dir
-
                     
 
 class CalibHelper(TimeInOut):
     
     '''
-    Only in chain with TimePower!
+    Only in chain with TimeAverage!
     '''
     
     source = Instance(TimeAverage)
     
-    calib_level = Float(114)
+    #: Name of the file to be saved. If none is given, the name will be
+    #: automatically generated from a time stamp.
+    name = File(filter=['*.txt'], 
+        desc="name of data file")    
+
+    #: calibration level [dB] or pressure [Pa] of calibration device 
+    magnitude = Float(114)
     
-    calib_delta = Float(10)
+    # calib values of source channels
+    calibdata = Dict({'calibvalue':[],'magnitude':[]})
     
-    calib_value = List([])
+    #: max elements/averaged blocks in buffer to calculate calib value. 
+    buffer_size = Int(100)
+
+    # standarddeviation
+    calibstd = Float(.5)
+
+    #: delta of magnitude to consider a channels as calibrating
+    delta = Float(10)
     
-    iscalib = Bool(False)
-    
-    calib_nblocks = Int(100)
-    
-#    @on_trait_change('digest')
-#    def calib_value_init(self):
-#        self.calib_value = [None for _ in self.numchannels]
-        
     @on_trait_change('numchannels')
     def adjust_calib_values(self):
-        if self.calib_value == []: 
-            self.calib_value = [None for _ in range(self.numchannels)]
-        elif len(self.calib_value) < self.numchannels:
-            [self.calib_value.append(None) for _ in range(self.numchannels-len(self.calib_value))]
-        elif len(self.calib_value) > self.numchannels:
-            [self.calib_value.pop() for _ in range(len(self.calib_value)-self.numchannels)]
+        diff = self.numchannels-len(self.calibdata['calibvalue'])
+        if not self.calibdata['calibvalue']: 
+            self.calibdata['magnitude'] = [0]*self.numchannels
+            self.calibdata['calibvalue'] = [0]*self.numchannels
+        elif diff > 0:
+            for i in range(diff):
+                self.calibdata['magnitude'].append(0) 
+                self.calibdata['calibvalue'].append(0) 
+        elif diff < 0:
+            for i in range(abs(diff)):
+                self.calibdata['magnitude'].pop()
+                self.calibdata['calibvalue'].pop() 
             
+    def create_filename(self):
+        if self.name == '':
+            stamp = datetime.fromtimestamp(time()).strftime('%H:%M:%S')
+            self.name = 'calib_file_'+stamp.replace(':','')+'.out'
+
+    def save(self):
+        self.create_filename()
+        savetxt(self.name,array(list(self.calibdata.values()), dtype=float),'%f')
+
     def result(self, num):
-        """ 
         """
-        stamp = datetime.fromtimestamp(time()).strftime('%H:%M:%S')
-        
-        clev = self.calib_level # calibration level, default 94 dB
-        clev_low = clev-self.calib_delta # lower bound, default 91 dB
-        clev_upper = clev+self.calib_delta # lower bound, default 97 dB
-        cal_dict = {ind: deque([],maxlen=self.calib_nblocks+10) for ind in range(self.numchannels)} 
+        Parameters
+        ----------
+        num : TYPE
+            DESCRIPTION.
 
+        Returns
+        -------
+        None.
+
+        """
+        nc = self.numchannels
+        buffer = zeros((self.buffer_size,nc))
         for temp in self.source.result(num):
-            if self.iscalib:
-                data = L_p(temp[0]) 
-                cal_msk = logical_and(data > clev_low,data < clev_upper)
-                
-                if where(cal_msk)[0].size == 1 and self.calib_value[where(cal_msk)[0][0]] is None: # only if one channel has calib level 
-                    channel=where(cal_msk)[0][0] # calibrating channel index 
-                    level=data[cal_msk][0] # calibrating channel level
-    #                print(level)
-    #                print('mean:',mean(cal_dict[channel]))
-                    cal_dict[channel].append(level) # add to block cache
-                    if len(cal_dict[channel]) == self.calib_nblocks+10 and array(cal_dict[channel]).std() < 1: 
-                        vals = array(cal_dict[channel])
-                        self.calib_value[channel] = mean(vals[10:])
-                        savetxt('calib_file_'+stamp.replace(':','')+'.out',array(self.calib_value,dtype=float),'%f')
-                        print("channel: {} = {}".format(channel,mean(cal_dict[channel])))
-                    yield 1
-                else:
-                    yield 0
-            else:
-                break
-
-
+            bufferidx = self.buffer_size-temp.shape[0]
+            buffer[0:bufferidx] = buffer[-bufferidx:]  # copy remaining samples in front of next block
+            buffer[-temp.shape[0]:,:] = L_p(temp)
+            calibmask = logical_and(buffer > (self.magnitude-self.delta),
+                                  buffer < (self.magnitude+self.delta)
+                                  ).sum(0) 
+            if (calibmask.max() == nc) and (calibmask.sum() == nc):
+                idx = calibmask.argmax()
+                if buffer[:,idx].std() < self.calibstd:
+                    self.calibdata['calibvalue'].insert(idx,
+                                             mean(L_p(buffer[:,idx])))
+                    self.calibdata['magnitude'].insert(idx,self.magnitude)
+            yield temp
+                                             
+            
 class LastInOut(TimeInOut):
     
     source = Instance(SampleSplitter)
@@ -110,6 +112,7 @@ class LastInOut(TimeInOut):
             anz = min(num,shape(temp)[0])
             yield temp[:anz]
             self.source._clear_block_buffer(self)
+
 
 class EventThread(Thread):
     
