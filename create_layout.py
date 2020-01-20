@@ -6,19 +6,22 @@ Created on Sun Jan 19 17:41:52 2020
 @author: arne_holter
 """
 # App folder
-paths = ['MicGeomExample']
+paths = ['MicGeomExample', 'FreqBeamformingExample', 'LiveViewExample',
+         'TimeSamplesExample']
 ############### THEME COLOR SELECTIONS ################
 # Set background color
-bg_col = 'pink' #'#2F2F2F'
+bg_col = 'yellow'#'#2F2F2F'
 # Set text color
 txt_col = 'white'
 # Set selection color
 sel_col = 'darkred'
+# Set link color: [color, hovered color]
+link_col = ['green', 'white']
 
 for path in paths:
 ############### WRITE THEME.YAML AND INDEX.HTML #######
     # yaml file
-    yaml_file = open(path + '/theme.yaml', 'w')
+    yaml_file = open('examples/' + path + '/theme.yaml', 'w')
     yaml_lines = [f'attrs:',
                   f'    Figure:',
                   f'        background_fill_color: "{bg_col}"',
@@ -34,6 +37,7 @@ for path in paths:
                   f'    Grid:',
                   f'        grid_line_dash: [6, 4]',
                   f'        grid_line_alpha: .3',
+                  f'        grid_line_color: "{txt_col}"',
                   f'    Title:',
                   f'        background_fill_color: "{bg_col}"',
                   f'        text_color: "{txt_col}"',
@@ -60,36 +64,61 @@ for path in paths:
     yaml_file.close()
     
     # html file
-    html_file = open(path + '/templates/index.html', 'w')
+    html_file = open('examples/' + path + '/templates/index.html', 'w')
     html_lines = ['{% extends base %}',
                   '{% block title %}Bokeh Msm Example{% endblock %}',
                   '{% block preamble %}',
                   '<style>',
-                  '  @import url(https://fonts.googleapis.com/css?family=Noto+Sans);',
-                  '  .slick-header-column {',
-                 f'    background-color: {bg_col} !important;',
-                 f'    background-image: none !important;',
+                  '  a:link {',
+                 f'    color: {link_col[0]};', # set link color
                   '    }',
-                  '  .slick-row {',
+                  '  a:visited {',
+                 f'    color: {link_col[0]};', # set link color
+                  '    }',   
+                  '  a:hover {',
+                 f'    color: {link_col[1]};', # set hovered link color
+                  '    }',
+                  '  a:active {',
+                 f'    color: {link_col[0]};', # set link color
+                  '    }',
+                  '  @import url(https://fonts.googleapis.com/css?family=Noto+Sans);',
+                  '  .slick-header-column {',                   # datatable header
+                 f'    background-color: {bg_col} !important;',  
+                 f'    background-image: none !important;',     
+                  '    }',
+                  '  .slick-row {',                             # datatable rows
                  f'    background-color: {bg_col} !important;',
                  f'    background-image: none !important;',
                  f'    color: {txt_col} !important;',
                  f'    overflow: hidden;',
     		      '    }',
-                  '  .bk-cell-index {',
+                  '  .bk-cell-index {',                         # datatable index column
                  f'    background-color: {bg_col} !important;',
                  f'    background-image: none !important;',
                  f'    color: {txt_col} !important;',
     		      '    }',
-                  '  .slick-cell.selected {',
+                  '  .slick-cell.selected {',                   # datable selection color
                  f'    background-color: {sel_col} !important;',
                   '    }',
+                  '  body::-webkit-scrollbar {',                # absolute width of browser scrollbar
+                  '   width: 8px;',
+                  '  }',
                   '  body {',
-                  '    font-family: "Noto Sans", sans-serif;'
+                  '    font-family: "Noto Sans", sans-serif;'   # font
                   '    -webkit-font-smoothing: antialiased;',
                   '    text-rendering: optimizeLegibility;',
-                 f'    color: #fff;',
-                 f'    background: {bg_col};',
+                 f'    color: {txt_col};',                      # text color
+                 f'    background: {bg_col};',                  # background color
+                 f'    scrollbar-width: thin;',
+                 f'    scrollbar-color: {txt_col} {bg_col};',   # scrollbar <slider color> <background color>
+                  '    }',
+                  '  body::-webkit-scrollbar-track {',          # scrollbar background
+                 f'    background: {bg_col}',
+                  '    }',
+                  '  body::-webkit-scrollbar-thumb {',          # scrollbar slider
+                 f'    background-color: {txt_col};',
+                  '    border-radius: 4px;',
+                  '    border: 2px;',
                   '    }',
                   '</style>',
                   '{% endblock %}']
