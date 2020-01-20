@@ -69,8 +69,7 @@ psf_update = lambda attr, old, new: psfPresenter.update()
 psfFreqSlider.on_change('value',psf_update) # change psf plot when frequency changes
 # mgWidgets['mpos_tot'].source.on_change('data',psf_update)
 
-#def server_doc(doc):
-#        #MicGeomPlot
+#MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', 
                 tools = 'pan,wheel_zoom,reset,lasso_select',
                 match_aspect=True,)
@@ -105,14 +104,4 @@ ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab],width=500)
 # make Document
 doc.add_root(row(mgPlot,psfPlot,widgetbox(
     calcButton,psfFreqSlider,ControlTabs,width=500)))
-#theme = Theme(filename='theme.yaml')
-#doc.theme = theme
-    
-    
-#    server = Server({'/': server_doc}, num_procs=1)
-#    server.start()
-#
-#if __name__ == '__main__':
-#    print('Opening Microphone Geometry application on http://localhost:5006/')
-#    server.io_loop.add_callback(server.show, "/")
-#    server.io_loop.start()
+
