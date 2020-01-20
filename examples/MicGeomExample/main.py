@@ -6,10 +6,10 @@
 import os
 from os import path
 import acoular
-from bokeh.embed import file_html
-from bokeh.resources import CDN
+from numpy import shape
+from bokeh.io import curdoc
 from bokeh.layouts import column, row,widgetbox
-from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider
+from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider, StringFormatter, TableColumn, DataTable
 from bokeh.models import LogColorMapper, ColorBar, PointDrawTool
 from bokeh.plotting import figure
 from bokeh.palettes import viridis
@@ -19,6 +19,7 @@ from spectacoular import MicGeom, SteeringVector, RectGrid, PointSpreadFunction,
 PointSpreadFunctionPresenter
 from pylab import ravel_multi_index, array
 
+doc = curdoc()
 acoular.config.global_caching = 'none' # no result cachings
 PALETTE = viridis(100)
 
@@ -68,51 +69,50 @@ psf_update = lambda attr, old, new: psfPresenter.update()
 psfFreqSlider.on_change('value',psf_update) # change psf plot when frequency changes
 # mgWidgets['mpos_tot'].source.on_change('data',psf_update)
 
-def server_doc(doc):
-    #MicGeomPlot
-    mgPlot = figure(title='Microphone Geometry', 
-                    tools = 'pan,wheel_zoom,reset,lasso_select',
-                    match_aspect=True,)
-    micRenderer = mgPlot.circle_cross(x='x',y='y',size=10,fill_alpha=0.2,
-                                      source=mgWidgets['mpos_tot'].source)
-    drawtool = PointDrawTool(renderers=[micRenderer])
-    mgPlot.add_tools(drawtool)
-    mgPlot.toolbar.active_tap = drawtool
+#def server_doc(doc):
+#        #MicGeomPlot
+mgPlot = figure(title='Microphone Geometry', 
+                tools = 'pan,wheel_zoom,reset,lasso_select',
+                match_aspect=True,)
+micRenderer = mgPlot.circle_cross(x='x',y='y',size=10,fill_alpha=0.2,
+                                  source=mgWidgets['mpos_tot'].source)
+drawtool = PointDrawTool(renderers=[micRenderer])
+mgPlot.add_tools(drawtool)
+mgPlot.toolbar.active_tap = drawtool
+
+# PSF Plot
+# Tooltips for additional information
+PSF_TOOLTIPS = [
+    ("Level [dB]", "@psf"),
+("(x,y)", "($x, $y)"),]
+psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
+                 tooltips=PSF_TOOLTIPS,match_aspect=True)
+psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
+cm = LogColorMapper(low=74, high=94,palette=PALETTE)
+psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
+             source=psfPresenter.cdsource, color_mapper=cm)
+psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Level [dB]",\
+                            title_standoff=10),'right')
+                    
+### CREATE LAYOUT ### 
+# Tabs
+mgTab = Panel(child=column(*mgWidgets.values()),title='Microphone Geometry')
+psfTab = Panel(child=column(*psfWidgets.values()),title='Point-Spread Function')
+gridTab = Panel(child=column(*rgWidgets.values()),title='Grid')
+stTab = Panel(child=column(*stWidgets.values()),title='Steering')
+ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab],width=500)
+
+# make Document
+doc.add_root(row(mgPlot,psfPlot,widgetbox(
+    calcButton,psfFreqSlider,ControlTabs,width=500)))
+#theme = Theme(filename='theme.yaml')
+#doc.theme = theme
     
-    # PSF Plot
-    # Tooltips for additional information
-    PSF_TOOLTIPS = [
-        ("Level [dB]", "@psf"),
-    ("(x,y)", "($x, $y)"),]
-    psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
-                     tooltips=PSF_TOOLTIPS,match_aspect=True)
-    psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
-    cm = LogColorMapper(low=74, high=94,palette=PALETTE)
-    psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
-                 source=psfPresenter.cdsource, color_mapper=cm)
-    psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Level [dB]",\
-                                title_standoff=10),'right')
-                        
-    ### CREATE LAYOUT ### 
-    # Tabs
-    mgTab = Panel(child=column(*mgWidgets.values()),title='Microphone Geometry')
-    psfTab = Panel(child=column(*psfWidgets.values()),title='Point-Spread Function')
-    gridTab = Panel(child=column(*rgWidgets.values()),title='Grid')
-    stTab = Panel(child=column(*stWidgets.values()),title='Steering')
-    ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab],width=500)
-
-    # make Document
-    doc.add_root(row(mgPlot,psfPlot,widgetbox(
-        calcButton,psfFreqSlider,ControlTabs,width=500)))
-    theme = Theme(filename='theme.yaml')
-    doc.theme = theme
-#    html = file_html(doc,CDN, template='templates/index.html')
     
-
-server = Server({'/': server_doc}, num_procs=1)
-server.start()
-
-if __name__ == '__main__':
-    print('Opening Microphone Geometry application on http://localhost:5006/')
-    server.io_loop.add_callback(server.show, "/")
-    server.io_loop.start()
+#    server = Server({'/': server_doc}, num_procs=1)
+#    server.start()
+#
+#if __name__ == '__main__':
+#    print('Opening Microphone Geometry application on http://localhost:5006/')
+#    server.io_loop.add_callback(server.show, "/")
+#    server.io_loop.start()
