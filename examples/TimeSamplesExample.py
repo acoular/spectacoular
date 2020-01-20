@@ -16,7 +16,7 @@ import sounddevice as sd
 
 # build processing chain
 ts = MaskedTimeSamples(name='example_data.h5')
-tv = TimeSamplesPresenter(source=ts)
+tv = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
 playback = TimeSamplesPlayback(source=ts)
 
 # create widget to select the channel that should be plotted
