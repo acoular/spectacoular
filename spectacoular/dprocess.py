@@ -182,9 +182,7 @@ class TimeSamplesPresenter(BasePresenter):
         >>>    tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
         
     """
-    #: Number of samples to appear in the plot, best practice is to use the width of the plot
-    nsamples_plot = Int(-1)
-    
+        
     #: Data source; :class:`~acoular.sources.TimeSamples` or derived object.
     source = Trait(TimeSamples)
     
@@ -192,6 +190,9 @@ class TimeSamplesPresenter(BasePresenter):
     cdsource = ColumnDataSource(data={'xs':[],'ys':[]})
     
     channels = ListInt([])
+    
+    # Number of samples to appear in the plot, best practice is to use the width of the plot
+    _numsubsamples = Int(-1)
     
     trait_widget_mapper = {'channels': TextInput,
                        }
@@ -211,7 +212,7 @@ class TimeSamplesPresenter(BasePresenter):
             start = 0
             stop = None
         
-        plotlen = self.nsamples_plot 
+        plotlen = self._numsubsamples 
         if plotlen>0 and plotlen < self.source.numsamples:
             used_samples = self.source.numsamples//plotlen * plotlen
             newstop = start + used_samples
