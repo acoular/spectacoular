@@ -13,13 +13,15 @@ from numpy import shape,logical_and,savetxt,mean,array,newaxis,zeros
 from datetime import datetime
 from time import time,sleep
 from scipy.signal import lfilter
+from bokeh.models.widgets import TextInput, DataTable
 
 # acoular imports
 from acoular import TimeInOut, TimeSamples,\
 L_p,TimeAverage,FiltFiltOctave, SampleSplitter
-                    
+                     
+from spectacoular import BaseSpectacoular
 
-class CalibHelper(TimeInOut):
+class CalibHelper(TimeInOut, BaseSpectacoular):
     
     '''
     Only in chain with TimeAverage!
@@ -47,6 +49,22 @@ class CalibHelper(TimeInOut):
     #: delta of magnitude to consider a channels as calibrating
     delta = Float(10)
     
+    trait_widget_mapper = {'name': TextInput,
+                           'magnitude': TextInput,
+                           # 'calibdata' : DataTable,
+                           'buffer_size' : TextInput,
+                           'calibstd': TextInput,
+                           'delta': TextInput,
+                       }
+
+    trait_widget_args = {'name': {'disabled':False},
+                         'magnitude': {'disabled':False},
+                         # 'calibdata':  {'disabled':False},
+                         'buffer_size':  {'disabled':False},
+                         'calibstd':  {'disabled':False},
+                         'delta':  {'disabled':False},
+                         }
+
     @on_trait_change('numchannels')
     def adjust_calib_values(self):
         diff = self.numchannels-len(self.calibdata['calibvalue'])

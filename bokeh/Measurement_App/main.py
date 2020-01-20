@@ -55,7 +55,7 @@ from spectacoular import RectGrid, MicGeom
 from interfaces import get_interface
 from layout import MODE_COLORS, micgeom_fig,amp_fig,buffer_bar,aclogo,\
 selectPerCallPeriod, checkbox_use_current_time, \
-select_setting, select_calib, bfColorMapper,ampColorMapper, \
+select_setting, bfColorMapper,ampColorMapper, \
 settings_button,select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,\
 calib_toggle,text_user_info, dynamicSlider,checkbox_use_camera,  \
 selectBf, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider
@@ -167,6 +167,8 @@ micGeo.set_widgets(**{'from_file':select_micgeom})
 mgWidgets = micGeo.get_widgets()
 mgWidgets['from_file'] = select_micgeom
 
+calWidgets = ch.get_widgets()
+calcolumn = column(calWidgets['name'], calWidgets['magnitude'],calWidgets['delta'])
 # =============================================================================
 # bokeh
 # =============================================================================
@@ -189,7 +191,6 @@ level_init_data = {'channels':list(np.arange(1,NUMCHANNELS+1)),
 ChLevelsCDS = ColumnDataSource(data = level_init_data)
 MicGeomCDS = ColumnDataSource(data=mic_init_data) 
 BeamfCDS = ColumnDataSource({'beamformer_data':[]})
-CalValsCDS = ColumnDataSource({'channels':ch_names,'calib':ch.calib_value})
 BufferBarCDS = ColumnDataSource({'y':['buffer'],'filling':np.zeros(1)}) 
 cameraCDS = ColumnDataSource({'image_data':[]})
 
@@ -207,13 +208,14 @@ wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
 #                    step=0.05, title="Transparency Slider")
                 
 # CalibTable
+CalValsCDS = ColumnDataSource(ch.calibdata)
 formatter = StringFormatter(text_color='black')
 calib_columns = [
-    TableColumn(field="channels", title="Input Channels",formatter=formatter),
-    TableColumn(field="calib", title="Calibration Value",formatter=formatter),]
+    TableColumn(field="calibvalue", title="Calibration Values",formatter=formatter),
+    TableColumn(field="magnitude", title="Calibration level",formatter=formatter),]
 calib_table = DataTable(source=CalValsCDS, columns=calib_columns, width=500,
                         height=280,editable=True)
-calib_table.header_row = False
+# calib_table.header_row = False
 
 # checkboxes # inline=True -> arange horizontally, False-> vertically
 checkbox_micgeom = CheckboxGroup(labels=ch_names,
@@ -268,7 +270,7 @@ disable_obj_rec = [
         display_toggle, calib_toggle, beamf_toggle
         ]
 
-disable_obj_calib = [msm_toggle,select_calib]
+disable_obj_calib = [msm_toggle]
 
 disable_obj_beamf = [
         freqSlider,wtimeSlider,dynamicSlider,checkbox_autolevel_mode,
@@ -410,17 +412,13 @@ def select_setting_callback(attr, old, new):
     iniManager.from_file = os.path.join(CONFPATH,new)
 select_setting.on_change('value',select_setting_callback)
 
-def calib_level_callback(attr, old, new):
-    ch.calib_level = float(new)
-select_calib.on_change("value", calib_level_callback)
-
-def calib_user_callback(attr, old, new):
-    # function is only to read back user induced manipulation of calib values
-    if calib_table.editable == True: 
-        tab_vals = list(map(convert_table,new['calib']))
-        if not tab_vals == ch.calib_value:
-            ch.calib_value = tab_vals
-CalValsCDS.on_change("data",calib_user_callback)
+# def calib_user_callback(attr, old, new):
+#     # function is only to read back user induced manipulation of calib values
+#     if calib_table.editable == True: 
+#         tab_vals = list(map(convert_table,new['calib']))
+#         if not tab_vals == ch.calib_value:
+#             ch.calib_value = tab_vals
+# CalValsCDS.on_change("data",calib_user_callback)
 
 def mode_log_callback(mode,isSet):
     to_txt_buffer(log_text_toggles[(mode,isSet)])
@@ -521,11 +519,17 @@ def msmtoggle_handler(arg):
     
 msm_toggle.on_click(msmtoggle_handler)
 
+def calib_data(num):
+    ct = currentThread()
+    gen = ch.result(num)
+    while getattr(ct, "do_run", True):
+        yield next(gen)
+
 def calibtoggle_handler(arg):
     global periodic_cal_callback, disp_threads # need to be global
     if arg:
-        calib_table.editable = False
-        ch.iscalib = True
+        # calib_table.editable = False
+        # ch.iscalib = True
         calibEvent = Event()
         calibEventThread = EventThread(
                 post_callback=partial(change_mode,calib_toggle,'calib',False),
@@ -533,18 +537,21 @@ def calibtoggle_handler(arg):
                 doc = doc,
                 event=calibEvent)
         calib_thread = SamplesThread(
-                samplesGen=ch.result(1),
+                samplesGen=calib_data(1),
                 splitterObj= sampSplit,
                 splitterDestination=fo_cal,
                 event=calibEvent)
         calib_thread.start()
         calibEventThread.start()
-        periodic_cal_callback = doc.add_periodic_callback(
-                periodic_update_calib_table,500)
+        # periodic_cal_callback = doc.add_periodic_callback(
+        #         periodic_update_calib_table,500)
     if not arg:
-        ch.iscalib = False
-        calib_table.editable = True
-        doc.remove_periodic_callback(periodic_cal_callback)
+        calib_thread.do_run = False
+        calib_thread.join()
+    # if not arg:
+        # ch.iscalib = False
+        # calib_table.editable = True
+        # doc.remove_periodic_callback(periodic_cal_callback)
 
 calib_toggle.on_click(calibtoggle_handler)
 
@@ -610,9 +617,9 @@ def update_app():
     if DEVICE == 'tornado' or DEVICE == 'typhoon':
         update_buffer_bar_plot()
 
-def periodic_update_calib_table():
-    # only when clibration is running
-    CalValsCDS.data['calib'] = ch.calib_value
+# def periodic_update_calib_table():
+#     # only when clibration is running
+#     CalValsCDS.data['calib'] = ch.calib_value
 
 def periodic_update_log():
     text_user_info.text = "\n".join(msg for msg in txt_buffer)
@@ -642,8 +649,8 @@ if DEVICE == 'tornado' or DEVICE == 'typhoon':
         amp_fig.xaxis.major_label_overrides = {str(ticker[i]): inputSignalGen.inchannels_[i] for i in range(inputSignalGen.numchannels)}
         checkbox_micgeom.labels = inputSignalGen.inchannels_
         checkbox_micgeom.active = [_ for _ in range(inputSignalGen.numchannels)]
-        CalValsCDS.data = {'channels':[ _ for _ in inputSignalGen.inchannels_],
-                       'calib': ch.calib_value}
+        # CalValsCDS.data = {'channels':[ _ for _ in inputSignalGen.inchannels_],
+        #                'calib': ch.calib_value}
         buffer_bar.x_range=Range1d(0,int(devManager.BlockCount[0]))
         if micGeo.num_mics > 0:
             MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
@@ -658,11 +665,11 @@ if DEVICE == 'tornado' or DEVICE == 'typhoon':
 logTab = Panel(child=text_user_info, title="Log")
 channelsTab = Panel(child=column(select_all_channels_button,checkbox_micgeom,
                                  width=400,height=400),title="Array Channels")
-calibrationTab = Panel(child=column(select_calib,calib_table), title="Calibration")
+calibrationTab = Panel(child=column(calib_table), title="Calibration")
 controlTabs = Tabs(tabs=[logTab,channelsTab,calibrationTab])
 
 # Figure Tabs
-amplitudesTab = Panel(child=row(amp_fig),
+amplitudesTab = Panel(child=row(amp_fig,column(controlTabs,calcolumn)),
                       title='Channel Levels')
 
 mgWidgetCol = column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
@@ -716,7 +723,7 @@ elif DEVICE == 'uma16' or DEVICE == 'phantom':
                          selectPerCallPeriod,
                          )    
     
-middle_column = column(figureTabs,controlTabs)
+middle_column = column(figureTabs)
                        
 
 right_column = column(dumdiv)

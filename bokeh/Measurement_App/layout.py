@@ -39,7 +39,6 @@ beamf_toggle = Toggle(label="start beamforming", active=False,disabled=True)
 # Select Widgets
 selectPerCallPeriod = Select(title="Select Update Period [ms]", value=str(50), options=["25","50","100", "200", "400","800"])
 select_setting = Select(title="Select Settings:", value="None")
-select_calib = Select(title="Select Calibration Value:", value="114", options=['114', '104','94'])
 selectBf = Select(title="Select Beamformer", 
                   value="Beamformer Freq", options=["Beamformer Time","Beamformer Freq"])
 
