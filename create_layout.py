@@ -10,7 +10,7 @@ paths = ['MicGeomExample', 'FreqBeamformingExample', 'LiveViewExample',
          'TimeSamplesExample']
 ############### THEME COLOR SELECTIONS ################
 # Set background color
-bg_col = 'yellow'#'#2F2F2F'
+bg_col = '#2F2F2F'
 # Set text color
 txt_col = 'white'
 # Set selection color

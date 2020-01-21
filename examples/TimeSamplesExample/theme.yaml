@@ -1,7 +1,7 @@
 attrs:
     Figure:
-        background_fill_color: "yellow"
-        border_fill_color: "yellow"
+        background_fill_color: "#2F2F2F"
+        border_fill_color: "#2F2F2F"
         outline_line_color: "white"
     Axis:
         axis_line_color: "white"
@@ -15,22 +15,22 @@ attrs:
         grid_line_alpha: .3
         grid_line_color: "white"
     Title:
-        background_fill_color: "yellow"
+        background_fill_color: "#2F2F2F"
         text_color: "white"
     Widget:
-        background: "yellow"
+        background: "#2F2F2F"
     Title:
         text_color: "white"
     Label:
-        background_fill_color: "yellow"
+        background_fill_color: "#2F2F2F"
         text_color: "white"
     Legend:
-        background_fill_color: "yellow"
-        border_line_color: "yellow"
+        background_fill_color: "#2F2F2F"
+        border_line_color: "#2F2F2F"
         title_text_color: "white"
         label_text_color: "white"
     ColorBar:
-        background_fill_color: "yellow"
+        background_fill_color: "#2F2F2F"
         title_text_color: "white"
         major_tick_line_color: "white"
         minor_tick_line_color: "white"
