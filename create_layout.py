@@ -18,6 +18,8 @@ sel_col = 'darkred'
 # Set link color: [color, hovered color]
 link_col = ['green', 'white']
 
+# read Acoular Logo:
+Ac_logo = open('Acoular_logo', 'r').read()
 for path in paths:
 ############### WRITE THEME.YAML AND INDEX.HTML #######
     # yaml file
@@ -68,6 +70,7 @@ for path in paths:
     html_lines = ['{% extends base %}',
                   '{% block title %}Bokeh Msm Example{% endblock %}',
                   '{% block preamble %}',
+                 f'<img alt="Logo" src="{Ac_logo}">',
                   '<style>',
                   '  a:link {',
                  f'    color: {link_col[0]};', # set link color
