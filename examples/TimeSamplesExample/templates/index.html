@@ -16,6 +16,23 @@
     color: green;
     }
   @import url(https://fonts.googleapis.com/css?family=Noto+Sans);
+  .bk-root .slick-header-columns, .bk-root .slick-headerrow-columns, .bk-root .slick-footerrow-columns {
+    overflow: visible !important;
+    border-left: 0px solid #2F2F2F !important;
+    border-top: 0px solid #2F2F2F !important;
+    border-bottom: 0px solid #2F2F2F !important;
+    border-right: 0px solid #2F2F2F !important;
+    }
+  .bk-root .slick-header-column.ui-state-default {
+    border-left: 0px solid #2F2F2F !important;
+    border-top: 0px solid #2F2F2F !important;
+    border-bottom: 1px solid white !important;
+    border-right: 0px solid #2F2F2F !important;
+    }
+  .bk-root .slick-cell, .bk-root .slick-headerrow-column, .bk-root .slick-footerrow-column {
+    border-right: 0px solid white !important;
+    border-left: 0px solid white !important;
+    }
   .slick-header-column {
     background-color: #2F2F2F !important;
     background-image: none !important;
@@ -34,21 +51,20 @@
   .slick-cell.selected {
     background-color: darkred !important;
     }
-  body::-webkit-scrollbar {
-   width: 8px;
-  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    }
   body {
-    font-family: "Noto Sans", sans-serif;    -webkit-font-smoothing: antialiased;
+    font-family: "Noto Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     color: white;
     background: #2F2F2F;
-    scrollbar-width: thin;
-    scrollbar-color: white #2F2F2F;
     }
-  body::-webkit-scrollbar-track {
+  ::-webkit-scrollbar-track {
     background: #2F2F2F
     }
-  body::-webkit-scrollbar-thumb {
+  ::-webkit-scrollbar-thumb {
     background-color: white;
     border-radius: 4px;
     border: 2px;

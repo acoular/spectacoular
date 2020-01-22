@@ -87,6 +87,23 @@ for path in paths:
                  f'    color: {link_col[0]};', # set link color
                   '    }',
                   '  @import url(https://fonts.googleapis.com/css?family=Noto+Sans);',
+                  '  .bk-root .slick-header-columns, .bk-root .slick-headerrow-columns, .bk-root .slick-footerrow-columns {',
+                  '    overflow: visible !important;',
+  	             f'    border-left: 0px solid {bg_col} !important;', # remove borders in header
+  	             f'    border-top: 0px solid {bg_col} !important;',
+  	             f'    border-bottom: 0px solid {bg_col} !important;',
+  	             f'    border-right: 0px solid {bg_col} !important;',
+                  '    }',
+                  '  .bk-root .slick-header-column.ui-state-default {',
+  	             f'    border-left: 0px solid {bg_col} !important;',
+  	             f'    border-top: 0px solid {bg_col} !important;',
+  	             f'    border-bottom: 1px solid {txt_col} !important;', # set bottom rule in header
+  	             f'    border-right: 0px solid {bg_col} !important;',
+                  '    }',
+                  '  .bk-root .slick-cell, .bk-root .slick-headerrow-column, .bk-root .slick-footerrow-column {',
+  	             f'    border-right: 0px solid {txt_col} !important;', # remove vertical borders
+  	             f'    border-left: 0px solid {txt_col} !important;',
+                  '    }',
                   '  .slick-header-column {',                   # datatable header
                  f'    background-color: {bg_col} !important;',  
                  f'    background-image: none !important;',     
@@ -105,22 +122,20 @@ for path in paths:
                   '  .slick-cell.selected {',                   # datable selection color
                  f'    background-color: {sel_col} !important;',
                   '    }',
-                  '  body::-webkit-scrollbar {',                # absolute width of browser scrollbar
-                  '   width: 8px;',
-                  '  }',
+                  '  ::-webkit-scrollbar {',                # absolute width of browser scrollbar
+                  '    width: 8px;',
+                  '    }',
                   '  body {',
-                  '    font-family: "Noto Sans", sans-serif;'   # font
+                  '    font-family: "Noto Sans", sans-serif;',   # font
                   '    -webkit-font-smoothing: antialiased;',
                   '    text-rendering: optimizeLegibility;',
                  f'    color: {txt_col};',                      # text color
                  f'    background: {bg_col};',                  # background color
-                 f'    scrollbar-width: thin;',
-                 f'    scrollbar-color: {txt_col} {bg_col};',   # scrollbar <slider color> <background color>
                   '    }',
-                  '  body::-webkit-scrollbar-track {',          # scrollbar background
+                  '  ::-webkit-scrollbar-track {',          # scrollbar background
                  f'    background: {bg_col}',
                   '    }',
-                  '  body::-webkit-scrollbar-thumb {',          # scrollbar slider
+                  '  ::-webkit-scrollbar-thumb {',          # scrollbar slider
                  f'    background-color: {txt_col};',
                   '    border-radius: 4px;',
                   '    border: 2px;',
