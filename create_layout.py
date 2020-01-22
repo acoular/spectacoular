@@ -90,13 +90,13 @@ for path in paths:
                   '  .bk-root .slick-header-columns, .bk-root .slick-headerrow-columns, .bk-root .slick-footerrow-columns {',
                   '    overflow: visible !important;',
   	             f'    border-left: 0px solid {bg_col} !important;', # remove borders in header
-  	             f'    border-top: 0px solid {bg_col} !important;',
+  	             f'    border-top: 2px solid {txt_col} !important;',
   	             f'    border-bottom: 0px solid {bg_col} !important;',
   	             f'    border-right: 0px solid {bg_col} !important;',
                   '    }',
                   '  .bk-root .slick-header-column.ui-state-default {',
   	             f'    border-left: 0px solid {bg_col} !important;',
-  	             f'    border-top: 0px solid {bg_col} !important;',
+  	             f'    border-top: 0px solid {txt_col} !important;',
   	             f'    border-bottom: 1px solid {txt_col} !important;', # set bottom rule in header
   	             f'    border-right: 0px solid {bg_col} !important;',
                   '    }',
