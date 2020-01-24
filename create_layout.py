@@ -115,7 +115,7 @@ for path in paths:
   	             f'    border-bottom: 0px solid {bg_col} !important;',
   	             f'    border-right: 0px solid {bg_col} !important;',
                   '    }',
-                  '  .slick-header-column.ui-state-default {',
+                  '  .bk-root .slick-header-column.ui-state-default {',
   	             f'    border-left: 0px solid {bg_col} !important;',
   	             f'    border-top: 0px solid {txt_col} !important;',
   	             f'    border-bottom: 1px solid {txt_col} !important;', # set bottom rule in header
