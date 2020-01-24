@@ -1,0 +1,35 @@
+attrs:
+    Figure:
+        background_fill_color: "#2F2F2F"
+        border_fill_color: "#2F2F2F"
+        outline_line_color: "white"
+    Axis:
+        axis_line_color: "white"
+        axis_label_text_color: "white"
+        major_label_text_color: "white"
+        major_tick_line_color: "white"
+        minor_tick_line_color: "white"
+        minor_tick_line_color: "white"
+    Grid:
+        grid_line_dash: [6, 4]
+        grid_line_alpha: .3
+        grid_line_color: "white"
+    Title:
+        background_fill_color: "#2F2F2F"
+        text_color: "white"
+    Widget:
+        background: "#2F2F2F"
+    Label:
+        background_fill_color: "#2F2F2F"
+        text_color: "white"
+    Legend:
+        background_fill_color: "#2F2F2F"
+        border_line_color: "#2F2F2F"
+        title_text_color: "white"
+        label_text_color: "white"
+    ColorBar:
+        background_fill_color: "#2F2F2F"
+        title_text_color: "white"
+        major_tick_line_color: "white"
+        minor_tick_line_color: "white"
+        major_label_text_color: "white"
