@@ -26,7 +26,7 @@ Ac_logo = open('Acoular_logo', 'r').read()
 for path in paths:
 ############### WRITE THEME.YAML AND INDEX.HTML #######
     # yaml file
-    yaml_file = open('examples/' + path + '/theme.yaml', 'w')
+    yaml_file = open('apps/' + path + '/theme.yaml', 'w')
     yaml_lines = [f'attrs:',
                   f'    Figure:',
                   f'        background_fill_color: "{bg_col}"',
@@ -67,7 +67,7 @@ for path in paths:
     yaml_file.close()
     
     # html file
-    html_file = open('examples/' + path + '/templates/index.html', 'w')
+    html_file = open('apps/' + path + '/templates/index.html', 'w')
     html_lines = ['{% extends base %}',
                   '{% block title %}Bokeh Msm Example{% endblock %}',
                   '{% block preamble %}',
