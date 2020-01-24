@@ -11,13 +11,24 @@ paths = ['MicGeomExample', 'FreqBeamformingExample', 'LiveViewExample',
          'TimeSamplesExample']
 ############### THEME COLOR SELECTIONS ################
 # Set background color
-bg_col = '#2F2F2F'
+bg_col  = '#2F2F2F'
 # Set text color
 txt_col = 'white'
 # Set selection color
 sel_col = 'darkred'
 # Set link color: [color, hovered color]
 link_col = ['green', 'white']
+# Font Sizes
+ft_for_all = True # if True: font size of ft_f is valid for all
+ft_f       = '12pt' # font of figures
+ft_wt      = '14pt' # font of widgets and tables
+# Font
+ft         = "Times" # bokeh default is "Helvetica"
+
+if ft_for_all:
+    ft_w = ft_f
+else:
+    ft_w = ft_wt
 
 # read Acoular Logo:
 logo_height = 50
@@ -36,9 +47,11 @@ for path in paths:
                   f'        axis_line_color: "{txt_col}"',
                   f'        axis_label_text_color: "{txt_col}"',
                   f'        major_label_text_color: "{txt_col}"',
+                  f'        major_label_text_font_size: "{ft_f}"',
                   f'        major_tick_line_color: "{txt_col}"',
                   f'        minor_tick_line_color: "{txt_col}"',
                   f'        minor_tick_line_color: "{txt_col}"',
+                  f'        axis_label_text_font_size: "{ft_f}"',
                   f'    Grid:',
                   f'        grid_line_dash: [6, 4]',
                   f'        grid_line_alpha: .3',
@@ -46,6 +59,8 @@ for path in paths:
                   f'    Title:',
                   f'        background_fill_color: "{bg_col}"',
                   f'        text_color: "{txt_col}"',
+                  f'        text_font_size: "{ft_f}"',
+                  f'        text_font: "{ft}"',
                   f'    Widget:',
                   f'        background: "{bg_col}"',
                   f'    Label:',
@@ -55,13 +70,20 @@ for path in paths:
                   f'        background_fill_color: "{bg_col}"',
                   f'        border_line_color: "{bg_col}"',
                   f'        title_text_color: "{txt_col}"',
+                  f'        titel_text_font: "{ft}"',
                   f'        label_text_color: "{txt_col}"',
+                  f'        label_text_font: "{ft}"',
+                  f'        label_text_font_size: "{ft_f}"',
                   f'    ColorBar:',
                   f'        background_fill_color: "{bg_col}"',
                   f'        title_text_color: "{txt_col}"',
+                  f'        title_text_font_size: "{ft_f}"',
+                  f'        title_text_font: "{ft}"',
                   f'        major_tick_line_color: "{txt_col}"',
                   f'        minor_tick_line_color: "{txt_col}"',
-                  f'        major_label_text_color: "{txt_col}"']
+                  f'        major_label_text_color: "{txt_col}"',
+                  f'        major_label_text_font: "{ft}"',
+                  f'        major_label_text_font_size: "{ft_f}"']
     
     yaml_file.write('\n'.join(yaml_lines))
     yaml_file.close()
@@ -85,21 +107,25 @@ for path in paths:
                   '  a:active {',
                  f'    color: {link_col[0]};', # set link color
                   '    }',
-                  '  @import url(https://fonts.googleapis.com/css?family=Noto+Sans);',
-                  '  .bk-root .slick-header-columns, .bk-root .slick-headerrow-columns, .bk-root .slick-footerrow-columns {',
+#                  '  @import url(https://fonts.googleapis.com/css?family=Noto+Sans);',
+                  '  .slick-header-columns, .slick-headerrow-columns, .slick-footerrow-columns {',
                   '    overflow: visible !important;',
   	             f'    border-left: 0px solid {bg_col} !important;', # remove borders in header
   	             f'    border-top: 2px solid {txt_col} !important;',
   	             f'    border-bottom: 0px solid {bg_col} !important;',
   	             f'    border-right: 0px solid {bg_col} !important;',
                   '    }',
-                  '  .bk-root .slick-header-column.ui-state-default {',
+                  '  .slick-header-column.ui-state-default {',
   	             f'    border-left: 0px solid {bg_col} !important;',
   	             f'    border-top: 0px solid {txt_col} !important;',
   	             f'    border-bottom: 1px solid {txt_col} !important;', # set bottom rule in header
   	             f'    border-right: 0px solid {bg_col} !important;',
                   '    }',
-                  '  .bk-root .slick-cell, .bk-root .slick-headerrow-column, .bk-root .slick-footerrow-column {',
+                  '  .bk {',
+                 f'    font-size: {ft_w} !important;', 
+                 f'    font-family: {ft} !important;',
+                  '    }',
+                  '  .slick-cell, .slick-headerrow-column, .slick-footerrow-column {',
   	             f'    border-right: 0px solid {txt_col} !important;', # remove vertical borders
   	             f'    border-left: 0px solid {txt_col} !important;',
                   '    }',
@@ -125,11 +151,12 @@ for path in paths:
                   '    width: 8px;',
                   '    }',
                   '  body {',
-                  '    font-family: "Noto Sans", sans-serif;',   # font
+#                  '    font-family: "Noto Sans", sans-serif;',   # font body
                   '    -webkit-font-smoothing: antialiased;',
                   '    text-rendering: optimizeLegibility;',
-                 f'    color: {txt_col};',                      # text color
-                 f'    background: {bg_col};',                  # background color
+                 f'    color: {txt_col};',                      # text color body
+                 f'    font-size: {ft_f};',                     # font size body
+                 f'    background: {bg_col};',                  # background color body
                   '    }',
                   '  ::-webkit-scrollbar-track {',          # scrollbar background
                  f'    background: {bg_col}',

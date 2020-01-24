@@ -15,21 +15,24 @@
   a:active {
     color: green;
     }
-  @import url(https://fonts.googleapis.com/css?family=Noto+Sans);
-  .bk-root .slick-header-columns, .bk-root .slick-headerrow-columns, .bk-root .slick-footerrow-columns {
+  .slick-header-columns, .slick-headerrow-columns, .slick-footerrow-columns {
     overflow: visible !important;
     border-left: 0px solid #2F2F2F !important;
     border-top: 2px solid white !important;
     border-bottom: 0px solid #2F2F2F !important;
     border-right: 0px solid #2F2F2F !important;
     }
-  .bk-root .slick-header-column.ui-state-default {
+  .slick-header-column.ui-state-default {
     border-left: 0px solid #2F2F2F !important;
     border-top: 0px solid white !important;
     border-bottom: 1px solid white !important;
     border-right: 0px solid #2F2F2F !important;
     }
-  .bk-root .slick-cell, .bk-root .slick-headerrow-column, .bk-root .slick-footerrow-column {
+  .bk {
+    font-size: 12pt !important;
+    font-family: Times !important;
+    }
+  .slick-cell, .slick-headerrow-column, .slick-footerrow-column {
     border-right: 0px solid white !important;
     border-left: 0px solid white !important;
     }
@@ -55,10 +58,10 @@
     width: 8px;
     }
   body {
-    font-family: "Noto Sans", sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     color: white;
+    font-size: 12pt;
     background: #2F2F2F;
     }
   ::-webkit-scrollbar-track {
