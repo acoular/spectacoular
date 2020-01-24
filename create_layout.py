@@ -47,8 +47,6 @@ for path in paths:
                   f'        text_color: "{txt_col}"',
                   f'    Widget:',
                   f'        background: "{bg_col}"',
-                  f'    Title:',
-                  f'        text_color: "{txt_col}"',
                   f'    Label:',
                   f'        background_fill_color: "{bg_col}"',
                   f'        text_color: "{txt_col}"',
