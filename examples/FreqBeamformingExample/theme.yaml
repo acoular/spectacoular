@@ -19,8 +19,6 @@ attrs:
         text_color: "white"
     Widget:
         background: "#2F2F2F"
-    Title:
-        text_color: "white"
     Label:
         background_fill_color: "#2F2F2F"
         text_color: "white"

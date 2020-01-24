@@ -19,8 +19,8 @@ sel_col = 'darkred'
 link_col = ['green', 'white']
 
 # read Acoular Logo:
-logo_height = 100
-logo_width = 500
+logo_height = 50
+logo_width = 50
 Ac_logo = open('Acoular_logo', 'r').read()
 for path in paths:
 ############### WRITE THEME.YAML AND INDEX.HTML #######
