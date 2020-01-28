@@ -1,7 +1,11 @@
 # ignore files and file types:
 *.pyc
 *.pyd
-*.h5
 
 # ignore directories:
 __pycache__/
+cache/
+td/
+
+bokeh/Measurement_App/static/two_sources_one_moving_10s.h5
+bokeh/Measurement_App/static/two_sources_one_moving_60s.h5
