@@ -339,9 +339,10 @@ def get_active_channels():
     return ch
 
 def get_numsamples():
-    if ti_msmtime.value:
+    if ti_msmtime.value == '-1' or  ti_msmtime.value == '':
+        return -1
+    else:
         return int(float(ti_msmtime.value)*inputSignalGen.sample_freq)
-
 
 # callback functions
 
@@ -493,26 +494,13 @@ def beamftoggle_handler(arg):
         print("bf thread finished")
         beamfEventThread.join()
         print("bf event thread finished")
-       
 
 beamf_toggle.on_click(beamftoggle_handler)
 
-def write_data(num):
-    ct = currentThread()
-    gen = wh5.result(num)
-    smax = get_numsamples()
-    if smax: # user provided samples
-        scount = 0
-        while getattr(ct, "do_run", True) and scount < smax:
-            yield next(gen)
-            scount += num
-    else: # run until the user stops
-        while getattr(ct, "do_run", True):
-            yield next(gen)
-
 def msmtoggle_handler(arg):
     global wh5_thread
-    if arg: # button is presampSplited 
+    if arg: # button is presampSplited
+        wh5.numsamples_write = get_numsamples()
         if checkbox_use_current_time.active == [0]: ti_savename.value = current_time()
         wh5_event = Event()
         wh5_consumer = EventThread(
@@ -521,14 +509,14 @@ def msmtoggle_handler(arg):
                 doc = doc,
                 event=wh5_event)
         wh5_thread = SamplesThread(
-                samplesGen=write_data(BLOCKSIZE),
+                samplesGen=wh5.result(BLOCKSIZE),
                 splitterObj=sampSplit,
                 splitterDestination=wh5,
                 event = wh5_event)
         wh5_thread.start()
         wh5_consumer.start()
     if not arg:
-        wh5_thread.do_run = False
+        wh5.writeflag = False
         wh5_thread.join()
     
 msm_toggle.on_click(msmtoggle_handler)
