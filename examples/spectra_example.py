@@ -10,8 +10,8 @@ from spectacoular import TimeSamples
 from six.moves import xrange  # solves the xrange/range issue for python2/3: in py3 'xrange' is now treated as 'range' and in py2 nothing changes
 
 from numpy import array, ones, hanning, hamming, bartlett, blackman, \
-dot, newaxis, zeros,  fft, fill_diagonal, arange
-
+dot, newaxis, zeros,  fft, fill_diagonal, arange, append, reshape
+import numpy as np
 from traits.api import  Int, Property, Trait, \
 Range, Bool, cached_property, property_depends_on, Delegate, CArray, Float
 
@@ -77,8 +77,10 @@ sp = SpectraInOut(source=ts)
 
 result = sp.result(num=256) # result is a generator!
 
-res = next(result) # yields first spectra Block for all 56 channels
+# res = next(result) # yields first spectra Block for all 56 channels
 
-# get all spectra blocks  
+# get all spectra blocks 
+r = []
 for res in result:
-    r = res
+    r.append(res)
+r_mean = list(np.abs(np.mean(np.array(r).transpose((0,2,1)),axis=0)))
