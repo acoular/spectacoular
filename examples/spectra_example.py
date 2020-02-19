@@ -83,20 +83,7 @@ class SpectraInOut( TimeInOut ):
         for temp in self.source.result(self.block_size):    
             wind = self.window_(self.block_size)
             wind = wind[:, newaxis]
-            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)/self.block_size
+            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)*(2/self.block_size)
             yield ft
-    
 
 
-# ts = TimeSamples(name='example_data.h5')
-# sp = SpectraInOut(source=ts)
-
-# result = sp.result() # result is a generator!
-
-# # res = next(result) # yields first spectra Block for all 56 channels
-
-# # get all spectra blocks 
-# r = []
-# for res in result:
-#     r.append(res)
-# r_mean = list(np.abs(np.mean(np.array(r).transpose((0,2,1)),axis=0)))

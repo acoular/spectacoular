@@ -55,6 +55,7 @@ def print_devices():
 queryButton.on_click(print_devices)
 
 def get_spectra():
+    sp.block_size = int(blkWidget.value)
     freq = sp.fftfreq()  
     result = sp.result() # result is a generator!    
     res = next(result) # yields first spectra Block for all 56 channels 
@@ -70,6 +71,8 @@ def get_spectra():
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tvWidgets = tv.get_widgets()
+blkWidget = Select(title="Block Size", value="256", 
+                   options=["128", "256", "512"])
 tv.set_widgets(**{'channels': msWidget})
 playback.set_widgets(**{'channels': msWidget})
 
@@ -108,7 +111,7 @@ def server_doc(doc):
     plotTab = Tabs(tabs=[tsTab, fdTab])
     #create layout
     tsWidgetsCol = widgetbox(applyButton,*tsWidgets.values(),width=400)
-    pbWidgetCol = widgetbox(playButton,row(inputDevice,outputDevice,width=400),
+    pbWidgetCol = widgetbox(playButton,blkWidget, row(inputDevice,outputDevice,width=400),
                             queryButton,queryOutput,width=400)
     allWidgetsLayout = column(msWidget,row(tsWidgetsCol,pbWidgetCol))
     doc.add_root(row(plotTab,allWidgetsLayout))
