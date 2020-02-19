@@ -80,7 +80,10 @@ class SpectraInOut( TimeInOut ):
         Samples in blocks of shape (numfreq, :attr:`numchannels`). 
             The last block may be shorter than num.
             """
-        for temp in self.source.result(self.block_size):    
+        for temp in self.source.result(self.block_size):
+            if np.shape(temp)[0] < self.block_size:
+                z2pad = self.block_size - np.shape(temp)[0] 
+                temp  = np.pad(temp, [(0,z2pad),(0,0)], mode='constant', constant_values=0)
             wind = self.window_(self.block_size)
             wind = wind[:, newaxis]
             ft = fft.rfft(temp*wind, None, 0).astype(self.precision)*(2/self.block_size)
