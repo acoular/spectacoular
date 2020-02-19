@@ -18,11 +18,12 @@ import sounddevice as sd
 from acoular.sources import SamplesGenerator
 from acoular.tprocess import TimeInOut
 from spectra_example import SpectraInOut
-from numpy import mean, abs, shape, linspace, array, transpose
+from numpy import mean, conj, real, array
 
 # build processing chain
-ts = MaskedTimeSamples(name='example_data.h5')
-tv = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
+ts       = MaskedTimeSamples(name='example_data.h5')
+tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
+sp       = SpectraInOut(source=ts)
 playback = TimeSamplesPlayback(source=ts)
 freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0]))
 
@@ -54,18 +55,17 @@ def print_devices():
 queryButton.on_click(print_devices)
 
 def get_spectra():
-    ts = TimeSamples(name='example_data.h5')
-    sp = SpectraInOut(source=ts)    
+    freq = sp.fftfreq()  
     result = sp.result(num=256) # result is a generator!    
-    res = next(result) # yields first spectra Block for all 56 channels    
+    res = next(result) # yields first spectra Block for all 56 channels 
     # get all spectra blocks  
-    r, freqs = [], []
+    r = []
     for res in result:
         r.append(res)
-    r_mean = list(abs(mean(array(r).transpose((0,2,1)),axis=0)))
-    for n in range(shape(r_mean)[0]):
-        freqs.append(linspace(0,shape(res)[0]-1,num=shape(res)[0]))
-    freqdata.data.update(amp=r_mean, freqs=freqs)
+    r_mean = list(mean(real(array(r).transpose((0,2,1)) * 
+                       conj(array(r).transpose((0,2,1)))),axis=0))
+    r_sel  = r_mean[int(msWidget.value)]
+    freqdata.data.update(amp=r_sel, freqs=freq)
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -101,7 +101,7 @@ def server_doc(doc):
     tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
     # FrequencySignalPlot
     freqplot = figure(title="Mean Spectral Data", plot_width=1000, plot_height=800)
-    freqplot.multi_line('freqs', 'amp', source=freqdata)
+    freqplot.line('freqs', 'amp', source=freqdata)
     # Put in Tabs
     tsTab = Panel(child=tsPlot, title='Time Data')
     fdTab = Panel(child=freqplot, title='Frequency Data')

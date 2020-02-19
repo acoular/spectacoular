@@ -66,10 +66,21 @@ class SpectraInOut( TimeInOut ):
         for temp in self.source.result(num):    
             wind = self.window_(num)
             wind = wind[:, newaxis]
-            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)
+            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)/num
             yield ft
     
-
+    def fftfreq ( self ):
+        """
+        Return the Discrete Fourier Transform sample frequencies.
+        
+        Returns
+        -------
+        f : ndarray
+            Array of length *block_size/2+1* containing the sample frequencies.
+        """
+        block_size = 256
+        return abs(fft.fftfreq(block_size, 1./self.source.sample_freq)\
+                    [:int(block_size/2+1)])
 
 
 ts = TimeSamples(name='example_data.h5')
