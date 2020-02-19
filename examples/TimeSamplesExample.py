@@ -18,6 +18,7 @@ import sounddevice as sd
 from acoular.sources import SamplesGenerator
 from acoular.tprocess import TimeInOut
 from spectra_example import SpectraInOut
+from acoular import L_p
 from numpy import mean, conj, real, array
 
 # build processing chain
@@ -65,14 +66,14 @@ def get_spectra():
         r.append(res)
     r_mean = list(mean(real(array(r).transpose((0,2,1)) * 
                        conj(array(r).transpose((0,2,1)))),axis=0))
-    r_sel  = r_mean[int(msWidget.value)]
+    r_sel  = L_p(r_mean[int(msWidget.value)])
     freqdata.data.update(amp=r_sel, freqs=freq)
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tvWidgets = tv.get_widgets()
 blkWidget = Select(title="Block Size", value="256", 
-                   options=["128", "256", "512"])
+                   options=["128","256","512","1024","2048","4096","8192"])
 tv.set_widgets(**{'channels': msWidget})
 playback.set_widgets(**{'channels': msWidget})
 
@@ -100,10 +101,22 @@ playButton.on_click(playButton_handler)
 
 def server_doc(doc):
     # TimeSignalPlot
-    tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800)
+    tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800,
+                    x_axis_label="Time Samples", y_axis_label="p in Pa")
+    tsPlot.xaxis.axis_label_text_font_style = "normal"
+    tsPlot.yaxis.axis_label_text_font_style = "normal"
     tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
     # FrequencySignalPlot
-    freqplot = figure(title="Mean Spectral Data", plot_width=1000, plot_height=800)
+    f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
+    f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 20000: '20'}
+    freqplot = figure(title="Spectral Data", plot_width=1000, plot_height=800,
+                      x_axis_type="log", x_axis_label="f in kHz", y_axis_label="L_p in dB_SPL")
+    freqplot.xaxis.axis_label_text_font_style = "normal"
+    freqplot.yaxis.axis_label_text_font_style = "normal"
+    freqplot.xgrid.minor_grid_line_color = 'navy'
+    freqplot.xgrid.minor_grid_line_alpha = 0.05
+    freqplot.xaxis.ticker = f_ticks
+    freqplot.xaxis.major_label_overrides = f_ticks_override
     freqplot.line('freqs', 'amp', source=freqdata)
     # Put in Tabs
     tsTab = Panel(child=tsPlot, title='Time Data')
