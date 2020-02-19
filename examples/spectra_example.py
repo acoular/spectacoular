@@ -42,13 +42,30 @@ class SpectraInOut( TimeInOut ):
         'Blackman':blackman}, 
         desc="type of window for FFT")
     
+    #: FFT block size, one of: 128, 256, 512, 1024, 2048 ... 65536,
+    #: defaults to 1024.
+    block_size = Trait(1024, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536,
+        desc="number of samples per FFT block")
+
     #: The floating-number-precision of entries of csm, eigenvalues and 
     #: eigenvectors, corresponding to numpy dtypes. Default is 64 bit.
     precision = Trait('complex128', 'complex64', 
                       desc="precision csm, eva, eve")
     
+    def fftfreq ( self ):
+        """
+        Return the Discrete Fourier Transform sample frequencies.
+        
+        Returns
+        -------
+        f : ndarray
+            Array of length *block_size/2+1* containing the sample frequencies.
+        """
+        return abs(fft.fftfreq(self.block_size, 1./self.source.sample_freq)\
+                    [:int(self.block_size/2+1)])
+
     #generator that yields the fft for every channel
-    def result(self, num=128):
+    def result(self):
         """ 
         Python generator that yields the output block-wise.
         
@@ -63,35 +80,23 @@ class SpectraInOut( TimeInOut ):
         Samples in blocks of shape (numfreq, :attr:`numchannels`). 
             The last block may be shorter than num.
             """
-        for temp in self.source.result(num):    
-            wind = self.window_(num)
+        for temp in self.source.result(self.block_size):    
+            wind = self.window_(self.block_size)
             wind = wind[:, newaxis]
-            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)/num
+            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)/self.block_size
             yield ft
     
-    def fftfreq ( self ):
-        """
-        Return the Discrete Fourier Transform sample frequencies.
-        
-        Returns
-        -------
-        f : ndarray
-            Array of length *block_size/2+1* containing the sample frequencies.
-        """
-        block_size = 256
-        return abs(fft.fftfreq(block_size, 1./self.source.sample_freq)\
-                    [:int(block_size/2+1)])
 
 
-ts = TimeSamples(name='example_data.h5')
-sp = SpectraInOut(source=ts)
+# ts = TimeSamples(name='example_data.h5')
+# sp = SpectraInOut(source=ts)
 
-result = sp.result(num=256) # result is a generator!
+# result = sp.result() # result is a generator!
 
-# res = next(result) # yields first spectra Block for all 56 channels
+# # res = next(result) # yields first spectra Block for all 56 channels
 
-# get all spectra blocks 
-r = []
-for res in result:
-    r.append(res)
-r_mean = list(np.abs(np.mean(np.array(r).transpose((0,2,1)),axis=0)))
+# # get all spectra blocks 
+# r = []
+# for res in result:
+#     r.append(res)
+# r_mean = list(np.abs(np.mean(np.array(r).transpose((0,2,1)),axis=0)))

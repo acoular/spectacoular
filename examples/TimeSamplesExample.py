@@ -56,7 +56,7 @@ queryButton.on_click(print_devices)
 
 def get_spectra():
     freq = sp.fftfreq()  
-    result = sp.result(num=256) # result is a generator!    
+    result = sp.result() # result is a generator!    
     res = next(result) # yields first spectra Block for all 56 channels 
     # get all spectra blocks  
     r = []
