@@ -7,17 +7,15 @@
 Example how to plot TimeData
 """
 from bokeh.layouts import column, row, widgetbox
-from bokeh.events import MouseLeave
+# from bokeh.events import MouseLeave
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText, Tabs, Panel
 from bokeh.plotting import figure
 from bokeh.server.server import Server
-from spectacoular import MaskedTimeSamples, TimeSamplesPresenter,TimeSamplesPlayback, TimeSamples
+from spectacoular import MaskedTimeSamples, TimeSamplesPresenter,\
+    TimeSamplesPlayback, SpectraInOut
 import sounddevice as sd
 # from acoular.internal import digest
-from acoular.sources import SamplesGenerator
-from acoular.tprocess import TimeInOut
-from spectra_example import SpectraInOut
 from acoular import L_p
 from numpy import mean, conj, real, array
 
@@ -34,7 +32,7 @@ msWidget = Select(title="Select Channel:", value="0",
 # button widget to playback the selected time data
 playButton = Toggle(label="Playback Time Data", button_type="success")
 # create Button to trigger plot
-applyButton = Toggle(label="Plot Time Data",button_type="success")
+applyButton = Toggle(label="Plot Data",button_type="success")
 # Input Device Textfield
 inputDevice = TextInput(title="Input Device Index", value=str(playback.device[0]))
 # Output Device Textfield
@@ -56,7 +54,7 @@ def print_devices():
 queryButton.on_click(print_devices)
 
 def get_spectra():
-    sp.block_size = int(blkWidget.value)
+    # sp.block_size = int(blkWidget.value)
     freq = sp.fftfreq()  
     result = sp.result() # result is a generator!    
     res = next(result) # yields first spectra Block for all 56 channels 
@@ -72,8 +70,7 @@ def get_spectra():
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tvWidgets = tv.get_widgets()
-blkWidget = Select(title="Block Size", value="256", 
-                   options=["128","256","512","1024","2048","4096","8192"])
+spWidgets = sp.get_widgets()
 tv.set_widgets(**{'channels': msWidget})
 playback.set_widgets(**{'channels': msWidget})
 
@@ -83,9 +80,9 @@ def plot(arg):
         tv.update()
         get_spectra()
         applyButton.active = False
-        applyButton.label = 'Plot Time Data'
+        applyButton.label = 'Plot Data'
     if not arg:
-        applyButton.label = 'Plot Time Data'
+        applyButton.label = 'Plot Data'
 applyButton.on_click(plot)
 
 def change_selectable_channels():
@@ -102,15 +99,18 @@ playButton.on_click(playButton_handler)
 def server_doc(doc):
     # TimeSignalPlot
     tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800,
-                    x_axis_label="Time Samples", y_axis_label="p in Pa")
+                    x_axis_label="sample index", y_axis_label="p [Pa]")
     tsPlot.xaxis.axis_label_text_font_style = "normal"
     tsPlot.yaxis.axis_label_text_font_style = "normal"
     tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
     # FrequencySignalPlot
     f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
-    f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 20000: '20'}
-    freqplot = figure(title="Spectral Data", plot_width=1000, plot_height=800,
-                      x_axis_type="log", x_axis_label="f in kHz", y_axis_label="L_p in dB_SPL")
+    f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
+                        500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
+                        20000: '20'}
+    freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
+                      x_axis_type="log", x_axis_label="f in kHz", 
+                      y_axis_label="|P(f)|^2 / dB")
     freqplot.xaxis.axis_label_text_font_style = "normal"
     freqplot.yaxis.axis_label_text_font_style = "normal"
     freqplot.xgrid.minor_grid_line_color = 'navy'
@@ -124,7 +124,8 @@ def server_doc(doc):
     plotTab = Tabs(tabs=[tsTab, fdTab])
     #create layout
     tsWidgetsCol = widgetbox(applyButton,*tsWidgets.values(),width=400)
-    pbWidgetCol = widgetbox(playButton,blkWidget, row(inputDevice,outputDevice,width=400),
+    pbWidgetCol = widgetbox(playButton,spWidgets['window'],spWidgets['block_size'],
+                            row(inputDevice,outputDevice,width=400),
                             queryButton,queryOutput,width=400)
     allWidgetsLayout = column(msWidget,row(tsWidgetsCol,pbWidgetCol))
     doc.add_root(row(plotTab,allWidgetsLayout))

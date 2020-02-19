@@ -186,7 +186,6 @@ class TimeSamplesPlayback(TimeInOut,BaseSpectacoular):
 columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
 
-class CalibHelper(TimeInOut, BaseSpectacoular):
     
     '''
     Only in chain with TimeAverage!
@@ -323,3 +322,5 @@ class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
             zi = zeros((max(len(a), len(b))-1, self.source.numchannels))
             block, zi = lfilter(b, a, block, axis=0, zi=zi)
             yield block
+
+class CalibHelper(TimeInOut, BaseSpectacoular):
