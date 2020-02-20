@@ -116,8 +116,8 @@ freqplot = figure(title="Spectral Data", plot_width=1000, plot_height=800,
                   x_axis_type="log", x_axis_label="f in kHz", y_axis_label="L_p in dB_SPL")
 freqplot.xaxis.axis_label_text_font_style = "normal"
 freqplot.yaxis.axis_label_text_font_style = "normal"
-freqplot.xgrid.minor_grid_line_color = 'navy'
-freqplot.xgrid.minor_grid_line_alpha = 0.05
+freqplot.xgrid.minor_grid_line_color = 'grey'
+freqplot.xgrid.minor_grid_line_alpha = 0.3
 freqplot.xaxis.ticker = f_ticks
 freqplot.xaxis.major_label_overrides = f_ticks_override
 freqplot.line('freqs', 'amp', source=freqdata, line_color="lime")
