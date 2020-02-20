@@ -57,7 +57,6 @@ def get_spectra():
     # sp.block_size = int(blkWidget.value)
     freq = sp.fftfreq()  
     result = sp.result() # result is a generator!    
-    res = next(result) # yields first spectra Block for all 56 channels 
     # get all spectra blocks  
     r = []
     for res in result:
