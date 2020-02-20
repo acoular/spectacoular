@@ -18,7 +18,7 @@ from spectacoular import MaskedTimeSamples, TimeSamplesPresenter,TimeSamplesPlay
 import sounddevice as sd
 # from spectra_example import SpectraInOut
 from acoular import L_p
-from numpy import mean, conj, real, array
+from numpy import mean, conj, real, array, log10, logspace, append, sort
 
 
 
@@ -66,6 +66,27 @@ spWidgets = sp.get_widgets()
 tv.set_widgets(**{'channels': msWidget})
 playback.set_widgets(**{'channels': msWidget})
 
+# THIS FUNCTION GENERATES THE TICKS (TO MOVE)
+def get_logticks(frange=[100, 10000], minor_ticks=[5,2,7,8], unit='kHz'):
+    scales = int(log10(frange[1]))-int(log10(frange[0]))+1
+    # start with major ticks
+    ticks = logspace(int(log10(frange[0])),int(log10(frange[1])), num=scales)
+    for n in minor_ticks:
+        ticks = append(ticks, ticks[:scales]*n)
+        ticks = ticks[frange[0]<=ticks] # lower bound
+        ticks = ticks[ticks<=frange[1]] # upper bound
+    ticks = list(sort(ticks))
+    # if unit =='kHz':
+    #     d = 1000
+    # else:
+    #     d = 1
+    # override = dict()
+    # for tick in ticks:
+    #     override.update(tick = str(tick/d))
+    return ticks
+        
+    
+
 def get_spectra():
     freq = sp.fftfreq()  
     result = sp.result() # result is a generator!    
@@ -83,6 +104,7 @@ def plot(arg):
         applyButton.label = 'Plotting ...'
         tv.update()
         get_spectra()
+        get_logticks()
         applyButton.active = False
         applyButton.label = 'Plot Data'
     if not arg:
@@ -108,16 +130,16 @@ tsPlot.xaxis.axis_label_text_font_style = "normal"
 tsPlot.yaxis.axis_label_text_font_style = "normal"
 tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 # FrequencySignalPlot
-f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
-f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 20000: '20'}
+# f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
+# f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 20000: '20'}
 freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
-                  x_axis_type="log", x_axis_label="f in kHz", y_axis_label="|P(f)|^2 / dB")
+                  x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB")
 freqplot.xaxis.axis_label_text_font_style = "normal"
 freqplot.yaxis.axis_label_text_font_style = "normal"
 freqplot.xgrid.minor_grid_line_color = 'grey'
 freqplot.xgrid.minor_grid_line_alpha = 0.3
-freqplot.xaxis.ticker = f_ticks
-freqplot.xaxis.major_label_overrides = f_ticks_override
+freqplot.xaxis.ticker = get_logticks([10, 30000], minor_ticks=[5,2,8])
+# freqplot.xaxis.major_label_overrides = f_ticks_override
 freqplot.line('freqs', 'amp', source=freqdata, line_color="lime")
 # Put in Tabs
 tsTab = Panel(child=tsPlot, title='Time Data')
