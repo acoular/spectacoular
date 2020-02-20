@@ -67,7 +67,6 @@ tv.set_widgets(**{'channels': msWidget})
 playback.set_widgets(**{'channels': msWidget})
 
 def get_spectra():
-    # sp.block_size = int(blkWidget.value)
     freq = sp.fftfreq()  
     result = sp.result() # result is a generator!    
     res = next(result) # yields first spectra Block for all 56 channels 
@@ -103,7 +102,8 @@ def playButton_handler(arg):
 playButton.on_click(playButton_handler)
 
 # TimeSignalPlot
-tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800)
+tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800,
+                x_axis_label="sample index", y_axis_label="p [Pa]")
 tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 tsPlot.xaxis.axis_label_text_font_style = "normal"
 tsPlot.yaxis.axis_label_text_font_style = "normal"
@@ -111,8 +111,8 @@ tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 # FrequencySignalPlot
 f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 20000: '20'}
-freqplot = figure(title="Spectral Data", plot_width=1000, plot_height=800,
-                  x_axis_type="log", x_axis_label="f in kHz", y_axis_label="L_p in dB_SPL")
+freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
+                  x_axis_type="log", x_axis_label="f in kHz", y_axis_label="|P(f)|^2 / dB")
 freqplot.xaxis.axis_label_text_font_style = "normal"
 freqplot.yaxis.axis_label_text_font_style = "normal"
 freqplot.xgrid.minor_grid_line_color = 'grey'
