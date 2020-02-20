@@ -166,9 +166,7 @@ select_micgeom = Select(title="Select MicGeom:", value=os.path.join(MGEOMPATH,mg
 micGeo.set_widgets(**{'from_file':select_micgeom})
 mgWidgets = micGeo.get_widgets()
 mgWidgets['from_file'] = select_micgeom
-
 calWidgets = ch.get_widgets()
-calcolumn = column(calWidgets['name'], calWidgets['magnitude'],calWidgets['delta'])
 # =============================================================================
 # bokeh
 # =============================================================================
@@ -207,16 +205,6 @@ wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
 #transpSlider = Slider(start=0, end=1, value=0.5, 
 #                    step=0.05, title="Transparency Slider")
                 
-# CalibTable
-CalValsCDS = ColumnDataSource(ch.calibdata)
-formatter = StringFormatter(text_color='black')
-calib_columns = [
-    TableColumn(field="calibvalue", title="Calibration Values",formatter=formatter),
-    TableColumn(field="magnitude", title="Calibration level",formatter=formatter),]
-calib_table = DataTable(source=CalValsCDS, columns=calib_columns, width=500,
-                        height=280,editable=True)
-# calib_table.header_row = False
-
 # checkboxes # inline=True -> arange horizontally, False-> vertically
 checkbox_micgeom = CheckboxGroup(labels=ch_names,
                                  active=[_ for _ in range(NUMCHANNELS)],
@@ -663,18 +651,20 @@ if DEVICE == 'tornado' or DEVICE == 'typhoon':
 
 # Tabs
 logTab = Panel(child=text_user_info, title="Log")
-channelsTab = Panel(child=column(select_all_channels_button,checkbox_micgeom,
-                                 width=400,height=400),title="Array Channels")
-calibrationTab = Panel(child=column(calib_table), title="Calibration")
-controlTabs = Tabs(tabs=[logTab,channelsTab,calibrationTab])
+calcolumn = column(calWidgets['name'], calWidgets['magnitude'],calWidgets['delta'],
+                   calWidgets['calibdata'])
+calibrationTab = Panel(child=row(calcolumn), title="Calibration")
+controlTabs = Tabs(tabs=[logTab])
 
 # Figure Tabs
-amplitudesTab = Panel(child=row(amp_fig,column(controlTabs,calcolumn)),
+amplitudesTab = Panel(child=row(amp_fig,column(controlTabs)),
                       title='Channel Levels')
 
 mgWidgetCol = column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
                      mgWidgets['num_mics'])
-micgeomTab = Panel(child=column(row(micgeom_fig,mgWidgetCol)),
+channelsCol = column(mgWidgetCol,select_all_channels_button,checkbox_micgeom,
+                                 width=300,height=400)
+micgeomTab = Panel(child=column(row(micgeom_fig,channelsCol)),
                    title='Microphone Geometry')
 
 
@@ -692,7 +682,7 @@ beamformTab = Panel(child=column(
                          ))
                         ),title='Beamforming')
             
-figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab],width=850)
+figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab,calibrationTab],width=850)
 
 dumdiv= Div(text='',width=21, height=13) # just for spacing
     

@@ -7,19 +7,22 @@ Created on Mon Feb  5 13:23:25 2018
 """
 
 from traits.api import Int, Instance, on_trait_change, Bool, Float, \
-Dict, File
+Dict, File, CArray
 from threading import Thread
-from numpy import shape,logical_and,savetxt,mean,array,newaxis,zeros
+from numpy import shape,logical_and,savetxt,mean,array,newaxis,zeros,append
 from datetime import datetime
 from time import time,sleep
 from scipy.signal import lfilter
-from bokeh.models.widgets import TextInput, DataTable
+from bokeh.models.widgets import TextInput, DataTable,TableColumn, NumberEditor
 
 # acoular imports
 from acoular import TimeInOut, TimeSamples,\
 L_p,TimeAverage,FiltFiltOctave, SampleSplitter
                      
 from spectacoular import BaseSpectacoular
+
+columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
+           TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
 
 class CalibHelper(TimeInOut, BaseSpectacoular):
     
@@ -38,8 +41,8 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
     magnitude = Float(114)
     
     # calib values of source channels
-    calibdata = Dict({'calibvalue':[],'magnitude':[]})
-    
+    calibdata = CArray()
+
     #: max elements/averaged blocks in buffer to calculate calib value. 
     buffer_size = Int(100)
 
@@ -51,7 +54,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
     
     trait_widget_mapper = {'name': TextInput,
                            'magnitude': TextInput,
-                           # 'calibdata' : DataTable,
+                            'calibdata' : DataTable,
                            'buffer_size' : TextInput,
                            'calibstd': TextInput,
                            'delta': TextInput,
@@ -59,27 +62,18 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 
     trait_widget_args = {'name': {'disabled':False},
                          'magnitude': {'disabled':False},
-                         # 'calibdata':  {'disabled':False},
+                          'calibdata':  {'editable':True,'columns':columns},
                          'buffer_size':  {'disabled':False},
                          'calibstd':  {'disabled':False},
-                         'delta':  {'disabled':False},
+                         'delta': {'disabled':False},
                          }
 
     @on_trait_change('numchannels')
     def adjust_calib_values(self):
-        diff = self.numchannels-len(self.calibdata['calibvalue'])
-        if not self.calibdata['calibvalue']: 
-            self.calibdata['magnitude'] = [0]*self.numchannels
-            self.calibdata['calibvalue'] = [0]*self.numchannels
-        elif diff > 0:
-            for i in range(diff):
-                self.calibdata['magnitude'].append(0) 
-                self.calibdata['calibvalue'].append(0) 
-        elif diff < 0:
-            for i in range(abs(diff)):
-                self.calibdata['magnitude'].pop()
-                self.calibdata['calibvalue'].pop() 
-            
+        diff = self.numchannels-self.calibdata.shape[0]
+        if self.calibdata.size == 0 or diff != 0:
+            self.calibdata = zeros((self.numchannels,2))
+
     def create_filename(self):
         if self.name == '':
             stamp = datetime.fromtimestamp(time()).strftime('%H:%M:%S')
@@ -87,7 +81,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 
     def save(self):
         self.create_filename()
-        savetxt(self.name,array(list(self.calibdata.values()), dtype=float),'%f')
+        savetxt(self.name,self.calibdata,'%f')
 
     def result(self, num):
         """
@@ -101,6 +95,8 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
         None.
 
         """
+        
+        self.adjust_calib_values()
         nc = self.numchannels
         buffer = zeros((self.buffer_size,nc))
         for temp in self.source.result(num):
@@ -113,9 +109,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
             if (calibmask.max() == nc) and (calibmask.sum() == nc):
                 idx = calibmask.argmax()
                 if buffer[:,idx].std() < self.calibstd:
-                    self.calibdata['calibvalue'].insert(idx,
-                                             mean(L_p(buffer[:,idx])))
-                    self.calibdata['magnitude'].insert(idx,self.magnitude)
+                    self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
             yield temp
                                              
             
