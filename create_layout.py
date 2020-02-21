@@ -55,7 +55,7 @@ for path in paths:
                   f'        minor_tick_line_color: "{txt_col}"',
                   f'        axis_label_text_font_size: "{ft_f}"',
                   f'        axis_label_text_font: "{ft}"',
-                  f'        axis_label_text_font_style: "normal"',
+                  f'        axis_label_text_font_style: "{ft_stl}"',
                   f'    Grid:',
                   f'        grid_line_dash: [6, 4]',
                   f'        grid_line_alpha: .3',
