@@ -556,6 +556,122 @@ trait_widget_args = {'naverage':  {'disabled':False},
 add_bokeh_attr(TimeAverage,trait_widget_mapper,trait_widget_args)
 
 
+
+from acoular import Trigger
+
+trait_widget_mapper = {'threshold' :TextInput,
+                       'trigger_type': Select,
+                       'max_variation_of_duration' : TextInput,
+                       'hunk_length' : TextInput,
+                       'multiple_peaks_in_hunk' : Select,
+#                       'indices' : DataTable,
+                       }
+
+trait_widget_args = {'threshold': {'disabled':False},
+                    'trigger_type': {'disabled':False},
+                     'max_variation_of_duration' : {'disabled':False},
+                     'hunk_length' : {'disabled':False},
+                     'multiple_peaks_in_hunk' :{'disabled':False},
+#                     'indices' : {'disabled':True},
+                     }
+
+
+add_bokeh_attr(Trigger,trait_widget_mapper,trait_widget_args)
+
+
+from acoular import AngleTracker
+
+
+trait_widget_mapper = {'trigger_per_revo' :TextInput,
+                       'rot_direction': TextInput,
+                       'interp_points' : TextInput,
+                       'start_angle' : TextInput,
+                       'average_rpm' : TextInput,
+#                       'indices' : DataTable,
+                       }
+
+trait_widget_args = {'trigger_per_revo': {'disabled':False},
+                    'rot_direction': {'disabled':False},
+                     'interp_points' : {'disabled':False},
+                     'start_angle' : {'disabled':False},
+                     'average_rpm' :{'disabled':True},
+#                     'indices' : {'disabled':True},
+                     }
+
+
+add_bokeh_attr(AngleTracker,trait_widget_mapper,trait_widget_args)
+
+
+
+
+from acoular import SpatialInterpolator
+
+trait_widget_mapper = {'method' :Select,
+                        'array_dimension': Select,
+                       'sample_freq' : TextInput,
+                       'numchannels' : TextInput,
+                       'interp_at_zero' : Select,
+#                       'indices' : DataTable,
+                       }
+
+trait_widget_args = {'method': {'disabled':False},
+                    'array_dimension': {'disabled':False},
+                     'sample_freq' : {'disabled':True},
+                     'numchannels' : {'disabled':True},
+                     'interp_at_zero' :{'disabled':False},
+#                     'indices' : {'disabled':True},
+                     }
+
+add_bokeh_attr(SpatialInterpolator,trait_widget_mapper,trait_widget_args)
+
+
+
+from acoular import SpatialInterpolatorRotation
+
+trait_widget_mapper = {'method' :Select,
+                        'array_dimension': Select,
+                       'sample_freq' : TextInput,
+                       'numchannels' : TextInput,
+                       'interp_at_zero' : Select,
+#                       'indices' : DataTable,
+                       }
+
+trait_widget_args = {'method': {'disabled':False},
+                    'array_dimension': {'disabled':False},
+                     'sample_freq' : {'disabled':True},
+                     'numchannels' : {'disabled':True},
+                     'interp_at_zero' :{'disabled':False},
+#                     'indices' : {'disabled':True},
+                     }
+
+add_bokeh_attr(SpatialInterpolatorRotation,trait_widget_mapper,trait_widget_args)
+
+
+
+from acoular import SpatialInterpolatorConstantRotation
+
+trait_widget_mapper = {'method' :Select,
+                        'array_dimension': Select,
+                       'sample_freq' : TextInput,
+                       'numchannels' : TextInput,
+                       'interp_at_zero' : Select,
+                       'rotational_speed' : TextInput,
+                       }
+
+trait_widget_args = {'method': {'disabled':False},
+                    'array_dimension': {'disabled':False},
+                     'sample_freq' : {'disabled':True},
+                     'numchannels' : {'disabled':True},
+                     'interp_at_zero' :{'disabled':False},
+                     'rotational_speed' :{'disabled':False},
+#                     'indices' : {'disabled':True},
+                     }
+
+add_bokeh_attr(SpatialInterpolatorConstantRotation,trait_widget_mapper,trait_widget_args)
+
+
+
+
 from acoular import WriteH5
 
 trait_widget_mapper = {'name': TextInput,
