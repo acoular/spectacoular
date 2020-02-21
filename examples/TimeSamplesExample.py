@@ -9,7 +9,8 @@ Example how to plot TimeData
 from bokeh.layouts import column, row, widgetbox
 # from bokeh.events import MouseLeave
 from bokeh.models import ColumnDataSource
-from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText, Tabs, Panel
+from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText, \
+    Tabs, Panel, MultiSelect
 from bokeh.plotting import figure
 from bokeh.server.server import Server
 from spectacoular import MaskedTimeSamples, TimeSamplesPresenter,\
@@ -26,9 +27,13 @@ sp       = SpectraInOut(source=ts)
 playback = TimeSamplesPlayback(source=ts)
 freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0]))
 
+chidx = [str(i) for i in range(ts.numchannels)]
+
 # create widget to select the channel that should be plotted
-msWidget = Select(title="Select Channel:", value="0",
-                       options=[str(i) for i in range(ts.numchannels)])
+tselect = Select(title="Select Channel:", value="0",options=chidx)
+sselect = MultiSelect(title="Select Channel:", value=["0"],
+                               options=[(i,i) for i in chidx])
+
 # button widget to playback the selected time data
 playButton = Toggle(label="Playback Time Data", button_type="success")
 # create Button to trigger plot
@@ -63,31 +68,20 @@ def get_spectra():
         r.append(res)
     r_mean = list(mean(real(array(r).transpose((0,2,1)) * 
                        conj(array(r).transpose((0,2,1)))),axis=0))
-    r_sel  = L_p(r_mean[int(msWidget.value)])
+    r_sel  = L_p(r_mean[int(tselect.value)])
     freqdata.data.update(amp=r_sel, freqs=freq)
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tvWidgets = tv.get_widgets()
 spWidgets = sp.get_widgets()
-tv.set_widgets(**{'channels': msWidget})
-playback.set_widgets(**{'channels': msWidget})
-
-def plot(arg):
-    if arg:
-        applyButton.label = 'Plotting ...'
-        tv.update()
-        get_spectra()
-        applyButton.active = False
-        applyButton.label = 'Plot Data'
-    if not arg:
-        applyButton.label = 'Plot Data'
-applyButton.on_click(plot)
+tv.set_widgets(**{'channels': tselect})
+playback.set_widgets(**{'channels': tselect})
 
 def change_selectable_channels():
     channels = [str(idx) for idx in range(ts.numchannels)]
     channels.insert(0,"") # add no data field
-    msWidget.options = channels
+    tselect.options = channels
 ts.on_trait_change( change_selectable_channels, "numchannels")
 
 def playButton_handler(arg):
@@ -117,17 +111,36 @@ def server_doc(doc):
     freqplot.xaxis.ticker = f_ticks
     freqplot.xaxis.major_label_overrides = f_ticks_override
     freqplot.line('freqs', 'amp', source=freqdata)
-    # Put in Tabs
-    tsTab = Panel(child=tsPlot, title='Time Data')
-    fdTab = Panel(child=freqplot, title='Frequency Data')
-    plotTab = Tabs(tabs=[tsTab, fdTab])
+
     #create layout
-    tsWidgetsCol = widgetbox(applyButton,*tsWidgets.values(),width=400)
-    pbWidgetCol = widgetbox(playButton,spWidgets['window'],spWidgets['block_size'],
-                            row(inputDevice,outputDevice,width=400),
+    tsWidgetsCol = widgetbox(tselect,applyButton,*tsWidgets.values(),
+                             width=400)
+    spWidgetsCol = widgetbox(sselect,applyButton,spWidgets['window'],
+                             spWidgets['block_size'],
+                             width=400)
+    pbWidgetCol = widgetbox(playButton,inputDevice,outputDevice,
                             queryButton,queryOutput,width=400)
-    allWidgetsLayout = column(msWidget,row(tsWidgetsCol,pbWidgetCol))
-    doc.add_root(row(plotTab,allWidgetsLayout))
+
+    # Put in Tabs
+    tsTab = Panel(child=row(tsPlot,tsWidgetsCol,pbWidgetCol), title='Time Data')
+    fdTab = Panel(child=row(freqplot,spWidgetsCol), title='Frequency Data')
+    plotTab = Tabs(tabs=[tsTab, fdTab])
+    
+    def plot(arg):
+        if arg:
+            applyButton.label = 'Plotting ...'
+            if plotTab.active == 0: 
+                tv.update()
+            elif plotTab.active == 1:
+                get_spectra()
+            applyButton.active = False
+            applyButton.label = 'Plot Data'
+        if not arg:
+            applyButton.label = 'Plot Data'
+    applyButton.on_click(plot)
+
+    # add to doc
+    doc.add_root(plotTab)
 
 # Setting num_procs here means we can't touch the IOLoop before now, we must
 # let Server handle that. If you need to explicitly handle IOLoops then you
