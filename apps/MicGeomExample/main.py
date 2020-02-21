@@ -13,16 +13,16 @@ from bokeh.layouts import column, row,widgetbox
 from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider, StringFormatter, TableColumn, DataTable
 from bokeh.models import LogColorMapper, ColorBar, PointDrawTool
 from bokeh.plotting import figure
-from bokeh.palettes import viridis, Reds256
+from bokeh.palettes import Viridis256 
 from bokeh.server.server import Server
 from bokeh.themes import Theme
 from spectacoular import MicGeom, SteeringVector, RectGrid, PointSpreadFunction,\
 PointSpreadFunctionPresenter,set_calc_button_callback
 from pylab import ravel_multi_index, array
+PALETTE = Viridis256
 
 doc = curdoc()
 acoular.config.global_caching = 'none' # no result cachings
-PALETTE = Reds256
 
 # define selectable microphone geometries
 micgeofiles = path.join( path.split(acoular.__file__)[0],'xml')
@@ -31,7 +31,7 @@ options.append('')
 
 # build processing chain
 mg = MicGeom(from_file=options[0])
-rg = RectGrid(x_min=-0.5, x_max=0.5, y_min=-0.5, y_max=0.5, z=.5,increment=0.01)
+rg = RectGrid(x_min=-0.5, x_max=0.5, y_min=-0.5, y_max=0.5, z=.5,increment=0.02)
 st = SteeringVector(mics = mg, grid = rg)
 psf = PointSpreadFunction(steer=st,freq=1000.0)
 psfPresenter = PointSpreadFunctionPresenter(source=psf)
@@ -67,7 +67,8 @@ psfFreqSlider.on_change('value',psf_update) # change psf plot when frequency cha
 #MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', 
                 tools = 'pan,wheel_zoom,reset,lasso_select',
-                match_aspect=True,)
+                plot_width=600, plot_height=600)
+                #match_aspect=True,)
 micRenderer = mgPlot.circle_cross(x='x',y='y',size=10,fill_alpha=0.2,
                                   source=mgWidgets['mpos_tot'].source)
 drawtool = PointDrawTool(renderers=[micRenderer])
@@ -80,24 +81,27 @@ PSF_TOOLTIPS = [
     ("Level [dB]", "@psf"),
     ("(x,y)", "($x, $y)"),]
 psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
-                 tooltips=PSF_TOOLTIPS,match_aspect=True)
+                 tooltips=PSF_TOOLTIPS,
+                 plot_width=600, plot_height=600)
 psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
 cm = LogColorMapper(low=74, high=94,palette=PALETTE, low_color= '#2F2F2F')
 psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
              source=psfPresenter.cdsource, color_mapper=cm)
 psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="dB",\
-                            title_standoff=10,
+                            title_standoff=5,
                             background_fill_color = '#2F2F2F'),'right')
                     
 ### CREATE LAYOUT ### 
 # Tabs
-mgTab = Panel(child=column(*mgWidgets.values()),title='Microphone Geometry')
+mgTab = Panel(child=column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
+                           mgWidgets['num_mics'],mgWidgets['mpos_tot']),
+        title='Microphone Geometry')
 psfTab = Panel(child=column(*psfWidgets.values()),title='Point-Spread Function')
 gridTab = Panel(child=column(*rgWidgets.values()),title='Grid')
 stTab = Panel(child=column(*stWidgets.values()),title='Steering')
-ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab],width=500)
+ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab])
 
 # make Document
 doc.add_root(row(mgPlot,psfPlot,widgetbox(
-    calcButton,psfFreqSlider,ControlTabs,width=500)))
+    calcButton,psfFreqSlider,ControlTabs,width=600)))
 
