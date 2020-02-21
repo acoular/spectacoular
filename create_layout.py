@@ -24,6 +24,7 @@ ft_f       = '10pt' # font of figures
 ft_wt      = '14pt' # font of widgets and tables
 # Font
 ft         = "Helvetica" # bokeh default is "Helvetica"
+ft_stl     = "normal" # italic, bold
 
 if ft_for_all:
     ft_w = ft_f
@@ -54,10 +55,13 @@ for path in paths:
                   f'        minor_tick_line_color: "{txt_col}"',
                   f'        axis_label_text_font_size: "{ft_f}"',
                   f'        axis_label_text_font: "{ft}"',
+                  f'        axis_label_text_font_style: "normal"',
                   f'    Grid:',
                   f'        grid_line_dash: [6, 4]',
                   f'        grid_line_alpha: .3',
                   f'        grid_line_color: "{txt_col}"',
+                  f'        minor_grid_line_color: "{txt_col}"',
+                  f'        minor_grid_line_alpha: .1',
                   f'    Title:',
                   f'        background_fill_color: "{bg_col}"',
                   f'        text_color: "{txt_col}"',
