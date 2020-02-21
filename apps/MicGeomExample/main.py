@@ -13,7 +13,7 @@ from bokeh.layouts import column, row,widgetbox
 from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider, StringFormatter, TableColumn, DataTable
 from bokeh.models import LogColorMapper, ColorBar, PointDrawTool
 from bokeh.plotting import figure
-from bokeh.palettes import viridis
+from bokeh.palettes import viridis, Reds256
 from bokeh.server.server import Server
 from bokeh.themes import Theme
 from spectacoular import MicGeom, SteeringVector, RectGrid, PointSpreadFunction,\
@@ -22,7 +22,7 @@ from pylab import ravel_multi_index, array
 
 doc = curdoc()
 acoular.config.global_caching = 'none' # no result cachings
-PALETTE = viridis(100)
+PALETTE = Reds256
 
 # define selectable microphone geometries
 micgeofiles = path.join( path.split(acoular.__file__)[0],'xml')
@@ -78,15 +78,16 @@ mgPlot.toolbar.active_tap = drawtool
 # Tooltips for additional information
 PSF_TOOLTIPS = [
     ("Level [dB]", "@psf"),
-("(x,y)", "($x, $y)"),]
+    ("(x,y)", "($x, $y)"),]
 psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
                  tooltips=PSF_TOOLTIPS,match_aspect=True)
 psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
-cm = LogColorMapper(low=74, high=94,palette=PALETTE)
+cm = LogColorMapper(low=74, high=94,palette=PALETTE, low_color= '#2F2F2F')
 psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
              source=psfPresenter.cdsource, color_mapper=cm)
-psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Level [dB]",\
-                            title_standoff=10),'right')
+psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="dB",\
+                            title_standoff=10,
+                            background_fill_color = '#2F2F2F'),'right')
                     
 ### CREATE LAYOUT ### 
 # Tabs
