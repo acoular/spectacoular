@@ -43,7 +43,7 @@ selectBf = Select(title="Select Beamformer",
                   value="Beamformer Freq", options=["Beamformer Time","Beamformer Freq"])
 
 # Text
-text_user_info = PreText(text="", width=500, height=500)
+text_user_info = PreText(text="", width=300, height=500)
 
 # Range Slider 
 dynamicSlider = RangeSlider(start=30, end=110, 
@@ -76,15 +76,4 @@ buffer_bar.toolbar.logo = None
 buffer_bar.toolbar_location = None
 buffer_bar.axis.visible = None
 buffer_bar.grid.visible = None
-
-# Acoular Figure
-x_range = (0,.1) # could be anything - e.g.(0,1)
-y_range = (0,.1)
-aclogo = figure(x_range=x_range, y_range=y_range,plot_width=100, plot_height=100)
-aclogo.toolbar.logo = None
-aclogo.toolbar_location = None
-aclogo.axis.visible = None
-aclogo.grid.visible = None
-aclogo.outline_line_color = None
-aclogo.image_url(url=[IMPATH],x=x_range[0],y=y_range[1],w=x_range[1]-x_range[0],h=y_range[1]-y_range[0])
 

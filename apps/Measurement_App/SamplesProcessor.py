@@ -62,7 +62,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 
     trait_widget_args = {'name': {'disabled':False},
                          'magnitude': {'disabled':False},
-                          'calibdata':  {'editable':True,'columns':columns},
+                           'calibdata':  {'editable':True,'columns':columns},
                          'buffer_size':  {'disabled':False},
                          'calibstd':  {'disabled':False},
                          'delta': {'disabled':False},
@@ -100,16 +100,23 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
         nc = self.numchannels
         buffer = zeros((self.buffer_size,nc))
         for temp in self.source.result(num):
-            bufferidx = self.buffer_size-temp.shape[0]
+            ns = temp.shape[0]
+            bufferidx = self.buffer_size-ns
             buffer[0:bufferidx] = buffer[-bufferidx:]  # copy remaining samples in front of next block
-            buffer[-temp.shape[0]:,:] = L_p(temp)
+            buffer[-ns:,:] = L_p(temp)
             calibmask = logical_and(buffer > (self.magnitude-self.delta),
                                   buffer < (self.magnitude+self.delta)
                                   ).sum(0) 
+            # print(calibmask)
             if (calibmask.max() == nc) and (calibmask.sum() == nc):
                 idx = calibmask.argmax()
+                print(buffer[:,idx].std())
                 if buffer[:,idx].std() < self.calibstd:
-                    self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
+                    calibdata = self.calibdata.copy()
+                    calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
+                    # self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
+                    self.calibdata = calibdata
+                    print(self.calibdata[idx,:])
             yield temp
                                              
             

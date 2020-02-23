@@ -29,13 +29,13 @@ except:
     cam_enabled=False
 from datetime import datetime
 from time import time
-from threading import Event, currentThread
+from threading import Event
 from functools import partial
 from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
 from bokeh.models import ColumnDataSource,HoverTool, ColorBar
-from bokeh.models.widgets import PreText, Div, Select,TextInput,\
+from bokeh.models.widgets import PreText, Div, Select,TextInput,Button,\
 CheckboxGroup, DataTable, TableColumn,Tabs,Panel,StringFormatter, Slider
 from bokeh.layouts import column,row
 from bokeh.models.ranges import Range1d
@@ -53,7 +53,7 @@ from spectacoular import RectGrid, MicGeom
 
 #local imports
 from interfaces import get_interface
-from layout import MODE_COLORS, micgeom_fig,amp_fig,buffer_bar,aclogo,\
+from layout import MODE_COLORS, micgeom_fig,amp_fig,buffer_bar,\
 selectPerCallPeriod, checkbox_use_current_time, \
 select_setting, bfColorMapper,ampColorMapper, \
 settings_button,select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,\
@@ -131,7 +131,7 @@ timePowAvg = TimeAverage(source=timePow,naverage=BLOCKSIZE)
 fo_cal = FiltOctave(source=sampSplit,band=1000.0)
 tp_cal = TimePower(source=fo_cal)
 ta_cal = TimeAverage(source=tp_cal,naverage=BLOCKSIZE)          
-ch = CalibHelper(source = ta_cal)
+ch = CalibHelper(source = ta_cal,calibstd=8.0, magnitude=90, delta=5)
 
 # procesampSpliting rec Mode
 wh5 = WriteH5(source=sampSplit)
@@ -174,6 +174,10 @@ calWidgets = ch.get_widgets()
 # Text Inputs
 ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
 ti_savename = TextInput(value="", title="Filename:",disabled=True)
+
+# save calib button
+savecal = Button(label="save calibration",button_type="warning")
+savecal.on_click(lambda: ch.save())
 
 NUMCHANNELS = inputSignalGen.numchannels
 print(NUMCHANNELS, inputSignalGen.sample_freq)
@@ -507,14 +511,8 @@ def msmtoggle_handler(arg):
     
 msm_toggle.on_click(msmtoggle_handler)
 
-def calib_data(num):
-    ct = currentThread()
-    gen = ch.result(num)
-    while getattr(ct, "do_run", True):
-        yield next(gen)
-
 def calibtoggle_handler(arg):
-    global periodic_cal_callback, disp_threads # need to be global
+    global calib_thread,calibEventThread # need to be global
     if arg:
         # calib_table.editable = False
         # ch.iscalib = True
@@ -525,7 +523,7 @@ def calibtoggle_handler(arg):
                 doc = doc,
                 event=calibEvent)
         calib_thread = SamplesThread(
-                samplesGen=calib_data(1),
+                samplesGen= ch.result(1),
                 splitterObj= sampSplit,
                 splitterDestination=fo_cal,
                 event=calibEvent)
@@ -534,12 +532,14 @@ def calibtoggle_handler(arg):
         # periodic_cal_callback = doc.add_periodic_callback(
         #         periodic_update_calib_table,500)
     if not arg:
-        calib_thread.do_run = False
+        calib_thread.breakThread = True
+#        lastOut.isrunning = False
         calib_thread.join()
-    # if not arg:
-        # ch.iscalib = False
-        # calib_table.editable = True
-        # doc.remove_periodic_callback(periodic_cal_callback)
+        print("bf thread finished")
+        calibEventThread.join()
+        print("bf event thread finished")
+        # calib_thread.do_run = False
+        # calib_thread.join()
 
 calib_toggle.on_click(calibtoggle_handler)
 
@@ -651,14 +651,13 @@ if DEVICE == 'tornado' or DEVICE == 'typhoon':
 
 # Tabs
 logTab = Panel(child=text_user_info, title="Log")
-calcolumn = column(calWidgets['name'], calWidgets['magnitude'],calWidgets['delta'],
-                   calWidgets['calibdata'])
-calibrationTab = Panel(child=row(calcolumn), title="Calibration")
 controlTabs = Tabs(tabs=[logTab])
 
+calcolumn = column(savecal,calWidgets['name'], calWidgets['magnitude'],calWidgets['delta'],
+                    calWidgets['calibdata'])
 # Figure Tabs
-amplitudesTab = Panel(child=row(amp_fig,column(controlTabs)),
-                      title='Channel Levels')
+calibrationTab = Panel(child=row(calcolumn), title="Calibration")
+amplitudesTab = Panel(child=amp_fig,title='Channel Levels')
 
 mgWidgetCol = column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
                      mgWidgets['num_mics'])
@@ -684,10 +683,10 @@ beamformTab = Panel(child=column(
             
 figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab,calibrationTab],width=850)
 
-dumdiv= Div(text='',width=21, height=13) # just for spacing
+# dumdiv= Div(text='',width=21, height=13) # just for spacing
     
 if DEVICE == 'tornado' or DEVICE == 'typhoon':
-    left_column = column(aclogo,
+    left_column = column(
                          select_setting,
                          settings_button,
                          display_toggle,
@@ -699,10 +698,10 @@ if DEVICE == 'tornado' or DEVICE == 'typhoon':
                          beamf_toggle,
                          buffer_bar,
                          selectPerCallPeriod,
-                         )
+                         controlTabs)
     
 elif DEVICE == 'uma16' or DEVICE == 'phantom':
-    left_column = column(aclogo,
+    left_column = column(
                          display_toggle,
                          ti_savename,
                          checkbox_use_current_time,
@@ -711,17 +710,12 @@ elif DEVICE == 'uma16' or DEVICE == 'phantom':
                          calib_toggle,
                          beamf_toggle,
                          selectPerCallPeriod,
-                         )    
+                         controlTabs)    
     
 middle_column = column(figureTabs)
-                       
+# right_column = column(dumdiv)
 
-right_column = column(dumdiv)
-
-#row_group = row(middle_column,right_column)
-#column_group = column(row_group,controlTabs)
-#layout = row(left_column,column_group)
-layout = row(left_column,middle_column,right_column)
+layout = row(left_column,middle_column,)#right_column)
 
 doc.add_root(layout)
 doc.add_periodic_callback(periodic_update_log,500)
