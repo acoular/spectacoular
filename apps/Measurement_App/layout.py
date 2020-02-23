@@ -5,23 +5,21 @@ Created on Wed May 15 17:23:01 2019
 
 @author: kujawski
 """
-import numpy as np
-from bokeh.palettes import Spectral5
+from numpy import pi
+from bokeh.palettes import Spectral5, Viridis256
 from bokeh.plotting import figure
 from bokeh.models import LinearColorMapper, LogColorMapper
-from bokeh.models.widgets import Toggle,TextInput, Button, PreText,Select,RangeSlider,\
+from bokeh.models.widgets import Toggle, Button, PreText,Select,RangeSlider,\
 CheckboxGroup, Slider
-from bokeh.layouts import column,row
 
 COLOR = Spectral5
 MODE_COLORS = {'display':COLOR[0],'calib':COLOR[2],'msm':COLOR[3]}
-AMPFIG_ARGS = {'y_range': (0,140),'plot_width':800, 'plot_height':800} 
+AMPFIG_ARGS = {'y_range': (0,140),'plot_width':1200, 'plot_height':800} 
 MGEOMFIG_ARGS = {'plot_width':800,  'plot_height':800}
 BUFFBAR_ARGS = {'plot_width':280,  'plot_height':50}
-IMPATH = "Measurement_App/static/Acoular_logo_grey.png"
 
 # Color Mapper
-bfColorMapper = LogColorMapper(palette="Spectral11", low=70, high=90,low_color=(1,1,1,0))
+bfColorMapper = LogColorMapper(palette=Viridis256, low=70, high=90,low_color=(1,1,1,0))
 ampColorMapper = LinearColorMapper(palette=[COLOR[0],COLOR[0]], low=0.,high=180)
 
 # Buttons
@@ -29,18 +27,16 @@ settings_button = Button(label="load settings",disabled=False)
 select_all_channels_button = Button(label="select all channels")
 
 # Toggle Buttons 
-msm_toggle = Toggle(label="START MEASUREMENT", active=False,disabled=True,button_type="primary")
-display_toggle = Toggle(label="start display", active=False)
-calib_toggle = Toggle(label="start calibration", active=False,disabled=True)
-beamf_toggle = Toggle(label="start beamforming", active=False,disabled=True)
+msm_toggle = Toggle(label="START MEASUREMENT", active=False,disabled=True,button_type="danger")
+display_toggle = Toggle(label="start display", active=False,button_type="primary")
+calib_toggle = Toggle(label="start calibration", active=False,disabled=True,button_type="warning")
+beamf_toggle = Toggle(label="start beamforming", active=False,disabled=True,button_type="warning")
 
 
 
 # Select Widgets
 selectPerCallPeriod = Select(title="Select Update Period [ms]", value=str(50), options=["25","50","100", "200", "400","800"])
 select_setting = Select(title="Select Settings:", value="None")
-selectBf = Select(title="Select Beamformer", 
-                  value="Beamformer Freq", options=["Beamformer Time","Beamformer Freq"])
 
 # Text
 text_user_info = PreText(text="", width=300, height=500)
@@ -61,7 +57,7 @@ checkbox_autolevel_mode = CheckboxGroup(labels=["auto level mode"], active=[])
 # Amplitude Figure
 amp_fig = figure(title='SPL/dB',tools="",**AMPFIG_ARGS)
 amp_fig.xgrid.visible = False
-amp_fig.xaxis.major_label_orientation = np.pi/2
+amp_fig.xaxis.major_label_orientation = pi/2
 amp_fig.toolbar.logo=None
 
 # MicGeomFigure

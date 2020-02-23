@@ -1,15 +1,11 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
+#------------------------------------------------------------------------------
+# Copyright (c) 2007-2020, Acoular Development Team.
+#------------------------------------------------------------------------------
 """
-Created on Mon Apr  9 17:16:47 2018
-
-@author: adamkujawski
-
 app needs to be started by:
 bokeh serve --show Measurement_App --args --argName=argValue
-
-if sync order of pci cards should be specified use
-bokeh serve --show Measurement_App --args --device=typhoon --syncorder SerialNb1 SerialNb2 ...
 
 # Processing / Acoular
 #
@@ -18,8 +14,11 @@ bokeh serve --show Measurement_App --args --device=typhoon --syncorder SerialNb1
 # SamplesGenerator -> SampleSplitter |-> LastInOut -> BeamformerTime -> FiltOctave -> TimePower -> TimeAverage -> Beamforming
 #                                    |-> WriteH5   
 
-"""
+In case of SINUS Devices:
+if sync order of pci cards should be specified use
+bokeh serve --show Measurement_App --args --device=typhoon --syncorder SerialNb1 SerialNb2 ...
 
+"""
 import os
 import numpy as np 
 try:
@@ -34,23 +33,16 @@ from functools import partial
 from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
-from bokeh.models import ColumnDataSource,HoverTool, ColorBar
-from bokeh.models.widgets import PreText, Div, Select,TextInput,Button,\
-CheckboxGroup, DataTable, TableColumn,Tabs,Panel,StringFormatter, Slider
+from bokeh.models import ColumnDataSource, ColorBar
+from bokeh.models.widgets import Div, Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider
 from bokeh.layouts import column,row
 from bokeh.models.ranges import Range1d
-from bokeh.models.tickers import ContinuousTicker
-
 # acoular imports
 from acoular import TimePower, TimeAverage, L_p, MicGeom, \
-FiltOctave, SteeringVector, BeamformerTime,  SampleSplitter, \
-synthetic, BeamformerBase, BeamformerCleansc, BeamformerCMF, WriteH5
+FiltOctave, SteeringVector, BeamformerTime,  SampleSplitter, BeamformerBase, WriteH5
 from acoular_future import CSMInOut, BeamformerFreqTime
-from SamplesProcessor import SamplesThread,CalibHelper,\
-LastInOut,FiltOctaveLive, EventThread
-
-from spectacoular import RectGrid, MicGeom
-
+from SamplesProcessor import SamplesThread,EventThread,LastInOut
+from spectacoular import RectGrid,CalibHelper,FiltOctaveLive
 #local imports
 from interfaces import get_interface
 from layout import MODE_COLORS, micgeom_fig,amp_fig,buffer_bar,\
@@ -58,7 +50,7 @@ selectPerCallPeriod, checkbox_use_current_time, \
 select_setting, bfColorMapper,ampColorMapper, \
 settings_button,select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,\
 calib_toggle,text_user_info, dynamicSlider,checkbox_use_camera,  \
-selectBf, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider
+checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -119,23 +111,18 @@ elif DEVICE == 'tornado' or DEVICE == 'typhoon':
     grid = RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
 
 micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,mg_file))
-
 # Spplitting of incoming samples
 sampSplit = SampleSplitter(source = inputSignalGen, buffer_size=BUFFERSIZE)
-
 # ProcesampSpliting display Mode
 timePow = TimePower(source=sampSplit)
 timePowAvg = TimeAverage(source=timePow,naverage=BLOCKSIZE) 
-
 # ProcesampSpliting calib Mode
 fo_cal = FiltOctave(source=sampSplit,band=1000.0)
 tp_cal = TimePower(source=fo_cal)
 ta_cal = TimeAverage(source=tp_cal,naverage=BLOCKSIZE)          
-ch = CalibHelper(source = ta_cal,calibstd=8.0, magnitude=90, delta=5)
-
+ch = CalibHelper(source = ta_cal)
 # procesampSpliting rec Mode
 wh5 = WriteH5(source=sampSplit)
-
 # procesampSpliting beamforming Mode
 stVec = SteeringVector(grid=grid, mics=micGeo, steer_type = 'true location')
 lastOut = LastInOut(source=sampSplit)
@@ -167,6 +154,7 @@ micGeo.set_widgets(**{'from_file':select_micgeom})
 mgWidgets = micGeo.get_widgets()
 mgWidgets['from_file'] = select_micgeom
 calWidgets = ch.get_widgets()
+
 # =============================================================================
 # bokeh
 # =============================================================================
@@ -200,15 +188,14 @@ cameraCDS = ColumnDataSource({'image_data':[]})
 select_setting.options=["None"]+os.listdir(CONFPATH)
 #
 freqSlider = Slider(start=50, end=10000, value=CFREQ, 
-                    step=1, title="Frequency",disabled=True)
+                    step=1, title="Frequency",disabled=False)
+bfFilt.set_widgets(**{'band':freqSlider}) # 
+
 
 wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
                      step=0.0025, title="Time weighting (FAST: 0.125, SLOW: 1.0)",
                      disabled=True)
 
-#transpSlider = Slider(start=0, end=1, value=0.5, 
-#                    step=0.05, title="Transparency Slider")
-                
 # checkboxes # inline=True -> arange horizontally, False-> vertically
 checkbox_micgeom = CheckboxGroup(labels=ch_names,
                                  active=[_ for _ in range(NUMCHANNELS)],
@@ -347,18 +334,12 @@ dynamicSlider.on_change('value', dynamic_slider_callback)
 
 def freq_slider_callback(attr,old,new):
     f.center_freq = new
-    #f.ind_low  = int(BLOCKSIZE * new * 2**(-0.5/BANDWIDTH) / inputSignalGen.sample_freq)
-    #f.ind_high = int(BLOCKSIZE * new * 2**( 0.5/BANDWIDTH) / inputSignalGen.sample_freq)+1
-    bfFilt.band = new
 freqSlider.on_change('value',freq_slider_callback)
-
 
 def wtime_slider_callback(attr,old,new):
     f.weight_time = new
 
 wtimeSlider.on_change('value',wtime_slider_callback)
-
-
 
 def checkbox_paint_mode_callback(arg):
     if arg == []:
@@ -403,14 +384,6 @@ ti_savename.on_change("value", savename_callback)
 def select_setting_callback(attr, old, new):
     iniManager.from_file = os.path.join(CONFPATH,new)
 select_setting.on_change('value',select_setting_callback)
-
-# def calib_user_callback(attr, old, new):
-#     # function is only to read back user induced manipulation of calib values
-#     if calib_table.editable == True: 
-#         tab_vals = list(map(convert_table,new['calib']))
-#         if not tab_vals == ch.calib_value:
-#             ch.calib_value = tab_vals
-# CalValsCDS.on_change("data",calib_user_callback)
 
 def mode_log_callback(mode,isSet):
     to_txt_buffer(log_text_toggles[(mode,isSet)])
@@ -463,7 +436,7 @@ display_toggle.on_click(displaytoggle_handler)
 def beamftoggle_handler(arg):
     global bf_thread,beamfEventThread # need to be global
     if arg:
-#        lastOut.isrunning = True
+        figureTabs.active = 2 # jump to beamformer window
         beamfEvent = Event()
         beamfEventThread = EventThread(
                 post_callback=partial(change_mode,beamf_toggle,'beamf',False),
@@ -479,7 +452,6 @@ def beamftoggle_handler(arg):
         beamfEventThread.start()
     if not arg:
         bf_thread.breakThread = True
-#        lastOut.isrunning = False
         bf_thread.join()
         print("bf thread finished")
         beamfEventThread.join()
@@ -514,8 +486,6 @@ msm_toggle.on_click(msmtoggle_handler)
 def calibtoggle_handler(arg):
     global calib_thread,calibEventThread # need to be global
     if arg:
-        # calib_table.editable = False
-        # ch.iscalib = True
         calibEvent = Event()
         calibEventThread = EventThread(
                 post_callback=partial(change_mode,calib_toggle,'calib',False),
@@ -529,17 +499,12 @@ def calibtoggle_handler(arg):
                 event=calibEvent)
         calib_thread.start()
         calibEventThread.start()
-        # periodic_cal_callback = doc.add_periodic_callback(
-        #         periodic_update_calib_table,500)
     if not arg:
         calib_thread.breakThread = True
-#        lastOut.isrunning = False
         calib_thread.join()
-        print("bf thread finished")
+        print("calib thread finished")
         calibEventThread.join()
-        print("bf event thread finished")
-        # calib_thread.do_run = False
-        # calib_thread.join()
+        print("calib event thread finished")
 
 calib_toggle.on_click(calibtoggle_handler)
 
@@ -605,10 +570,6 @@ def update_app():
     if DEVICE == 'tornado' or DEVICE == 'typhoon':
         update_buffer_bar_plot()
 
-# def periodic_update_calib_table():
-#     # only when clibration is running
-#     CalValsCDS.data['calib'] = ch.calib_value
-
 def periodic_update_log():
     text_user_info.text = "\n".join(msg for msg in txt_buffer)
 
@@ -648,29 +609,28 @@ if DEVICE == 'tornado' or DEVICE == 'typhoon':
 # =============================================================================
 #  Set Up Bokeh Document Layout
 # =============================================================================
+emptyspace = Div(text='',width=20, height=1000) # just for horizontal spacing
+emptyspace1 = Div(text='',width=30, height=1000) # just for horizontal spacing
+emptyspace2 = Div(text='',width=250, height=30) # just for vertical spacing
+emptyspace3 = Div(text='',width=250, height=10) # just for vertical spacing
 
-# Tabs
-logTab = Panel(child=text_user_info, title="Log")
-controlTabs = Tabs(tabs=[logTab])
-
-calcolumn = column(savecal,calWidgets['name'], calWidgets['magnitude'],calWidgets['delta'],
-                    calWidgets['calibdata'])
-# Figure Tabs
-calibrationTab = Panel(child=row(calcolumn), title="Calibration")
-amplitudesTab = Panel(child=amp_fig,title='Channel Levels')
-
+# Columns
+calWidgets['calibdata'].height = 750
+calCol = row(calWidgets['calibdata'], emptyspace, column(
+                    savecal,calWidgets['name'], calWidgets['magnitude'],
+                    calWidgets['delta'],width=300,height=400))
 mgWidgetCol = column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
                      mgWidgets['num_mics'])
 channelsCol = column(mgWidgetCol,select_all_channels_button,checkbox_micgeom,
                                  width=300,height=400)
-micgeomTab = Panel(child=column(row(micgeom_fig,channelsCol)),
-                   title='Microphone Geometry')
-
-
 gridCol = column(*rgWidgets.values())
 
+# Tabs
+amplitudesTab = Panel(child=amp_fig,title='Channel Levels')
+micgeomTab = Panel(child=column(row(micgeom_fig,emptyspace1,channelsCol)),title='Microphone Geometry')
 beamformTab = Panel(child=column(
-                        row(beam_fig,gridCol,column(
+                        row(beam_fig,emptyspace1,gridCol,emptyspace,
+                        column(
                          freqSlider,
                          wtimeSlider,
                          dynamicSlider,
@@ -680,13 +640,13 @@ beamformTab = Panel(child=column(
                          checkbox_paint_mode
                          ))
                         ),title='Beamforming')
-            
+calibrationTab = Panel(child=calCol, title="Calibration")
 figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab,calibrationTab],width=850)
 
-# dumdiv= Div(text='',width=21, height=13) # just for spacing
-    
+logTab = Tabs(tabs=[Panel(child=text_user_info, title="Log")])
+
 if DEVICE == 'tornado' or DEVICE == 'typhoon':
-    left_column = column(
+    left_column = column(emptyspace2,
                          select_setting,
                          settings_button,
                          display_toggle,
@@ -698,10 +658,11 @@ if DEVICE == 'tornado' or DEVICE == 'typhoon':
                          beamf_toggle,
                          buffer_bar,
                          selectPerCallPeriod,
-                         controlTabs)
+                         emptyspace3,
+                         logTab)
     
 elif DEVICE == 'uma16' or DEVICE == 'phantom':
-    left_column = column(
+    left_column = column(emptyspace2,
                          display_toggle,
                          ti_savename,
                          checkbox_use_current_time,
@@ -710,12 +671,12 @@ elif DEVICE == 'uma16' or DEVICE == 'phantom':
                          calib_toggle,
                          beamf_toggle,
                          selectPerCallPeriod,
-                         controlTabs)    
+                         emptyspace3,
+                         logTab)    
     
-middle_column = column(figureTabs)
-# right_column = column(dumdiv)
+right_column = column(figureTabs)
 
-layout = row(left_column,middle_column,)#right_column)
+layout = row(emptyspace,left_column,emptyspace,right_column,)
 
 doc.add_root(layout)
 doc.add_periodic_callback(periodic_update_log,500)
