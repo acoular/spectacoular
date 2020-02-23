@@ -335,10 +335,8 @@ class DataTableMapper(TraitWidgetMapper):
     def _set_widgetvalue(self,traitvalue):
         ''' changes data in ColumnDataSource of DataTable widget '''
         newData = self.cast_to_dict(traitvalue)
-        # isSame = [new==old for (new,old) in 
-        #           zip(newData.values(),self.widget.source.data.values())]
-        # if len(isSame) > 0 and False in isSame:
-        self.widget.source.data = newData
+        if not self.widget.source.data == newData:
+            self.widget.source.data = newData
         return
 
     def _set_callbacks( self ):
