@@ -16,14 +16,40 @@ COLOR = Spectral5
 MODE_COLORS = {'display':COLOR[0],'calib':COLOR[2],'msm':COLOR[3]}
 AMPFIG_ARGS = {'y_range': (0,140),'plot_width':1200, 'plot_height':800} 
 MGEOMFIG_ARGS = {'plot_width':800,  'plot_height':800}
-BUFFBAR_ARGS = {'plot_width':280,  'plot_height':50}
+
+# status Definitions
+log_text_toggles =  {('msm',True): "collecting samples...",
+                    ('msm',False): "stopped collecting samples.",
+                    ('display',True): "display samples...",
+                    ('display',False): "stopped to display samples.",
+                    ('calib',True): "calibrating...",
+                    ('calib',False): "stopped calibrating.",
+                    ('beamf',True): "beamforming...",
+                    ('beamf',False): "stopped beamforming."}
+
+toggle_labels =     {('msm',False): "START MEASUREMENT",
+                    ('msm',True): "STOP MEASUREMENT",
+                    ('display',False): "start display",
+                    ('display',True): "stop display",
+                    ('calib',True): "stop calibration",
+                    ('calib',False): "start calibration",
+                    ('beamf',True): "stop beamforming",
+                    ('beamf',False): "start beamforming"}
+
+plot_colors =       {('msm',True): [MODE_COLORS['msm'],MODE_COLORS['msm']],
+                    ('msm',False): [MODE_COLORS['display'],MODE_COLORS['display']],
+                    ('display',True): [MODE_COLORS['display'],MODE_COLORS['display']],
+                    ('display',False): [MODE_COLORS['display'],MODE_COLORS['display']],
+                    ('calib',True): [MODE_COLORS['calib'],MODE_COLORS['calib']],
+                    ('calib',False): [MODE_COLORS['display'],MODE_COLORS['display']],
+                    ('beamf',True): [],
+                    ('beamf',False): []}
 
 # Color Mapper
 bfColorMapper = LogColorMapper(palette=Viridis256, low=70, high=90,low_color=(1,1,1,0))
 ampColorMapper = LinearColorMapper(palette=[COLOR[0],COLOR[0]], low=0.,high=180)
 
 # Buttons
-settings_button = Button(label="load settings",disabled=False)
 select_all_channels_button = Button(label="select all channels")
 
 # Toggle Buttons 
@@ -32,11 +58,8 @@ display_toggle = Toggle(label="start display", active=False,button_type="primary
 calib_toggle = Toggle(label="start calibration", active=False,disabled=True,button_type="warning")
 beamf_toggle = Toggle(label="start beamforming", active=False,disabled=True,button_type="warning")
 
-
-
 # Select Widgets
 selectPerCallPeriod = Select(title="Select Update Period [ms]", value=str(50), options=["25","50","100", "200", "400","800"])
-select_setting = Select(title="Select Settings:", value="None")
 
 # Text
 text_user_info = PreText(text="", width=300, height=500)
@@ -50,7 +73,6 @@ ClipSlider = Slider(start=0, end=120, value=0, step=.5, title="Clip Level (only 
 
 # Checkboxes
 checkbox_use_current_time = CheckboxGroup(labels=["use current time"], active=[0])
-checkbox_use_camera = CheckboxGroup(labels=["use camera"], active=[])
 checkbox_paint_mode = CheckboxGroup(labels=["paint mode"], active=[])
 checkbox_autolevel_mode = CheckboxGroup(labels=["auto level mode"], active=[])
 
@@ -63,13 +85,4 @@ amp_fig.toolbar.logo=None
 # MicGeomFigure
 micgeom_fig = figure(title='Array Geometry', tools = 'pan,wheel_zoom,reset',**MGEOMFIG_ARGS)
 micgeom_fig.toolbar.logo=None
-
-# Buffer Bar
-buffer_bar = figure(title="Buffer",y_range=['buffer'],x_range=(0,400),**BUFFBAR_ARGS)
-buffer_bar.xgrid.visible = False
-buffer_bar.ygrid.visible = False
-buffer_bar.toolbar.logo = None
-buffer_bar.toolbar_location = None
-buffer_bar.axis.visible = None
-buffer_bar.grid.visible = None
 

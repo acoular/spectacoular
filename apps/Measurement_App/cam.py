@@ -7,8 +7,13 @@
 from numpy import uint32, empty, uint8
 import cv2
 from bokeh.models import ColumnDataSource
+from bokeh.models.widgets import CheckboxGroup
+
+checkbox_use_camera = CheckboxGroup(labels=["use camera"], active=[])
 
 cameraCDS = ColumnDataSource({'image_data':[]})
+
+camWidgets = [checkbox_use_camera]
 
 (M,N) = (120,160)
 vc = cv2.VideoCapture(0)

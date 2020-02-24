@@ -277,7 +277,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
                                   buffer < (self.magnitude+self.delta)
                                   ).sum(0) 
             # print(calibmask)
-            if (calibmask.max() == nc) and (calibmask.sum() == nc):
+            if (calibmask.max() == self.buffer_size) and (calibmask.sum() == self.buffer_size):
                 idx = calibmask.argmax()
                 # print(buffer[:,idx].std())
                 if buffer[:,idx].std() < self.calibstd:
