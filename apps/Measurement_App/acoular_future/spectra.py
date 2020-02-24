@@ -19,7 +19,7 @@ from acoular.internal import digest
 from acoular.sources import SamplesGenerator
 from acoular.spectra import PowerSpectra, synthetic
 from acoular.tprocess import TimeInOut
-
+from spectacoular import BaseSpectacoular
 
 class SpectraInOut( TimeInOut ):
     """Provides the spectra of multichannel time data.   
@@ -71,7 +71,7 @@ class SpectraInOut( TimeInOut ):
     
     
 
-class CSMInOut( SpectraInOut ):
+class CSMInOut( SpectraInOut,BaseSpectacoular ):
     """Provides the CSM of multichannel Spectra data.  
         Returns CSM for every block over a Generator.
     

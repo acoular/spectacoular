@@ -24,6 +24,7 @@ import numpy as np
 try:
     import cv2
     cam_enabled=True
+    from cam import update_camera, cameraCDS
 except:
     cam_enabled=False
 from datetime import datetime
@@ -42,7 +43,7 @@ from acoular import TimePower, TimeAverage, L_p, MicGeom, \
 FiltOctave, SteeringVector, BeamformerTime,  SampleSplitter, BeamformerBase, WriteH5
 from acoular_future import CSMInOut, BeamformerFreqTime
 from SamplesProcessor import SamplesThread,EventThread,LastInOut
-from spectacoular import RectGrid,CalibHelper,FiltOctaveLive
+from spectacoular import RectGrid,CalibHelper,FiltOctaveLive,TimeInOutPresenter
 #local imports
 from interfaces import get_interface
 from layout import MODE_COLORS, micgeom_fig,amp_fig,buffer_bar,\
@@ -79,19 +80,17 @@ MGEOMPATH = os.path.join(APPFOLDER,"micgeom/")
 CONFPATH = os.path.join(APPFOLDER,"config_files/")
 TDPATH = os.path.join(APPFOLDER,"td/")
 BANDWIDTH = 3
-
 MAXMSG = 20 # maximum number of messages to display in GUI
 MICSCALE = 7
 CFREQ = 4000 
 BUFFERSIZE = 400
 NBLOCKS = 5 # number of blocks after which to do beamforming
 WTIME = 0.025
+XCAM = (-0.5,-0.375,1.,0.75)
 
 # =============================================================================
 #
 # =============================================================================
-xcam = (-0.5,-0.375,1.,0.75)
-
 if DEVICE == 'uma16':
     mg_file = 'minidsp_uma16.xml'
     inputSignalGen = get_interface(DEVICE)
@@ -102,13 +101,14 @@ elif DEVICE == 'phantom':
     mg_file = 'array_64.xml'
     inputSignalGen = get_interface(DEVICE)
     ch_names = [str(_) for _ in range(inputSignalGen.numchannels)]
-    grid = RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.005)
+    grid = RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
 elif DEVICE == 'tornado' or DEVICE == 'typhoon':
     mg_file = 'tub_vogel64.xml'
     iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,SYNCORDER)
     ch_names = inputSignalGen.inchannels_
     micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,mg_file)) 
     grid = RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
+NUMCHANNELS = inputSignalGen.numchannels
 
 micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,mg_file))
 # Spplitting of incoming samples
@@ -116,6 +116,7 @@ sampSplit = SampleSplitter(source = inputSignalGen, buffer_size=BUFFERSIZE)
 # ProcesampSpliting display Mode
 timePow = TimePower(source=sampSplit)
 timePowAvg = TimeAverage(source=timePow,naverage=BLOCKSIZE) 
+tioAvg = TimeInOutPresenter(source=timePowAvg)
 # ProcesampSpliting calib Mode
 fo_cal = FiltOctave(source=sampSplit,band=1000.0)
 tp_cal = TimePower(source=fo_cal)
@@ -158,7 +159,6 @@ calWidgets = ch.get_widgets()
 # =============================================================================
 # bokeh
 # =============================================================================
-
 # Text Inputs
 ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
 ti_savename = TextInput(value="", title="Filename:",disabled=True)
@@ -167,22 +167,14 @@ ti_savename = TextInput(value="", title="Filename:",disabled=True)
 savecal = Button(label="save calibration",button_type="warning")
 savecal.on_click(lambda: ch.save())
 
-NUMCHANNELS = inputSignalGen.numchannels
-print(NUMCHANNELS, inputSignalGen.sample_freq)
-
-mic_init_data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
-               'sizes':np.array([MICSCALE]*micGeo.num_mics),
-                   'channels':[str(_) for _ in range(micGeo.num_mics)]}
-
-level_init_data = {'channels':list(np.arange(1,NUMCHANNELS+1)),
-                   'level':np.zeros(NUMCHANNELS)}    
-
 # Columndatasources
-ChLevelsCDS = ColumnDataSource(data = level_init_data)
-MicGeomCDS = ColumnDataSource(data=mic_init_data) 
+ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,NUMCHANNELS+1)),
+                                       'level':np.zeros(NUMCHANNELS)} )
+MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
+                                    'sizes':np.array([MICSCALE]*micGeo.num_mics),
+                                    'channels':[str(_) for _ in range(micGeo.num_mics)]}) 
 BeamfCDS = ColumnDataSource({'beamformer_data':[]})
 BufferBarCDS = ColumnDataSource({'y':['buffer'],'filling':np.zeros(1)}) 
-cameraCDS = ColumnDataSource({'image_data':[]})
 
 # Widgets     
 select_setting.options=["None"]+os.listdir(CONFPATH)
@@ -190,7 +182,7 @@ select_setting.options=["None"]+os.listdir(CONFPATH)
 freqSlider = Slider(start=50, end=10000, value=CFREQ, 
                     step=1, title="Frequency",disabled=False)
 bfFilt.set_widgets(**{'band':freqSlider}) # 
-
+f.set_widgets(**{'center_freq':freqSlider})
 
 wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
                      step=0.0025, title="Time weighting (FAST: 0.125, SLOW: 1.0)",
@@ -223,21 +215,24 @@ height = int(width * dy/dx+0.5)
 beam_fig = figure(plot_width=width, plot_height=height,
                   x_range=[grid.x_min,grid.x_max], 
                   y_range=[grid.y_min,grid.y_max])
-
-beam_fig.image_rgba(image='image_data',x=xcam[0], y=xcam[1], dw=xcam[2], dh=xcam[3],source=cameraCDS)
 beam_fig.image(image='beamformer_data', x=grid.x_min, y=grid.y_min, dw=dx, dh=dy,
                 global_alpha=0.45,
                 color_mapper=bfColorMapper,
                 source=BeamfCDS)
 beam_fig.toolbar.logo=None
-
-color_bar = ColorBar(color_mapper=bfColorMapper,label_standoff=12, 
-                     background_fill_color = '#2F2F2F',
-                     border_line_color=None, location=(0,0))
+# color_bar = ColorBar(color_mapper=bfColorMapper,label_standoff=12, 
+#                      background_fill_color = '#2F2F2F',
+#                      border_line_color=None, location=(0,0))
 #beam_fig.add_layout(color_bar, 'right')
+if cam_enabled:
+    beam_fig.image_rgba(image='image_data',
+                        x=XCAM[0], y=XCAM[1], dw=XCAM[2], dh=XCAM[3],
+                        source=cameraCDS)
+
 
 # define bokeh widgets which should be disabled when display, recording or 
 # calibration runs
+
 disable_obj_disp = [
         selectPerCallPeriod,settings_button,
         select_micgeom,select_setting,
@@ -332,10 +327,6 @@ def dynamic_slider_callback(attr, old, new):
         (bfColorMapper.low, bfColorMapper.high) = new
 dynamicSlider.on_change('value', dynamic_slider_callback)    
 
-def freq_slider_callback(attr,old,new):
-    f.center_freq = new
-freqSlider.on_change('value',freq_slider_callback)
-
 def wtime_slider_callback(attr,old,new):
     f.weight_time = new
 
@@ -418,7 +409,7 @@ def displaytoggle_handler(arg):
                 doc = doc,
                 event=dispEvent)
         amp_thread = SamplesThread(
-                    samplesGen=get_pow_avg(1),
+                    samplesGen=tioAvg.result(1),
                     splitterObj= sampSplit,
                     splitterDestination=timePow,
                     event=dispEvent)
@@ -509,13 +500,6 @@ def calibtoggle_handler(arg):
 calib_toggle.on_click(calibtoggle_handler)
 
 # procesampSpliting functions
-
-leveldata = {'data':np.array([])}
-def get_pow_avg(num):
-    for temp in timePowAvg.result(num):
-        leveldata['data'] = L_p(temp)
-        yield
-
 bfdata = {'data':np.array([])}
 def get_bf_data(num):
     for temp in bf_used.result(num):
@@ -523,12 +507,12 @@ def get_bf_data(num):
         yield
 
 def update_amp_bar_plot():
-    if leveldata['data'].size > 0:
-        ChLevelsCDS.data['level'] = leveldata['data'].T
+    if tioAvg.data.data['data'].size > 0:
+        ChLevelsCDS.data['level'] =  L_p(tioAvg.data.data['data'].T)
 #                                            'channel': inputSignalGen.inchannels_}
 def update_mic_geom_plot():
     if micGeo.num_mics > 0: 
-        mg_vals = [leveldata['data'].T[i] for i in checkbox_micgeom.active] # only take which are active
+        mg_vals = [L_p(tioAvg.data.data['data'].T[i]) for i in checkbox_micgeom.active] # only take which are active
         MicGeomCDS.data['sizes'] = np.array(mg_vals)/MICSCALE
 
 def update_beamforming_plot():
@@ -540,26 +524,7 @@ def update_beamforming_plot():
             bfColorMapper.high = max(ClipSlider.value+dynamicValue, maxValue)
             bfColorMapper.low = max(ClipSlider.value, maxValue-dynamicValue)
 
-(M,N) = (120,160)
-if cam_enabled:
-    vc = cv2.VideoCapture(0)
-    vc.set(3,N)
-    vc.set(4,M)
-    img = np.empty((M, N), dtype=np.uint32)
-    view = img.view(dtype=np.uint8).reshape((M, N, 4))[::-1,::-1]
-    view[:,:,3] = 255
-
-def update_camera():
-    rval, frame = vc.read()
-    if rval:
-#        M, N, _ = frame.shape
-        view[:,:,:3] = frame[:,:,:3] # copy red channel
-#        view[:,:,1] = frame[:,:,1] # copy blue channel
-#        view[:,:,2] = frame[:,:,2] # copy green channel
-        cameraCDS.data['image_data'] = [img]
-    
-def update_app():   
-    # only update figure when necesampSplitary
+def update_app():  # only update figure when necesampSplitary
     if figureTabs.active == 0: 
         update_amp_bar_plot()
     if figureTabs.active ==1:
@@ -681,4 +646,3 @@ layout = row(emptyspace,left_column,emptyspace,right_column,)
 doc.add_root(layout)
 doc.add_periodic_callback(periodic_update_log,500)
 doc.title = "Measurement App"
-
