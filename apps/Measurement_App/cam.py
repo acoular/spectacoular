@@ -26,8 +26,17 @@ view[:,:,3] = 255
 def update_camera():
     rval, frame = vc.read()
     if rval:
-#        M, N, _ = frame.shape
-        view[:,:,:3] = frame[:,:,:3] # copy red channel
-#        view[:,:,1] = frame[:,:,1] # copy blue channel
-#        view[:,:,2] = frame[:,:,2] # copy green channel
+        view[:,:,0] = frame[:,:,2] # copy red channel
+        view[:,:,2] = frame[:,:,0] # copy blue channel
+        view[:,:,1] = frame[:,:,1] # copy green channel
         cameraCDS.data['image_data'] = [img]
+
+def set_camera_callback(doc):
+    def checkbox_use_camera_callback(attr,old,new):
+        global periodic_plot_callback
+        if checkbox_use_camera.active: 
+            periodic_plot_callback = doc.add_periodic_callback(update_camera,40)
+        else:
+            doc.remove_periodic_callback(periodic_plot_callback)
+            cameraCDS.data['image_data'] = []
+    checkbox_use_camera.on_change('active',checkbox_use_camera_callback)

@@ -23,7 +23,7 @@ import numpy as np
 try:
     import cv2
     cam_enabled=True
-    from cam import update_camera, cameraCDS, camWidgets
+    from cam import cameraCDS, camWidgets, set_camera_callback
 except:
     cam_enabled=False
     camWidgets = []
@@ -49,6 +49,7 @@ select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,calib_toggle
 text_user_info, dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider
 
 doc = curdoc()
+if cam_enabled: set_camera_callback(doc)
 parser = argparse.ArgumentParser()
 parser.add_argument(
   '--device',
@@ -211,6 +212,10 @@ height = int(width * dy/dx+0.5)
 beam_fig = figure(plot_width=width, plot_height=height,
                   x_range=[grid.x_min,grid.x_max], 
                   y_range=[grid.y_min,grid.y_max])
+if cam_enabled:
+    beam_fig.image_rgba(image='image_data',
+                        x=XCAM[0], y=XCAM[1], dw=XCAM[2], dh=XCAM[3],
+                        source=cameraCDS)
 beam_fig.image(image='beamformer_data', x=grid.x_min, y=grid.y_min, dw=dx, dh=dy,
                 global_alpha=0.45,
                 color_mapper=bfColorMapper,
@@ -220,10 +225,7 @@ beam_fig.toolbar.logo=None
 #                      background_fill_color = '#2F2F2F',
 #                      border_line_color=None, location=(0,0))
 #beam_fig.add_layout(color_bar, 'right')
-if cam_enabled:
-    beam_fig.image_rgba(image='image_data',
-                        x=XCAM[0], y=XCAM[1], dw=XCAM[2], dh=XCAM[3],
-                        source=cameraCDS)
+
 
 # =============================================================================
 # # define bokeh widgets which should be disabled when display, recording or 
@@ -474,8 +476,6 @@ def update_app():  # only update figure when necesampSplitary
         update_mic_geom_plot()
     if figureTabs.active == 2 and beamf_toggle.active: 
         update_beamforming_plot() 
-        if cam_enabled:
-            if camWidgets[0].active: update_camera()
     if sinus_enabled:
          update_buffer_bar_plot()
 
