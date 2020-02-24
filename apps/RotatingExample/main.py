@@ -36,10 +36,11 @@ ts.invalid_channels = invalid
 ts.calib = cal
 mg = MicGeom(from_file=micgeofile,invalid_channels = invalid)
 
-si = SpatialInterpolatorConstantRotation(source = ts,mics = mg)
+si = SpatialInterpolatorConstantRotation(source = ts,mics = mg,  rotational_speed = 15.0,\
+                                         array_dimension = '2D')
 
 ps = PowerSpectra(time_data=si)
-rg = RectGrid(x_min=-1.5, x_max=1.5, y_min=-1.5, y_max=1.5, z=1.00,increment=0.10)
+rg = RectGrid(x_min=-0.8, x_max=0.8, y_min=-0.8, y_max=0.8, z=1.00,increment=0.05)
 env = Environment(c = 346.04)
 st = SteeringVector( grid = rg, mics=mg, env=env )    
 
@@ -53,7 +54,7 @@ bd = BeamformerDamas(beamformer=bb, n_iter=100)
 bdp = BeamformerDamasPlus(beamformer=bb, n_iter=100)
 bo = BeamformerOrth(beamformer=be, eva_list=list(range(38,54)))
 bs = BeamformerCleansc(freq_data=ps, steer=st, r_diag=True)
-bl = BeamformerClean(beamformer=bb, n_iter=100)
+bl = BeamformerClean(beamformer=bb, n_iter=100)    
 bcmf = BeamformerCMF(freq_data=ps, steer=st, method='LassoLarsBIC')
 bgib = BeamformerGIB(freq_data=ps, steer=st, method= 'LassoLars', n=10)
 
@@ -97,8 +98,8 @@ bvWidgets['num'].value = "3"
 
 
 colorMapper = LogColorMapper(palette=viridis(100), 
-                              low=30, high=50 ,low_color=(1,1,1,0))
-dynamicSlider = RangeSlider(start=0, end=120, step=1., value=(30,50),
+                              low=50, high=65 ,low_color=(1,1,1,0))
+dynamicSlider = RangeSlider(start=0, end=120, step=1., value=(50,65),
                             title="Dynamic Range")
 def dynamicSlider_callback(attr, old, new):
     (colorMapper.low, colorMapper.high) = dynamicSlider.value
@@ -147,7 +148,7 @@ psTab = Panel(child=column(*psWidgets.values()),title='FFT')
 bfTab = Panel(child=column(beamformerSelector,selectedBfWidgets),
               title='Beamforming')
 propertyTabs = Tabs(tabs=[tsTab,siTab,mgTab,calTab,envTab,gridTab,stTab,
-                          psTab,bfTab],width=1400)
+                          psTab,bfTab],width=1200)
 
 calcColumn = column(calcButton,*bvWidgets.values(),dynamicSlider)
 
