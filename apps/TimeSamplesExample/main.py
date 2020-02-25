@@ -113,11 +113,13 @@ playButton.on_click(playButton_handler)
 # TimeSignalPlot
 tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800,
                 x_axis_label="sample index", y_axis_label="p [Pa]")
+tsPlot.toolbar.logo = None
 tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 # FrequencySignalPlot
 freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
                   x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB")
+freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
 freqplot.line('freqs', 'amp', source=freqdata)
 #create layout
