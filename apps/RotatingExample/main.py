@@ -106,7 +106,7 @@ def dynamicSlider_callback(attr, old, new):
 dynamicSlider.on_change("value",dynamicSlider_callback)
 
 # create Button to trigger beamforming result calculation
-calcButton = Toggle(label="Calculate",button_type="success")
+calcButton = Toggle(label="Calculate",button_type="primary")
 def calc(arg):
     if arg:
         calcButton.label = 'Calculating ...'
@@ -147,8 +147,11 @@ stTab = Panel(child=column(*stWidgets.values()),title='Steering')
 psTab = Panel(child=column(*psWidgets.values()),title='FFT')
 bfTab = Panel(child=column(beamformerSelector,selectedBfWidgets),
               title='Beamforming')
-propertyTabs = Tabs(tabs=[tsTab,siTab,mgTab,calTab,envTab,gridTab,stTab,
-                          psTab,bfTab],width=1200)
+propertyTabs = Tabs(tabs=[tsTab,siTab,mgTab,calTab,envTab], sizing_mode="stretch_both")
+ 
+propertyTabs2 = Tabs(tabs=[gridTab,stTab,
+                          psTab,bfTab], sizing_mode="stretch_both")
+
 
 calcColumn = column(calcButton,*bvWidgets.values(),dynamicSlider)
 
@@ -158,5 +161,5 @@ def beamformer_handler(attr,old,new):
 beamformerSelector.on_change('value',beamformer_handler)
 
 # make Document
-mainlayout = row(plotTabs,calcColumn,propertyTabs)
+mainlayout = row(plotTabs,calcColumn,propertyTabs,propertyTabs2)
 doc.add_root(mainlayout)
