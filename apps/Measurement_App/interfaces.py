@@ -14,7 +14,11 @@ APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
 
 sys.path.insert(0,os.path.join(os.path.dirname(__file__),'../../'))
 H5SAVEFILE = 'two_sources_one_moving_10s.h5'
-H5PATH = os.path.join(APPFOLDER,"static/",H5SAVEFILE)
+DATAPATH = os.path.join(APPFOLDER,"data")
+if not os.path.exists(DATAPATH): 
+    print("create data folder")
+    os.mkdir(DATAPATH)
+H5PATH = os.path.join(DATAPATH,H5SAVEFILE)
 
 def get_interface(device,syncorder=[]):
     if device == 'uma16':
@@ -30,7 +34,7 @@ def get_interface(device,syncorder=[]):
         return InputSignalGen
 
 def create_three_sources_moving():
-    sfreq = 51200 
+    sfreq = 25600 
     duration = 10
     nsamples = duration*sfreq
     micgeofile = "Measurement_App/micgeom/array_64.xml"
@@ -58,20 +62,3 @@ def create_three_sources_moving():
     pa = Mixer( source=p1, sources=[p2,p3] )
     wh5 = WriteH5( source=pa, name=H5PATH )
     wh5.save()
-
-def create_three_sources():
-    sfreq = 51200 
-    duration = 10
-    nsamples = duration*sfreq
-    micgeofile = "Measurement_App/micgeom/array_64.xml"
-    mg = MicGeom( from_file=micgeofile )
-    n1 = WNoiseGenerator( sample_freq=sfreq, numsamples=nsamples, seed=100 )
-    n2 = WNoiseGenerator( sample_freq=sfreq, numsamples=nsamples, seed=200, rms=0.7 )
-    n3 = WNoiseGenerator( sample_freq=sfreq, numsamples=nsamples, seed=300, rms=0.5 )
-    p1 = PointSource( signal=n1, mics=mg,  loc=(-0.1,-0.1,0.3) )
-    p2 = PointSource( signal=n2, mics=mg,  loc=(0.15,0,0.3) )
-    p3 = PointSource( signal=n3, mics=mg,  loc=(0,0.1,0.3) )
-    pa = Mixer( source=p1, sources=[p2,p3] )
-    wh5 = WriteH5( source=pa, name=H5PATH )
-    wh5.save()
-        
