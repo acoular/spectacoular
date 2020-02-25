@@ -120,10 +120,6 @@ freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
                   x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB")
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
 freqplot.line('freqs', 'amp', source=freqdata)
-# Put in Tabs
-tsTab = Panel(child=tsPlot, title='Time Data')
-fdTab = Panel(child=freqplot, title='Frequency Data')
-plotTab = Tabs(tabs=[tsTab, fdTab])
 #create layout
 tsWidgetsCol = widgetbox(tselect,applyButton,*tsWidgets.values(),
                          width=400)
