@@ -9,11 +9,12 @@ Example that demonstrates different beamforming algorithms
 from os import path
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import LogColorMapper,ColorBar
+from bokeh.models.tools import BoxEditTool
+from bokeh.models import LogColorMapper,ColorBar,ColumnDataSource
 from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider
 from bokeh.plotting import figure
 from bokeh.palettes import viridis, plasma, inferno, magma
-from bokeh.server.server import Server
+from numpy import array
 import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
@@ -90,7 +91,6 @@ bvWidgets = bv.get_widgets()
 bvWidgets['freq'].value = "4000.0"
 bvWidgets['num'].value = "3"
 
-
 colorMapper = LogColorMapper(palette=viridis(100), 
                               low=30, high=50 ,low_color=(1,1,1,0))
 dynamicSlider = RangeSlider(start=0, end=120, step=1., value=(30,50),
@@ -150,8 +150,24 @@ def beamformer_handler(attr,old,new):
     selectedBfWidgets.children = list(beamformer_dict.get(new).get_widgets().values())
 beamformerSelector.on_change('value',beamformer_handler)
 
+cds = ColumnDataSource(data={'x':[],'y':[],'width':[], 'height':[]})
+def integrate_result(attr,old,new):
+    for i in range(len(cds.data['x'])):
+        sector = array([
+            cds.data['x'][i]-cds.data['width'][i]/2, 
+            cds.data['y'][i]-cds.data['height'][i]/2, 
+            cds.data['width'][i], 
+            cds.data['height'][i]
+            ])
+        print(sector)
+        print(acoular.L_p(acoular.integrate(array(bv.cdsource.data['pdata']), rg, sector)))
+
+# Integration sector
+isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=.3,color='red', source=cds)
+tool = BoxEditTool(renderers=[isector],num_objects=1)
+bfPlot.add_tools(tool)
+cds.on_change('data',integrate_result)
+
 # make Document
 mainlayout = row(plotTabs,calcColumn,propertyTabs)
 doc.add_root(mainlayout)
-
-
