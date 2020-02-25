@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed May 15 16:21:22 2019
-
-@author: kujawski
-"""
-
+#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
+#------------------------------------------------------------------------------
+# Copyright (c) 2007-2020, Acoular Development Team.
+#------------------------------------------------------------------------------
 import sys 
 import os
 from spectacoular import TimeSamplesPhantom
@@ -18,36 +15,13 @@ APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
 sys.path.insert(0,os.path.join(os.path.dirname(__file__),'../../'))
 H5SAVEFILE = 'two_sources_one_moving_10s.h5'
 H5PATH = os.path.join(APPFOLDER,"static/",H5SAVEFILE)
-DEV_SERIAL_NUMBERS = {'tornado': ['10142', '10112', '10125', '10126'],
-                        'typhoon': [
-                                '10092','10095','10030','10038',
-                                '10115','10116','10118','10119',
-                                '10120','10123',
-                                ]}
 
 def get_interface(device,syncorder=[]):
     if device == 'uma16':
         from acuma16 import UMA16SamplesGenerator
         InputSignalGen = UMA16SamplesGenerator()
         return InputSignalGen
-    
-    elif device == 'tornado' or device == 'typhoon':
-        from sinus import SINUSDeviceManager, SINUSAnalogInputManager, \
-        SINUSSamplesGenerator, ini_import
-        
-        if syncorder: 
-            DevManager = SINUSDeviceManager(orderdevices = syncorder)
-        elif not syncorder:
-            DevManager = SINUSDeviceManager(orderdevices = DEV_SERIAL_NUMBERS[device])
-            
-        DevInputManager = SINUSAnalogInputManager()
-        InputSignalGen = SINUSSamplesGenerator(manager=DevInputManager,
-                                               inchannels=DevInputManager.namechannels)
-        IniManager = ini_import()
-        return IniManager, DevManager,DevInputManager,InputSignalGen
-    
     elif device == 'phantom':
-        print(os.path.dirname(os.path.abspath(__file__)))
         exist = os.path.isfile(H5PATH)
         if not exist:
             print("need to create three sources file first...")

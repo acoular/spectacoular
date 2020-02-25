@@ -8,7 +8,7 @@ creates html and yaml layout for spectAcoular Apps
 """
 # App folder
 paths = ['MicGeomExample', 'FreqBeamformingExample', 'LiveViewExample',
-         'TimeSamplesExample']
+         'TimeSamplesExample','Measurement_App']
 ############### THEME COLOR SELECTIONS ################
 # Set background color
 bg_col  = '#2F2F2F'

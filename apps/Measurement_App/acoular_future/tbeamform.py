@@ -13,12 +13,13 @@ from traits.api import Property, Trait, Bool, cached_property, Instance
 from acoular.internal import digest
 from acoular.fbeamform import BeamformerBase
 from acoular.tbeamform import BeamformerTime
+from acoular.tprocess import TimeInOut
 
 from .spectra import CSMInOut, PowerSpectraSetCSM
 
                       
 
-class BeamformerFreqTime( BeamformerTime ):
+class BeamformerFreqTime( BeamformerTime,TimeInOut ):
     """
     Provides a basic time-dependent frequency domain beamformer with frequency output
     for a spatially fixed grid.

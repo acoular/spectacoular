@@ -9,3 +9,7 @@ td/
 
 bokeh/Measurement_App/static/two_sources_one_moving_10s.h5
 bokeh/Measurement_App/static/two_sources_one_moving_60s.h5
+
+apps/Measurement_App/static/two_sources_one_moving_10s.h5
+
+*.log
