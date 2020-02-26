@@ -132,15 +132,15 @@ freqplot.line('freqs', 'amp', source=freqdata)
 #create layout
 tsWidgetsCol = widgetbox(applyButton,tselect,*tsWidgets.values(),width=400)
 if sd_enabled: 
-    allWidgetsLayout = column(tselect,row(tsWidgetsCol,pbWidgetCol))
+    allWidgetsLayout = row(tsWidgetsCol,pbWidgetCol)
 else:
-    allWidgetsLayout = column(tselect,row(tsWidgetsCol))
-spWidgetsCol = widgetbox(tselect,applyButton,spWidgets['window'],
+    allWidgetsLayout = row(tsWidgetsCol)
+spWidgetsCol = widgetbox(applyButton,tselect,spWidgets['window'],
                          spWidgets['block_size'],
                          width=400)
 
 # Put in Tabs
-tsTab = Panel(child=row(tsPlot,tsWidgetsCol,pbWidgetCol), title='Time Data')
+tsTab = Panel(child=row(tsPlot,allWidgetsLayout), title='Time Data')
 fdTab = Panel(child=row(freqplot,spWidgetsCol), title='Frequency Data')
 plotTab = Tabs(tabs=[tsTab, fdTab])
 
