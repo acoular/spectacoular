@@ -14,7 +14,7 @@ from bokeh.models import LogColorMapper,ColorBar,ColumnDataSource
 from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider
 from bokeh.plotting import figure
 from bokeh.palettes import viridis, plasma, inferno, magma
-from numpy import array
+from numpy import array,zeros
 import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
@@ -124,9 +124,27 @@ bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
                            title="Level/dB",
                             title_standoff=10),'right')
 
+# FrequencySignalPlot
+freqdata = ColumnDataSource(data={'freqs':ps.fftfreq(),
+                                  'amp':zeros((ps.fftfreq().shape))})
+f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
+f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
+                    500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
+                    20000: '20'}
+freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
+                  x_axis_type="log", x_axis_label="f in kHz", 
+                  y_axis_label="|P(f)|^2 / dB")
+freqplot.xaxis.axis_label_text_font_style = "normal"
+freqplot.yaxis.axis_label_text_font_style = "normal"
+freqplot.xgrid.minor_grid_line_color = 'navy'
+freqplot.xgrid.minor_grid_line_alpha = 0.05
+freqplot.xaxis.ticker = f_ticks
+freqplot.xaxis.major_label_overrides = f_ticks_override
+freqplot.line('freqs', 'amp', source=freqdata)
+
 # Plot Tabs
 mgPlotTab = Panel(child=row(mgPlot),title='Microphone Geometry Plot')
-bfPlotTab = Panel(child=row(bfPlot),title='Source Plot')
+bfPlotTab = Panel(child=row(column(bfPlot,freqplot)),title='Source Plot')
 plotTabs = Tabs(tabs=[mgPlotTab,bfPlotTab],width=600)
 
 # Property Tabs
@@ -150,23 +168,26 @@ def beamformer_handler(attr,old,new):
     selectedBfWidgets.children = list(beamformer_dict.get(new).get_widgets().values())
 beamformerSelector.on_change('value',beamformer_handler)
 
-cds = ColumnDataSource(data={'x':[],'y':[],'width':[], 'height':[]})
+sectordata = ColumnDataSource(data={'x':[],'y':[],'width':[], 'height':[]})
 def integrate_result(attr,old,new):
-    for i in range(len(cds.data['x'])):
+    for i in range(len(sectordata.data['x'])):
         sector = array([
-            cds.data['x'][i]-cds.data['width'][i]/2, 
-            cds.data['y'][i]-cds.data['height'][i]/2, 
-            cds.data['width'][i], 
-            cds.data['height'][i]
+            sectordata.data['x'][i]-sectordata.data['width'][i]/2, 
+            sectordata.data['y'][i]-sectordata.data['height'][i]/2, 
+            sectordata.data['width'][i], 
+            sectordata.data['height'][i]
             ])
         print(sector)
-        print(acoular.L_p(acoular.integrate(array(bv.cdsource.data['pdata']), rg, sector)))
+        print(bv.source.integrate(sector))
+        freqdata.data['amp'] = acoular.L_p(bv.source.integrate(sector))
+        freqdata.data['freqs'] = ps.fftfreq()
+        # print(acoular.L_p(acoular.integrate(array(bv.cdsource.data['pdata']), rg, sector)))
 
 # Integration sector
-isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=.3,color='red', source=cds)
+isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=.3,color='red', source=sectordata)
 tool = BoxEditTool(renderers=[isector],num_objects=1)
 bfPlot.add_tools(tool)
-cds.on_change('data',integrate_result)
+sectordata.on_change('data',integrate_result)
 
 # make Document
 mainlayout = row(plotTabs,calcColumn,propertyTabs)
