@@ -8,9 +8,13 @@ Example how to plot TimeData
 """
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, widgetbox
-from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText
+from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText,\
+Tabs,Panel,MultiSelect
+from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
-from spectacoular import MaskedTimeSamples, TimeSamplesPresenter
+from numpy import mean, conj, real, array, log10, logspace,append,sort
+from acoular import L_p
+from spectacoular import MaskedTimeSamples, TimeSamplesPresenter, SpectraInOut
 try:
     import sounddevice as sd
     from spectacoular import TimeSamplesPlayback
@@ -18,23 +22,20 @@ try:
 except:
     sd_enabled = False
 
-
-
 doc = curdoc()
 # build processing chain
 ts       = MaskedTimeSamples(name='example_data.h5')
 tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
 sp       = SpectraInOut(source=ts)
-playback = TimeSamplesPlayback(source=ts)
 freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0]))
 
 chidx = [str(i) for i in range(ts.numchannels)]
 
 # create widget to select the channel that should be plotted
-msWidget = Select(title="Select Channel:", value="0",
-                       options=[str(i) for i in range(ts.numchannels)])
-# button widget to playback the selected time data
-playButton = Toggle(label="Playback Time Data", button_type="success")
+tselect = Select(title="Select Channel:", value="0",options=chidx)
+sselect = MultiSelect(title="Select Channel:", value=["0"],
+                               options=[(i,i) for i in chidx])
+
 # create Button to trigger plot
 applyButton = Toggle(label="Plot Time Data",button_type="success")
 
@@ -74,6 +75,7 @@ def get_spectra():
                        conj(array(r).transpose((0,2,1)))),axis=0))
     r_sel  = L_p(r_mean[int(tselect.value)])
     freqdata.data.update(amp=r_sel, freqs=freq)
+
 if sd_enabled: # in case of audio support
     playback = TimeSamplesPlayback(source=ts)
     # button widget to playback the selected time data
@@ -98,7 +100,7 @@ if sd_enabled: # in case of audio support
         queryOutput.text = f"{sd.query_devices()}"
     queryButton.on_click(print_devices)
 
-    playback.set_widgets(**{'channels': msWidget})
+    playback.set_widgets(**{'channels': tselect})
 
     def playButton_handler(arg):
         if arg: playback.play()
@@ -126,13 +128,21 @@ freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
 freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
 freqplot.line('freqs', 'amp', source=freqdata)
+
 #create layout
 tsWidgetsCol = widgetbox(applyButton,*tsWidgets.values(),width=400)
 if sd_enabled: 
-    allWidgetsLayout = column(msWidget,row(tsWidgetsCol,pbWidgetCol))
+    allWidgetsLayout = column(tselect,row(tsWidgetsCol,pbWidgetCol))
 else:
-    allWidgetsLayout = column(msWidget,row(tsWidgetsCol))
-doc.add_root(row(tsPlot,allWidgetsLayout))
+    allWidgetsLayout = column(tselect,row(tsWidgetsCol))
+spWidgetsCol = widgetbox(tselect,applyButton,spWidgets['window'],
+                         spWidgets['block_size'],
+                         width=400)
+
+# Put in Tabs
+tsTab = Panel(child=row(tsPlot,tsWidgetsCol,pbWidgetCol), title='Time Data')
+fdTab = Panel(child=row(freqplot,spWidgetsCol), title='Frequency Data')
+plotTab = Tabs(tabs=[tsTab, fdTab])
 
 def plot(arg):
     if arg:
@@ -148,3 +158,5 @@ def plot(arg):
         applyButton.label = 'Plot Data'
 applyButton.on_click(plot)
 
+# add to doc
+doc.add_root(plotTab)
