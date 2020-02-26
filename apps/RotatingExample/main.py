@@ -28,13 +28,9 @@ doc = curdoc()
 # build processing chain
 micgeofile = path.join( path.split(acoular.__file__)[0],'xml','array_56.xml')
 tdfile = 'rotating_source.h5'
-calibfile = 'example_calib.xml'
 ts = MaskedTimeSamples(name=tdfile)
-cal = Calib(from_file=calibfile)
-invalid = [1,7] # list of invalid channels (unwanted microphones etc.)
-ts.invalid_channels = invalid 
-ts.calib = cal
-mg = MicGeom(from_file=micgeofile,invalid_channels = invalid)
+
+mg = MicGeom(from_file=micgeofile)
 
 si = SpatialInterpolatorConstantRotation(source = ts,mics = mg,  rotational_speed = 15.0,\
                                          array_dimension = '2D')
@@ -87,7 +83,6 @@ tsWidgets = ts.get_widgets()
 siWidgets = si.get_widgets()
 mgWidgets = mg.get_widgets()
 envWidgets = env.get_widgets()
-calWidgets = cal.get_widgets()
 psWidgets = ps.get_widgets()
 rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
@@ -140,14 +135,13 @@ selectedBfWidgets = column(*bbWidgets.values())
 tsTab = Panel(child=column(*tsWidgets.values()),title='Time Data')
 siTab = Panel(child=column(*siWidgets.values()),title='Virtual Rotation')
 mgTab = Panel(child=column(*mgWidgets.values()),title='MicGeometry')
-calTab = Panel(child=column(*calWidgets.values()),title='Calibration')
 envTab = Panel(child=column(*envWidgets.values()),title='Environment')
 gridTab = Panel(child=column(*rgWidgets.values()),title='Grid')
 stTab = Panel(child=column(*stWidgets.values()),title='Steering')
 psTab = Panel(child=column(*psWidgets.values()),title='FFT')
 bfTab = Panel(child=column(beamformerSelector,selectedBfWidgets),
               title='Beamforming')
-propertyTabs = Tabs(tabs=[tsTab,siTab,mgTab,calTab,envTab], sizing_mode="stretch_both")
+propertyTabs = Tabs(tabs=[tsTab,siTab,mgTab,envTab], sizing_mode="stretch_both")
  
 propertyTabs2 = Tabs(tabs=[gridTab,stTab,
                           psTab,bfTab], sizing_mode="stretch_both")
