@@ -22,13 +22,14 @@ try:
     sd_enabled = True
 except:
     sd_enabled = False
+from numpy import mean, conj, real, array, log10, logspace, append, sort, shape
 
 doc = curdoc()
 # build processing chain
 ts       = MaskedTimeSamples(name='example_data.h5')
 tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
 sp       = SpectraInOut(source=ts)
-freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0]))
+freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0], chn=[0]))
 
 chidx = [str(i) for i in range(ts.numchannels)]
 
@@ -66,7 +67,6 @@ def get_logticks(frange=[100, 10000], minor_ticks=[5,2,7], unit='kHz'):
     return ticks, override
         
 def get_spectra():
-    freq = sp.fftfreq()  
     result = sp.result() # result is a generator!    
     # get all spectra blocks  
     r = []
@@ -74,8 +74,12 @@ def get_spectra():
         r.append(res)
     r_mean = list(mean(real(array(r).transpose((0,2,1)) * 
                        conj(array(r).transpose((0,2,1)))),axis=0))
-    r_sel  = L_p(r_mean[int(tselect.value)])
-    freqdata.data.update(amp=r_sel, freqs=freq)
+    r_sel, freq, chn = [], [], []
+    for sel in sselect.value:
+        r_sel.append(L_p(r_mean[int(sel)]))
+        freq.append(sp.fftfreq())
+        chn.append(int(sel))
+    freqdata.data.update(amp=r_sel, freqs=freq, chn=chn)
 
 if sd_enabled: # in case of audio support
     playback = TimeSamplesPlayback(source=ts)
@@ -124,12 +128,13 @@ tsPlot.toolbar.logo = None
 tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 # FrequencySignalPlot
+freqplottips = [("Channel", "@chn"),("Frequency in Hz", "$x"),("|P(f)|^2 in dB", "$y")]
 freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
-                  x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB")
+                  x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB",
+                  tooltips=freqplottips)
 freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
-freqplot.line('freqs', 'amp', source=freqdata)
-
+freqplot.multi_line('freqs', 'amp', source=freqdata)
 #create layout
 tsWidgetsCol = widgetbox(plotButton,tselect,*tsWidgets.values(),width=400)
 if sd_enabled: 
@@ -145,6 +150,19 @@ tsTab = Panel(child=row(tsPlot,allWidgetsLayout), title='Time Data')
 fdTab = Panel(child=row(freqplot,spWidgetsCol), title='Frequency Data')
 plotTab = Tabs(tabs=[tsTab, fdTab])
 
+def plot(arg):
+    if arg:
+        applyButton.label = 'Plotting ...'
+        if plotTab.active == 0: 
+            tv.update()
+        if plotTab.active == 1: 
+            get_spectra()
+            get_logticks([10, 30000], unit="Hz")
+        applyButton.active = False
+        applyButton.label = 'Plot Data'
+    if not arg:
+        applyButton.label = 'Plot Data'
+applyButton.on_click(plot)
 def plot():
     if plotTab.active == 0: 
         tv.update()
