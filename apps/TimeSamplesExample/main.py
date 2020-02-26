@@ -130,7 +130,7 @@ freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 
 freqplot.line('freqs', 'amp', source=freqdata)
 
 #create layout
-tsWidgetsCol = widgetbox(applyButton,*tsWidgets.values(),width=400)
+tsWidgetsCol = widgetbox(applyButton,tselect,*tsWidgets.values(),width=400)
 if sd_enabled: 
     allWidgetsLayout = column(tselect,row(tsWidgetsCol,pbWidgetCol))
 else:

@@ -7,23 +7,29 @@
 Example how to plot TimeData
 """
 from bokeh.layouts import column, row, widgetbox
-from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText
+from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText,\
+Tabs,Panel,MultiSelect
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
 from bokeh.server.server import Server
+from numpy import mean, conj, real, array
+from acoular import L_p
+from spectacoular import MaskedTimeSamples, TimeSamplesPresenter, SpectraInOut
 try:
     import sounddevice as sd
     from spectacoular import TimeSamplesPlayback
     sd_enabled = True
 except:
     sd_enabled = False
-from acoular import L_p
-from numpy import mean, conj, real, array
-from spectacoular import MaskedTimeSamples, TimeSamplesPresenter
 
 # build processing chain
-ts = MaskedTimeSamples(name='example_data.h5')
-tv = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
+ts       = MaskedTimeSamples(name='example_data.h5')
+tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
+sp       = SpectraInOut(source=ts)
+freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0]))
+
+chidx = [str(i) for i in range(ts.numchannels)]
+
 # create widget to select the channel that should be plotted
 tselect = Select(title="Select Channel:", value="0",options=chidx)
 sselect = MultiSelect(title="Select Channel:", value=["0"],
@@ -31,14 +37,12 @@ sselect = MultiSelect(title="Select Channel:", value=["0"],
 
 # create Button to trigger plot
 applyButton = Toggle(label="Plot Time Data",button_type="success")
-# Input Device Textfield
-inputDevice = TextInput(title="Input Device Index", value=str(playback.device[0]))
-# Output Device Textfield
-outputDevice = TextInput(title="Output Device Index", value=str(playback.device[1]))
-# QueryDevices
-queryButton = Button(label="QueryDevices")
-queryOutput = PreText(width=500, height=400)
 
+# get widgets to control settings
+tsWidgets = ts.get_widgets()
+tvWidgets = tv.get_widgets()
+spWidgets = sp.get_widgets()
+tv.set_widgets(**{'channels': tselect})
 
 def get_spectra():
     # sp.block_size = int(blkWidget.value)
@@ -52,12 +56,6 @@ def get_spectra():
                        conj(array(r).transpose((0,2,1)))),axis=0))
     r_sel  = L_p(r_mean[int(tselect.value)])
     freqdata.data.update(amp=r_sel, freqs=freq)
-
-# get widgets to control settings
-tsWidgets = ts.get_widgets()
-tvWidgets = tv.get_widgets()
-tv.set_widgets(**{'channels': msWidget})
-playback.set_widgets(**{'channels': msWidget})
 
 if sd_enabled: # in case of audio support
     playback = TimeSamplesPlayback(source=ts)
@@ -83,7 +81,7 @@ if sd_enabled: # in case of audio support
         queryOutput.text = f"{sd.query_devices()}"
     queryButton.on_click(print_devices)
 
-    playback.set_widgets(**{'channels': msWidget})
+    playback.set_widgets(**{'channels': tselect})
 
     def playButton_handler(arg):
         if arg: playback.play()
@@ -123,12 +121,11 @@ def server_doc(doc):
     freqplot.line('freqs', 'amp', source=freqdata)
 
     #create layout
-    tsWidgetsCol = widgetbox(applyButton,*tsWidgets.values(),width=400)
+    tsWidgetsCol = widgetbox(applyButton,tselect,*tsWidgets.values(),width=400)
     if sd_enabled: 
-        allWidgetsLayout = column(msWidget,row(tsWidgetsCol,pbWidgetCol))
+        allWidgetsLayout = column(tselect,row(tsWidgetsCol,pbWidgetCol))
     else:
-        allWidgetsLayout = column(msWidget,row(tsWidgetsCol))
-    doc.add_root(row(tsPlot,allWidgetsLayout))
+        allWidgetsLayout = column(tselect,row(tsWidgetsCol))
     spWidgetsCol = widgetbox(tselect,applyButton,spWidgets['window'],
                              spWidgets['block_size'],
                              width=400)
