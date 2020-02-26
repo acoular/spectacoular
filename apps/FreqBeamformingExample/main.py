@@ -121,7 +121,7 @@ bfPlot = figure(title='Beamforming Result', tools = 'pan,wheel_zoom,reset')
 bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',
              color_mapper=colorMapper,source=bv.cdsource)
 bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
-                           title="Level [dB]",
+                           title="Level/dB",
                             title_standoff=10),'right')
 
 # Plot Tabs
