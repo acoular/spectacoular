@@ -9,6 +9,8 @@ import cv2
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import CheckboxGroup
 
+BFALPHA = 0.45
+
 checkbox_use_camera = CheckboxGroup(labels=["use camera"], active=[])
 
 cameraCDS = ColumnDataSource({'image_data':[]})
@@ -31,6 +33,14 @@ def update_camera():
         view[:,:,1] = frame[:,:,1] # copy green channel
         cameraCDS.data['image_data'] = [img]
 
+def set_alpha_callback(bfImage):
+    def global_alpha_callback(attr,old,new):
+        if checkbox_use_camera.active: 
+            bfImage.glyph.global_alpha = BFALPHA
+        else:
+            bfImage.glyph.global_alpha = 1
+    checkbox_use_camera.on_change('active',global_alpha_callback)
+        
 def set_camera_callback(doc):
     def checkbox_use_camera_callback(attr,old,new):
         global periodic_plot_callback

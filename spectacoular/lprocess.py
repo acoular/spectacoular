@@ -24,7 +24,11 @@ from bokeh.models.widgets import TextInput,DataTable,TableColumn,\
 from bokeh.models import ColumnDataSource, LogColorMapper, ColorBar
 from traits.api import Property, File, CArray,Int, Delegate, Trait,\
 cached_property, on_trait_change, Float,Bool, Instance, ListInt
-import sounddevice as sd
+try:
+    import sounddevice as sd
+    sd_enabled=True
+except:
+    sd_enabled = False
 
 # acoular imports
 from acoular import TimeInOut, L_p,TimeAverage,FiltFiltOctave, \
@@ -128,65 +132,6 @@ class TimeInOutPresenter(TimeInOut,BasePresenter):
             self.data.data['data'] = temp
             yield temp
 
-                
-
-class TimeSamplesPlayback(TimeInOut,BaseSpectacoular):
-    """
-    In the future, this class should work in buffer mode and 
-    also write the current frame that is played to its columndatasource.
-    """
-    
-    # internal identifier
-    digest = Property( depends_on = ['source.digest', '__class__'])
-
-    #: index of the channel to play
-    channels = ListInt()
-    
-    # device property
-    device = Property()
-    
-    # current frame played back
-    # currentframe = Int()
-    
-    trait_widget_mapper = {'channels': TextInput,
-                       }
-
-    trait_widget_args = {'channels': {'disabled':False},
-                     }
-
-    @cached_property
-    def _get_digest( self ):
-        return digest(self)
-    
-    def _get_device( self ):
-        return list(sd.default.device)
-    
-    def _set_device( self, device ):
-        sd.default.device = device
-    
-    def play( self ):
-        '''
-        normalized playback of channel
-        '''
-        if self.channels:
-            if isinstance(self.source,MaskedTimeSamples):
-                sig = self.source.data[
-                    self.source.start:self.source.stop,self.channels].sum(1)
-            else:
-                sig = self.source.data[:,self.channels].sum(1)
-            norm = abs(sig).max()
-            sd.play(sig/norm,
-                    samplerate=self.sample_freq,
-                    blocking=False)
-        
-    def stop( self ):
-        '''
-        simply stops playback of file
-        '''
-        sd.stop()
-    
-    
-    
 columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
 
@@ -328,6 +273,62 @@ class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
             block, zi = lfilter(b, a, block, axis=0, zi=zi)
             yield block
 
+if sd_enabled:                
+
+    class TimeSamplesPlayback(TimeInOut,BaseSpectacoular):
+        """
+        In the future, this class should work in buffer mode and 
+        also write the current frame that is played to its columndatasource.
+        """
+        
+        # internal identifier
+        digest = Property( depends_on = ['source.digest', '__class__'])
+    
+        #: index of the channel to play
+        channels = ListInt()
+        
+        # device property
+        device = Property()
+        
+        # current frame played back
+        # currentframe = Int()
+        
+        trait_widget_mapper = {'channels': TextInput,
+                           }
+    
+        trait_widget_args = {'channels': {'disabled':False},
+                         }
+    
+        @cached_property
+        def _get_digest( self ):
+            return digest(self)
+        
+        def _get_device( self ):
+            return list(sd.default.device)
+        
+        def _set_device( self, device ):
+            sd.default.device = device
+        
+        def play( self ):
+            '''
+            normalized playback of channel
+            '''
+            if self.channels:
+                if isinstance(self.source,MaskedTimeSamples):
+                    sig = self.source.data[
+                        self.source.start:self.source.stop,self.channels].sum(1)
+                else:
+                    sig = self.source.data[:,self.channels].sum(1)
+                norm = abs(sig).max()
+                sd.play(sig/norm,
+                        samplerate=self.sample_freq,
+                        blocking=False)
+            
+        def stop( self ):
+            '''
+            simply stops playback of file
+            '''
+            sd.stop()
 
 
 class SpectraInOut( TimeInOut ):

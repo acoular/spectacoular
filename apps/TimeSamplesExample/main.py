@@ -8,27 +8,25 @@ Example how to plot TimeData
 """
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, widgetbox
-# from bokeh.events import MouseLeave
+from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText,\
+Tabs,Panel,MultiSelect
 from bokeh.models import ColumnDataSource
-from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText, \
-Tabs, Panel, MultiSelect
 from bokeh.plotting import figure
-# from bokeh.server.server import Server
-from spectacoular import MaskedTimeSamples, TimeSamplesPresenter,TimeSamplesPlayback, \
-                         SpectraInOut                       
-import sounddevice as sd
-# from spectra_example import SpectraInOut
+from numpy import mean, conj, real, array, log10, logspace,append,sort
 from acoular import L_p
-from numpy import mean, conj, real, array, log10, logspace, append, sort
-
-
+from spectacoular import MaskedTimeSamples, TimeSamplesPresenter, SpectraInOut
+try:
+    import sounddevice as sd
+    from spectacoular import TimeSamplesPlayback
+    sd_enabled = True
+except:
+    sd_enabled = False
 
 doc = curdoc()
 # build processing chain
 ts       = MaskedTimeSamples(name='example_data.h5')
 tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
 sp       = SpectraInOut(source=ts)
-playback = TimeSamplesPlayback(source=ts)
 freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0]))
 
 chidx = [str(i) for i in range(ts.numchannels)]
@@ -37,36 +35,15 @@ chidx = [str(i) for i in range(ts.numchannels)]
 tselect = Select(title="Select Channel:", value="0",options=chidx)
 sselect = MultiSelect(title="Select Channel:", value=["0"],
                                options=[(i,i) for i in chidx])
-# button widget to playback the selected time data
-playButton = Toggle(label="Playback Time Data", button_type="success")
+
 # create Button to trigger plot
 applyButton = Toggle(label="Plot Time Data",button_type="success")
-# Input Device Textfield
-inputDevice = TextInput(title="Input Device Index", value=str(playback.device[0]))
-# Output Device Textfield
-outputDevice = TextInput(title="Output Device Index", value=str(playback.device[1]))
-# QueryDevices
-queryButton = Button(label="QueryDevices")
-queryOutput = PreText(width=500, height=400)
-
-def set_input_device(attr,old,new):
-    playback.device = [int(new), playback.device[1]]
-inputDevice.on_change('value',set_input_device) 
-    
-def set_output_device(attr,old,new):
-    playback.device = [playback.device[0],int(new)]
-outputDevice.on_change('value',set_output_device) 
-
-def print_devices():
-    queryOutput.text = f"{sd.query_devices()}"
-queryButton.on_click(print_devices)
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tvWidgets = tv.get_widgets()
 spWidgets = sp.get_widgets()
 tv.set_widgets(**{'channels': tselect})
-playback.set_widgets(**{'channels': tselect})
 
 # THIS FUNCTION GENERATES THE TICKS (TO MOVE)
 def get_logticks(frange=[100, 10000], minor_ticks=[5,2,7], unit='kHz'):
@@ -99,16 +76,45 @@ def get_spectra():
     r_sel  = L_p(r_mean[int(tselect.value)])
     freqdata.data.update(amp=r_sel, freqs=freq)
 
+if sd_enabled: # in case of audio support
+    playback = TimeSamplesPlayback(source=ts)
+    # button widget to playback the selected time data
+    playButton = Toggle(label="Playback Time Data", button_type="success")
+    # Input Device Textfield
+    inputDevice = TextInput(title="Input Device Index", value=str(playback.device[0]))
+    # Output Device Textfield
+    outputDevice = TextInput(title="Output Device Index", value=str(playback.device[1]))
+    # QueryDevices
+    queryButton = Button(label="QueryDevices")
+    queryOutput = PreText(width=500, height=400)
+
+    def set_input_device(attr,old,new):
+        playback.device = [int(new), playback.device[1]]
+    inputDevice.on_change('value',set_input_device) 
+        
+    def set_output_device(attr,old,new):
+        playback.device = [playback.device[0],int(new)]
+    outputDevice.on_change('value',set_output_device) 
+
+    def print_devices():
+        queryOutput.text = f"{sd.query_devices()}"
+    queryButton.on_click(print_devices)
+
+    playback.set_widgets(**{'channels': tselect})
+
+    def playButton_handler(arg):
+        if arg: playback.play()
+        if not arg: playback.stop()
+    playButton.on_click(playButton_handler)
+
+    pbWidgetCol = widgetbox(playButton,row(inputDevice,outputDevice,width=400),
+                            queryButton,queryOutput,width=400)
+
 def change_selectable_channels():
     channels = [str(idx) for idx in range(ts.numchannels)]
     channels.insert(0,"") # add no data field
     tselect.options = channels
 ts.on_trait_change( change_selectable_channels, "numchannels")
-
-def playButton_handler(arg):
-    if arg: playback.play()
-    if not arg: playback.stop()
-playButton.on_click(playButton_handler)
 
 # TimeSignalPlot
 tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800,
@@ -122,16 +128,19 @@ freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
 freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
 freqplot.line('freqs', 'amp', source=freqdata)
+
 #create layout
-tsWidgetsCol = widgetbox(tselect,applyButton,*tsWidgets.values(),
-                         width=400)
-spWidgetsCol = widgetbox(tselect,applyButton,spWidgets['window'],
+tsWidgetsCol = widgetbox(applyButton,tselect,*tsWidgets.values(),width=400)
+if sd_enabled: 
+    allWidgetsLayout = row(tsWidgetsCol,pbWidgetCol)
+else:
+    allWidgetsLayout = row(tsWidgetsCol)
+spWidgetsCol = widgetbox(applyButton,tselect,spWidgets['window'],
                          spWidgets['block_size'],
                          width=400)
-pbWidgetCol = widgetbox(playButton,inputDevice,outputDevice,
-                        queryButton,queryOutput,width=400)
+
 # Put in Tabs
-tsTab = Panel(child=row(tsPlot,tsWidgetsCol,pbWidgetCol), title='Time Data')
+tsTab = Panel(child=row(tsPlot,allWidgetsLayout), title='Time Data')
 fdTab = Panel(child=row(freqplot,spWidgetsCol), title='Frequency Data')
 plotTab = Tabs(tabs=[tsTab, fdTab])
 

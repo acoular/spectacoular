@@ -23,7 +23,7 @@ import numpy as np
 try:
     import cv2
     cam_enabled=True
-    from cam import cameraCDS, camWidgets, set_camera_callback
+    from cam import cameraCDS, camWidgets, set_camera_callback, set_alpha_callback
 except:
     cam_enabled=False
     camWidgets = []
@@ -34,7 +34,7 @@ from functools import partial
 from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
-from bokeh.models import ColumnDataSource, ColorBar
+from bokeh.models import ColumnDataSource, ColorBar, LinearColorMapper
 from bokeh.models.widgets import Div, Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider
 from bokeh.layouts import column,row
 from acoular import TimePower, TimeAverage, L_p, MicGeom, FiltOctave, \
@@ -46,7 +46,8 @@ from interfaces import get_interface
 from layout import log_text_toggles, plot_colors, toggle_labels,micgeom_fig, \
 amp_fig, selectPerCallPeriod, checkbox_use_current_time, bfColorMapper,ampColorMapper, \
 select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,calib_toggle,\
-text_user_info, dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider
+text_user_info, dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider,\
+  COLOR,CLIPVALUE
 
 doc = curdoc()
 if cam_enabled: set_camera_callback(doc)
@@ -75,6 +76,8 @@ SYNCORDER = args.syncorder
 APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
 MGEOMPATH = os.path.join(APPFOLDER,"micgeom/")
 TDPATH = os.path.join(APPFOLDER,"td/")
+if not os.path.exists(TDPATH): 
+    os.mkdir(TDPATH)
 BANDWIDTH = 3
 MAXMSG = 20 # maximum number of messages to display in GUI
 MICSCALE = 7
@@ -199,8 +202,9 @@ amp_bar = amp_fig.vbar(x='channels', width=0.5, bottom=0,top='level',
                    color={'field': 'level', 'transform': ampColorMapper},
                    source=ChLevelsCDS)
 
+mgColorMapper = LinearColorMapper(palette=[COLOR[0],COLOR[10]], low=0.,high=CLIPVALUE*2/MICSCALE)
 micgeom_fig.circle(x='x',y='y', size='sizes',
-                   color={'field': 'sizes', 'transform': ampColorMapper},
+                   color={'field': 'sizes', 'transform': mgColorMapper},
                    source=MicGeomCDS)
 
 # make image
@@ -211,16 +215,18 @@ height = int(width * dy/dx+0.5)
 
 beam_fig = figure(plot_width=width, plot_height=height,
                   x_range=[grid.x_min,grid.x_max], 
-                  y_range=[grid.y_min,grid.y_max])
+                  y_range=[grid.y_min,grid.y_max],
+                   tools = 'pan,wheel_zoom,save,reset')
 if cam_enabled:
     beam_fig.image_rgba(image='image_data',
                         x=XCAM[0], y=XCAM[1], dw=XCAM[2], dh=XCAM[3],
                         source=cameraCDS)
-beam_fig.image(image='beamformer_data', x=grid.x_min, y=grid.y_min, dw=dx, dh=dy,
-                global_alpha=0.45,
+bfImage = beam_fig.image(image='beamformer_data', x=grid.x_min, y=grid.y_min, dw=dx, dh=dy,
+                #global_alpha=0.45,
                 color_mapper=bfColorMapper,
                 source=BeamfCDS)
 beam_fig.toolbar.logo=None
+if cam_enabled: set_alpha_callback(bfImage)
 # color_bar = ColorBar(color_mapper=bfColorMapper,label_standoff=12, 
 #                      background_fill_color = '#2F2F2F',
 #                      border_line_color=None, location=(0,0))
@@ -341,6 +347,7 @@ def change_mode(toggle,mode,isSet):
     widget_activation_callback(mode,isSet)   
     if plot_colors[(mode,isSet)]:
         ampColorMapper.palette = plot_colors[(mode,isSet)]
+        mgColorMapper.palette = plot_colors[(mode,isSet)]
 
 def displaytoggle_handler(arg):
     global periodic_plot_callback, disp_threads # need to be global

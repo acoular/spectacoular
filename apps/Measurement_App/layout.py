@@ -6,16 +6,19 @@ Created on Wed May 15 17:23:01 2019
 @author: kujawski
 """
 from numpy import pi
-from bokeh.palettes import Spectral5, Viridis256
+from bokeh.palettes import Spectral11, Viridis256
 from bokeh.plotting import figure
 from bokeh.models import LinearColorMapper, LogColorMapper
 from bokeh.models.widgets import Toggle, Button, PreText,Select,RangeSlider,\
 CheckboxGroup, Slider
 
-COLOR = Spectral5
-MODE_COLORS = {'display':COLOR[0],'calib':COLOR[2],'msm':COLOR[3]}
+CLIPVALUE = 120 # value in dB at which CLIP_COLOR is applied
+COLOR = Spectral11
+MODE_COLORS = {'display':COLOR[1],'calib':COLOR[5],'msm':COLOR[8]}
+CLIP_COLORS = {'display':COLOR[8],'calib':COLOR[8],'msm':COLOR[8]}
 AMPFIG_ARGS = {'y_range': (0,140),'plot_width':1200, 'plot_height':800} 
 MGEOMFIG_ARGS = {'plot_width':800,  'plot_height':800}
+
 
 # status Definitions
 log_text_toggles =  {('msm',True): "collecting samples...",
@@ -36,18 +39,18 @@ toggle_labels =     {('msm',False): "START MEASUREMENT",
                     ('beamf',True): "stop beamforming",
                     ('beamf',False): "start beamforming"}
 
-plot_colors =       {('msm',True): [MODE_COLORS['msm'],MODE_COLORS['msm']],
-                    ('msm',False): [MODE_COLORS['display'],MODE_COLORS['display']],
-                    ('display',True): [MODE_COLORS['display'],MODE_COLORS['display']],
-                    ('display',False): [MODE_COLORS['display'],MODE_COLORS['display']],
-                    ('calib',True): [MODE_COLORS['calib'],MODE_COLORS['calib']],
-                    ('calib',False): [MODE_COLORS['display'],MODE_COLORS['display']],
+plot_colors =       {('msm',True): [MODE_COLORS['msm'],CLIP_COLORS['msm']],
+                    ('msm',False): [MODE_COLORS['display'],CLIP_COLORS['display']],
+                    ('display',True): [MODE_COLORS['display'],CLIP_COLORS['display']],
+                    ('display',False): [MODE_COLORS['display'],CLIP_COLORS['display']],
+                    ('calib',True): [MODE_COLORS['calib'],CLIP_COLORS['calib']],
+                    ('calib',False): [MODE_COLORS['display'],CLIP_COLORS['display']],
                     ('beamf',True): [],
                     ('beamf',False): []}
 
 # Color Mapper
 bfColorMapper = LogColorMapper(palette=Viridis256, low=70, high=90,low_color=(1,1,1,0))
-ampColorMapper = LinearColorMapper(palette=[COLOR[0],COLOR[0]], low=0.,high=180)
+ampColorMapper = LinearColorMapper(palette=[COLOR[0],COLOR[10]], low=0.,high=CLIPVALUE*2)
 
 # Buttons
 select_all_channels_button = Button(label="select all channels")
