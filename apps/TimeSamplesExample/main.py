@@ -125,7 +125,7 @@ freqplot.line('freqs', 'amp', source=freqdata)
 #create layout
 tsWidgetsCol = widgetbox(tselect,applyButton,*tsWidgets.values(),
                          width=400)
-spWidgetsCol = widgetbox(sselect,applyButton,spWidgets['window'],
+spWidgetsCol = widgetbox(tselect,applyButton,spWidgets['window'],
                          spWidgets['block_size'],
                          width=400)
 pbWidgetCol = widgetbox(playButton,inputDevice,outputDevice,
