@@ -12,19 +12,23 @@
     TimeInOutPresenter
 """
  
-from numpy import logical_and,savetxt,mean,array,newaxis, zeros
+from numpy import logical_and,savetxt,mean,array,newaxis, zeros,\
+ pad, ones, hanning, hamming, bartlett, blackman,fft 
+
 from scipy.signal import lfilter
 from datetime import datetime
 from time import time,sleep
-from bokeh.models.widgets import TextInput,DataTable,TableColumn, NumberEditor
+from bokeh.models.widgets import TextInput,DataTable,TableColumn,\
+    NumberEditor, Select
 
 from bokeh.models import ColumnDataSource, LogColorMapper, ColorBar
-from traits.api import Property, File, CArray,Int,\
+from traits.api import Property, File, CArray,Int, Delegate, Trait,\
 cached_property, on_trait_change, Float,Bool, Instance, ListInt
 import sounddevice as sd
 
 # acoular imports
-from acoular import TimeInOut, L_p,TimeAverage,FiltFiltOctave, MaskedTimeSamples
+from acoular import TimeInOut, L_p,TimeAverage,FiltFiltOctave, \
+    SamplesGenerator,MaskedTimeSamples
 from acoular.internal import digest
 # 
 from .dprocess import BasePresenter
@@ -323,3 +327,87 @@ class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
             zi = zeros((max(len(a), len(b))-1, self.source.numchannels))
             block, zi = lfilter(b, a, block, axis=0, zi=zi)
             yield block
+
+
+
+class SpectraInOut( TimeInOut ):
+    """Provides the spectra of multichannel time data.   
+        Returns Spectra per block over a Generator.
+    
+    """
+    
+    #: Data source; :class:`~acoular.sources.SamplesGenerator` or derived object.
+    source = Trait(SamplesGenerator)
+
+    #: Sampling frequency of output signal, as given by :attr:`source`.
+    sample_freq = Delegate('source')
+    
+    #:the Windows function for the fft
+    window = Trait('Rectangular', 
+        {'Rectangular':ones, 
+        'Hanning':hanning, 
+        'Hamming':hamming, 
+        'Bartlett':bartlett, 
+        'Blackman':blackman}, 
+        desc="type of window for FFT")
+    
+    #: FFT block size, one of: 128, 256, 512, 1024, 2048 ... 65536,
+    #: defaults to 1024.
+    block_size = Trait(1024, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536,
+        desc="number of samples per FFT block")
+
+    #: The floating-number-precision of entries of csm, eigenvalues and 
+    #: eigenvectors, corresponding to numpy dtypes. Default is 64 bit.
+    precision = Trait('complex128', 'complex64', 
+                      desc="precision csm, eva, eve")
+    
+    trait_widget_mapper = {
+                        'window': Select,
+                        'block_size': Select,
+                       }
+
+    trait_widget_args = {
+                        'window':  {'disabled':False},
+                        'block_size':  {'disabled':False},
+                         }
+
+    get_widgets = get_widgets
+    
+    set_widgets = set_widgets
+
+    def fftfreq ( self ):
+        """
+        Return the Discrete Fourier Transform sample frequencies.
+        
+        Returns
+        -------
+        f : ndarray
+            Array of length *block_size/2+1* containing the sample frequencies.
+        """
+        return abs(fft.fftfreq(self.block_size, 1./self.source.sample_freq)\
+                    [:int(self.block_size/2+1)])
+
+    #generator that yields the fft for every channel
+    def result(self):
+        """ 
+        Python generator that yields the output block-wise.
+        
+        Parameters
+        ----------
+        num : integer
+            This parameter defines the size of the blocks to be yielded
+            (i.e. the number of samples per block).
+        
+        Returns
+        -------
+        Samples in blocks of shape (numfreq, :attr:`numchannels`). 
+            The last block may be shorter than num.
+            """
+        for temp in self.source.result(self.block_size):
+            if temp.shape[0] < self.block_size:
+                z2pad = self.block_size - temp.shape[0]
+                temp  = pad(temp, [(0,z2pad),(0,0)], mode='constant', constant_values=0)
+            wind = self.window_(self.block_size)
+            wind = wind[:, newaxis]
+            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)*(2/self.block_size)
+            yield ft
