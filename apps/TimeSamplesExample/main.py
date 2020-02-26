@@ -8,12 +8,15 @@ Example how to plot TimeData
 """
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, widgetbox
-from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText,\
-Tabs,Panel,MultiSelect
+# from bokeh.events import MouseLeave
+from bokeh.models import ColumnDataSource, Range1d
+from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText, \
+Tabs, Panel, MultiSelect
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
 from numpy import mean, conj, real, array, log10, logspace,append,sort
 from acoular import L_p
+from numpy import mean, conj, real, array, log10, logspace, append, sort
 from spectacoular import MaskedTimeSamples, TimeSamplesPresenter, SpectraInOut,\
     set_calc_button_callback
 try:
@@ -22,7 +25,6 @@ try:
     sd_enabled = True
 except:
     sd_enabled = False
-from numpy import mean, conj, real, array, log10, logspace, append, sort, shape
 
 doc = curdoc()
 # build processing chain
@@ -80,6 +82,7 @@ def get_spectra():
         freq.append(sp.fftfreq())
         chn.append(int(sel))
     freqdata.data.update(amp=r_sel, freqs=freq, chn=chn)
+    # freqplot.x_range = Range1d(freq[0][0], freq[0][-1])
 
 if sd_enabled: # in case of audio support
     playback = TimeSamplesPlayback(source=ts)
