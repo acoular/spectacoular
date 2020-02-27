@@ -189,7 +189,7 @@ f.set_widgets(**{'center_freq':freqSlider})
 
 wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
                      step=0.0025, title="Time weighting (FAST: 0.125, SLOW: 1.0)",
-                     disabled=True)
+                     disabled=False)
 f.set_widgets(**{'weight_time':wtimeSlider})
 
 # checkboxes # inline=True -> arange horizontally, False-> vertically
