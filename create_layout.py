@@ -16,8 +16,8 @@ bg_col  = '#2F2F2F'
 txt_col = 'white'
 # Set selection color
 sel_col = '#1f77b4'
-# Set success button color
-but_col = 'deepskyblue'
+# Set success button color: [color, hovered color]
+but_col = ['deepskyblue', 'deepskyblue']
 # Set link color: [color, hovered color]
 link_col = ['green', 'white']
 # Font Sizes
@@ -119,13 +119,13 @@ for path in paths:
                   '    }',
 #                  '  @import url(https://fonts.googleapis.com/css?family=Noto+Sans);',
                   '  .bk-root .bk-btn-success:hover {', # set color of success button if hovered
-                 f'    background-color: lime !important;',
-                 f'    border-color: red !important;',
+                 f'    background-color: {but_col[1]} !important;',
+                 f'    border-color: {but_col[1]} !important;',
                   '    }',
                   '  .bk-root .bk-btn-success {', # set color of success button
                  f'    color: {txt_col} !important;',
-                 f'    background-color: {but_col} !important;',
-                 f'    border-color: {bg_col} !important;',
+                 f'    background-color: {but_col[0]} !important;',
+                 f'    border-color: {but_col[0]} !important;',
                   '    }',
                   '  .slick-header-columns, .slick-headerrow-columns, .slick-footerrow-columns {',
                   '    overflow: visible !important;',

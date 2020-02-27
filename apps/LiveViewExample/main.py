@@ -79,6 +79,7 @@ bttn.on_click(toggle_handler)
 
 # amp bar
 ampPlot = figure(title='SPL/dB',tools="",**AMPFIG_ARGS)
+ampPlot.toolbar.logo = None
 ampPlot.vbar(
     x='ch', width=0.5, bottom=0,top='top', source=cdsource)
 # ampPlot.xgrid.visible = False
@@ -86,6 +87,7 @@ ampPlot.vbar(
 
 #MicGeomPlot
 mgPlot = figure(title='Microphone Geometry',**MGEOMFIG_ARGS)
+mgPlot.toolbar.logo = None
 mgPlot.circle_cross(x='x',y='y',size='size',fill_alpha=0.2,source=cdsource)
                                   
 ### CREATE LAYOUT ### 

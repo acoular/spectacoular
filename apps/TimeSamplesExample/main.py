@@ -7,9 +7,9 @@
 Example how to plot TimeData
 """
 from bokeh.io import curdoc
-from bokeh.layouts import column, row, widgetbox
+from bokeh.layouts import row, widgetbox
 # from bokeh.events import MouseLeave
-from bokeh.models import ColumnDataSource, Range1d
+from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText, \
 Tabs, Panel, MultiSelect
 from bokeh.models import ColumnDataSource
@@ -82,7 +82,8 @@ def get_spectra():
         freq.append(sp.fftfreq())
         chn.append(int(sel))
     freqdata.data.update(amp=r_sel, freqs=freq, chn=chn)
-    # freqplot.x_range = Range1d(freq[0][0], freq[0][-1])
+    freqplot.x_range.start = freq[0][1]-20
+    freqplot.x_range.end   = freq[0][-1]+20
 
 if sd_enabled: # in case of audio support
     playback = TimeSamplesPlayback(source=ts)
@@ -134,7 +135,7 @@ tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 freqplottips = [("Channel", "@chn"),("Frequency in Hz", "$x"),("|P(f)|^2 in dB", "$y")]
 freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
                   x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB",
-                  tooltips=freqplottips)
+                  tooltips=freqplottips, x_range=(40,26000))
 freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
 freqplot.multi_line('freqs', 'amp', source=freqdata)
