@@ -112,7 +112,7 @@ def dynamicSlider_callback(attr, old, new):
 dynamicSlider.on_change("value",dynamicSlider_callback)
 
 # create Button to trigger beamforming result calculation
-calcButton = Toggle(label="Calculate",button_type="success")
+calcButton = Toggle(label="Calculate",button_type="primary", width=150,height=50)
 set_calc_button_callback(bv.update,calcButton)
 
 
