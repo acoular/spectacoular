@@ -109,7 +109,8 @@ class BeamformerPresenter(BasePresenter):
     source = Trait(BeamformerBase)
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = ColumnDataSource(data={'bfdata':[],'x':[],'y':[],'dw':[],'dh':[]})
+    cdsource = ColumnDataSource(data={'bfdata':[],'x':[],'y':[],
+                                      'pdata':[],'dw':[],'dh':[]})
 
     #: :class:`~acoular.fbeamform.SteeringVector` or derived object. 
     steer = Instance(SteeringVector)
@@ -137,7 +138,7 @@ class BeamformerPresenter(BasePresenter):
         if res.size > 0: 
             dx = self.steer.grid.x_max-self.steer.grid.x_min
             dy = self.steer.grid.y_max-self.steer.grid.y_min
-            self.cdsource.data = {'bfdata' : [L_p(res).T],
+            self.cdsource.data = {'bfdata' : [L_p(res).T], 'pdata' : [(res).T], 
             'x':[self.steer.grid.x_min], 
             'y':[self.steer.grid.y_min], 
             'dw':[dx], 
