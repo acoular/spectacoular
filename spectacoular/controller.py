@@ -39,7 +39,7 @@ def set_calc_button_callback(calcFunc, calcButton):
             calcButton.active = False
             calcButton.disabled = False
             calcButton.label = 'Calculate'
-        if not arg:
+        else:
             calcButton.label = 'Calculate'
     calcButton.on_click(calc)
 
