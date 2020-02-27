@@ -11,7 +11,8 @@ from numpy import shape
 from bokeh.io import curdoc
 from bokeh.layouts import column, row,widgetbox
 from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider, StringFormatter, TableColumn, DataTable
-from bokeh.models import LinearColorMapper, ColorBar, PointDrawTool
+from bokeh.models import LinearColorMapper, ColorBar, PointDrawTool, ColumnDataSource
+from bokeh.events import Reset
 from bokeh.plotting import figure
 from bokeh.palettes import Viridis256 
 from bokeh.server.server import Server
@@ -24,6 +25,8 @@ PALETTE = Viridis256
 doc = curdoc()
 acoular.config.global_caching = 'none' # no result cachings
 
+#%%
+
 # define selectable microphone geometries
 micgeofiles = path.join( path.split(acoular.__file__)[0],'xml')
 options = [path.join(micgeofiles,name) for name in os.listdir(micgeofiles)]
@@ -35,7 +38,8 @@ rg = RectGrid(x_min=-0.5, x_max=0.5, y_min=-0.5, y_max=0.5, z=.5,increment=0.02)
 st = SteeringVector(mics = mg, grid = rg)
 psf = PointSpreadFunction(steer=st,freq=1000.0)
 psfPresenter = PointSpreadFunctionPresenter(source=psf)
-           
+
+#%%           
 # create Select widget to choose Microphone Geometry
 micGeomSelect = Select(title='Geometry',value=options[0],options=options) 
 # create Slider widget to choose Frequency of PSF
@@ -50,9 +54,13 @@ stWidgets = st.get_widgets()
 psfWidgets = psf.get_widgets()
 psf.set_widgets(**{'freq':psfFreqSlider}) # set from file attribute with select widget
 
+#%%
+
+
+src_pos = ColumnDataSource(data={'x':[0],'y':[0]})
 # create Button to trigger PSF calculation
 def calc():
-    source_pos = (0,0,rg.z) #(x,y,z), will be snapped to grid
+    source_pos = (src_pos.data['x'][0],src_pos.data['y'][0],rg.z) #(x,y,z), will be snapped to grid
     grid_index = array([ravel_multi_index(rg.index(*source_pos[:2]), rg.shape)])
     psf.grid_indices = grid_index
     psfPresenter.update()
@@ -64,7 +72,12 @@ psf_update = lambda attr, old, new: psfPresenter.update()
 psfFreqSlider.on_change('value',psf_update) # change psf plot when frequency changes
 # mgWidgets['mpos_tot'].source.on_change('data',psf_update)
 
-#MicGeomPlot
+
+
+
+
+
+#%% MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', 
                 tools = 'pan,wheel_zoom,reset,lasso_select',
                 plot_width=600, plot_height=600)
@@ -75,10 +88,13 @@ drawtool = PointDrawTool(renderers=[micRenderer])
 mgPlot.add_tools(drawtool)
 mgPlot.toolbar.active_tap = drawtool
 
-# PSF Plot
+
+
+
+#%% PSF Plot
 # Tooltips for additional information
 PSF_TOOLTIPS = [
-    ("Level (dB)", "@psf"),
+    ("Lp/dB", "@psf"),
     ("(x,y)", "($x, $y)"),]
 psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
                  tooltips=PSF_TOOLTIPS,
@@ -90,8 +106,31 @@ psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
 psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Lp/dB",\
                             title_standoff=5,
                             background_fill_color = '#2F2F2F'),'right')
-                    
-### CREATE LAYOUT ### 
+
+    
+srcRenderer = psfPlot.cross(x='x',y='y',size=10, fill_alpha=.8, source=src_pos)
+marktool = PointDrawTool(renderers=[srcRenderer], num_objects=1)
+psfPlot.add_tools(marktool)
+psfPlot.toolbar.active_tap = marktool
+
+# this is somwhat redundant to the calc function
+def calc_update(attr,old,new):
+    source_pos = (src_pos.data['x'][0],src_pos.data['y'][0],rg.z) #(x,y,z), will be snapped to grid
+    grid_index = array([ravel_multi_index(rg.index(*source_pos[:2]), rg.shape)])
+    psf.grid_indices = grid_index
+    psfPresenter.update()
+
+src_pos.on_change('data',calc_update)
+
+def resetpos(event):
+    src_pos.data={'x':[0],'y':[0]}
+
+psfPlot.on_event(Reset, resetpos)
+
+
+
+                  
+#%% CREATE LAYOUT ### 
 # Tabs
 mgTab = Panel(child=column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
                            mgWidgets['num_mics'],mgWidgets['mpos_tot']),
