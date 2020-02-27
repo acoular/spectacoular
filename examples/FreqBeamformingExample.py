@@ -18,7 +18,7 @@ from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
 BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
 BeamformerCleansc, BeamformerClean, BeamformerPresenter,\
-BeamformerCMF,BeamformerGIB,Environment,Calib
+BeamformerCMF,BeamformerGIB,Environment,Calib, set_calc_button_callback
  
 # build processing chain
 micgeofile = path.join( path.split(acoular.__file__)[0],'xml','array_56.xml')
@@ -99,15 +99,7 @@ dynamicSlider.on_change("value",dynamicSlider_callback)
 
 # create Button to trigger beamforming result calculation
 calcButton = Toggle(label="Calculate",button_type="success")
-def calc(arg):
-    if arg:
-        calcButton.label = 'Calculating ...'
-        bv.update()
-        calcButton.active = False
-        calcButton.label = 'Calculate'
-    if not arg:
-        calcButton.label = 'Calculate'
-calcButton.on_click(calc)
+set_calc_button_callback(bv.update,calcButton)
 
 # create server doc func
 def server_doc(doc):

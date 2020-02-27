@@ -13,14 +13,14 @@ from bokeh.models.tools import BoxEditTool
 from bokeh.models import LinearColorMapper,ColorBar,ColumnDataSource
 from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider
 from bokeh.plotting import figure
-from bokeh.palettes import viridis, plasma, inferno, magma
-from numpy import array, zeros, nan
+from bokeh.palettes import viridis
+from numpy import array, nan
 import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
 BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
 BeamformerCleansc, BeamformerClean, BeamformerPresenter,\
-BeamformerCMF,BeamformerGIB,Environment,Calib
+BeamformerCMF,BeamformerGIB,Environment,Calib,set_calc_button_callback
 
 doc = curdoc() 
 
@@ -112,18 +112,9 @@ def dynamicSlider_callback(attr, old, new):
 dynamicSlider.on_change("value",dynamicSlider_callback)
 
 # create Button to trigger beamforming result calculation
-calcButton = Toggle(label="Calculate",button_type="primary", width=150, height=50)
-def calc(arg):
-    if arg:
-        calcButton.label = 'Calculating ...'
-        bv.update()
-        calcButton.active = False
-        calcButton.label = 'Calculate'
-    else:
-        calcButton.label = 'Calculate'
-calcButton.on_click(calc)
+calcButton = Toggle(label="Calculate",button_type="primary", width=150,height=50)
+set_calc_button_callback(bv.update,calcButton)
 
-#%% Plots setup
 
 #MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', 
@@ -146,8 +137,10 @@ bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
                            title_standoff=10),'right')
 
 # FrequencySignalPlot
-freqdata = ColumnDataSource(data={'freqs':ps.fftfreq(),
-                                  'amp':zeros((ps.fftfreq().shape))})
+# freqdata = ColumnDataSource(data={'freqs':[list(ps.fftfreq())],
+#                                   'amp':[[zeros((ps.fftfreq().shape))]]})
+freqdata = ColumnDataSource(data={'freqs':[],
+                                  'amp':[]})
 f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
                     500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
@@ -162,8 +155,7 @@ freqplot.xgrid.minor_grid_line_color = 'navy'
 freqplot.xgrid.minor_grid_line_alpha = 0.05
 freqplot.xaxis.ticker = f_ticks
 freqplot.xaxis.major_label_overrides = f_ticks_override
-freqplot.line('freqs', 'amp', source=freqdata)
-
+freqplot.multi_line('freqs', 'amp', source=freqdata)
 
 
 #%% Property Tabs
@@ -190,7 +182,10 @@ beamformerSelector.on_change('value',beamformer_handler)
 #%% Integration sector
 
 sectordata = ColumnDataSource(data={'x':[],'y':[],'width':[], 'height':[]})
+                                    
 def integrate_result(attr,old,new):
+    famp = []
+    ffreq = []
     for i in range(len(sectordata.data['x'])):
         sector = array([
             sectordata.data['x'][i]-sectordata.data['width'][i]/2, 
@@ -199,19 +194,18 @@ def integrate_result(attr,old,new):
             sectordata.data['y'][i]+sectordata.data['height'][i]/2
             ])
         print(sector)
-        #print(bv.source.integrate(sector))
         specamp = acoular.L_p(bv.source.integrate(sector))
         specamp[specamp<-300] = nan
-        freqdata.data['amp'] = specamp
-        freqdata.data['freqs'] = ps.fftfreq()
-        # print(acoular.L_p(acoular.integrate(array(bv.cdsource.data['pdata']), rg, sector)))
+        famp.append(specamp)
+        ffreq.append(ps.fftfreq())
+    freqdata.data.update(amp=famp, freqs=ffreq)
 
 
-isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=.3,color='red', source=sectordata)
-tool = BoxEditTool(renderers=[isector],num_objects=1)
+isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=.4,color='red', source=sectordata)
+tool = BoxEditTool(renderers=[isector])
 bfPlot.add_tools(tool)
 sectordata.on_change('data',integrate_result)
-
+bv.cdsource.on_change('data',integrate_result)
 #%% Document layout
 
 calcRow = row(calcButton,*bvWidgets.values(),dynamicSlider)

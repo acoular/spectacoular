@@ -14,7 +14,8 @@ from bokeh.plotting import figure
 from bokeh.server.server import Server
 from numpy import mean, conj, real, array
 from acoular import L_p
-from spectacoular import MaskedTimeSamples, TimeSamplesPresenter, SpectraInOut
+from spectacoular import MaskedTimeSamples, TimeSamplesPresenter, SpectraInOut,\
+    set_calc_button_callback
 try:
     import sounddevice as sd
     from spectacoular import TimeSamplesPlayback
@@ -36,7 +37,7 @@ sselect = MultiSelect(title="Select Channel:", value=["0"],
                                options=[(i,i) for i in chidx])
 
 # create Button to trigger plot
-applyButton = Toggle(label="Plot Time Data",button_type="success")
+plotButton = Toggle(label="Calculate",button_type="success")
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -121,12 +122,12 @@ def server_doc(doc):
     freqplot.line('freqs', 'amp', source=freqdata)
 
     #create layout
-    tsWidgetsCol = widgetbox(applyButton,tselect,*tsWidgets.values(),width=400)
+    tsWidgetsCol = widgetbox(plotButton,tselect,*tsWidgets.values(),width=400)
     if sd_enabled: 
         allWidgetsLayout = row(tsWidgetsCol,pbWidgetCol)
     else:
         allWidgetsLayout = row(tsWidgetsCol)
-    spWidgetsCol = widgetbox(applyButton,tselect,spWidgets['window'],
+    spWidgetsCol = widgetbox(plotButton,tselect,spWidgets['window'],
                              spWidgets['block_size'],
                              width=400)
 
@@ -135,18 +136,12 @@ def server_doc(doc):
     fdTab = Panel(child=row(freqplot,spWidgetsCol), title='Frequency Data')
     plotTab = Tabs(tabs=[tsTab, fdTab])
 
-    def plot(arg):
-        if arg:
-            applyButton.label = 'Plotting ...'
-            if plotTab.active == 0: 
-                tv.update()
-            elif plotTab.active == 1:
-                get_spectra()
-            applyButton.active = False
-            applyButton.label = 'Plot Data'
-        if not arg:
-            applyButton.label = 'Plot Data'
-    applyButton.on_click(plot)
+    def plot():
+        if plotTab.active == 0: 
+            tv.update()
+        elif plotTab.active == 1:
+            get_spectra()
+    set_calc_button_callback(plot,plotButton)
 
     # add to doc
     doc.add_root(plotTab)
