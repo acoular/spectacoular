@@ -22,7 +22,7 @@ SpatialInterpolatorConstantRotation,\
 BeamformerBase, BeamformerFunctional,BeamformerCapon,\
 BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
 BeamformerCleansc, BeamformerClean, BeamformerPresenter,\
-BeamformerCMF,BeamformerGIB,Environment,Calib
+BeamformerCMF,BeamformerGIB,Environment,Calib,set_calc_button_callback
 
 doc = curdoc() 
 # build processing chain
@@ -102,16 +102,7 @@ dynamicSlider.on_change("value",dynamicSlider_callback)
 
 # create Button to trigger beamforming result calculation
 calcButton = Toggle(label="Calculate",button_type="primary")
-def calc(arg):
-    if arg:
-        calcButton.label = 'Calculating ...'
-        bv.update()
-        calcButton.active = False
-        calcButton.label = 'Calculate'
-    if not arg:
-        calcButton.label = 'Calculate'
-calcButton.on_click(calc)
-
+set_calc_button_callback(bv.update,calcButton)
 
 #MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', tools = 'hover,pan,wheel_zoom,reset')

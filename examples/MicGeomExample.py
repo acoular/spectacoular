@@ -4,6 +4,7 @@
 # Copyright (c) 2007-2019, Acoular Development Team.
 #------------------------------------------------------------------------------
 import os
+import sys
 from os import path
 import acoular
 from bokeh.layouts import column, row,widgetbox
@@ -13,7 +14,7 @@ from bokeh.plotting import figure
 from bokeh.palettes import viridis
 from bokeh.server.server import Server
 from spectacoular import MicGeom, SteeringVector, RectGrid, PointSpreadFunction,\
-PointSpreadFunctionPresenter
+PointSpreadFunctionPresenter,set_calc_button_callback
 from pylab import ravel_multi_index, array
 
 acoular.config.global_caching = 'none' # no result cachings
@@ -46,19 +47,13 @@ psfWidgets = psf.get_widgets()
 psf.set_widgets(**{'freq':psfFreqSlider}) # set from file attribute with select widget
 
 # create Button to trigger PSF calculation
-calcButton = Toggle(label="Calculate PSF",button_type="success")
-def calc(arg):
-    if arg:
-        calcButton.label = 'Calculating ...'
-        source_pos = (0,0,rg.z) #(x,y,z), will be snapped to grid
-        grid_index = array([ravel_multi_index(rg.index(*source_pos[:2]), rg.shape)])
-        psf.grid_indices = grid_index
-        psfPresenter.update()
-        calcButton.active = False
-        calcButton.label = 'Calculate'
-    if not arg:
-        calcButton.label = 'Calculate'
-calcButton.on_click(calc)
+def calc():
+    source_pos = (0,0,rg.z) #(x,y,z), will be snapped to grid
+    grid_index = array([ravel_multi_index(rg.index(*source_pos[:2]), rg.shape)])
+    psf.grid_indices = grid_index
+    psfPresenter.update()
+calcButton = Toggle(label="Calculate",button_type="success")
+set_calc_button_callback(calc,calcButton)
 
 # calculate psf on change of:
 psf_update = lambda attr, old, new: psfPresenter.update()        

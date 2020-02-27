@@ -24,6 +24,25 @@ from acoular import SamplesGenerator
 
 from .factory import BaseSpectacoular
 
+def set_calc_button_callback(calcFunc, calcButton):
+    def calc(arg):
+        calclabel = 'Calculating ...'
+        if arg:
+            calcButton.label = calclabel
+            calcButton.disabled = True
+            while not calcButton.label == calclabel and not calcButton.disabled:
+                pass
+            try:
+                calcFunc()
+            except Exception as ex:
+                print(ex)
+            calcButton.active = False
+            calcButton.disabled = False
+            calcButton.label = 'Calculate'
+        if not arg:
+            calcButton.label = 'Calculate'
+    calcButton.on_click(calc)
+
 
 # class SingleChannelController(BaseSpectacoular):
     

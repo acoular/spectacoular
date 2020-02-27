@@ -20,7 +20,7 @@ from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
 BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
 BeamformerCleansc, BeamformerClean, BeamformerPresenter,\
-BeamformerCMF,BeamformerGIB,Environment,Calib
+BeamformerCMF,BeamformerGIB,Environment,Calib,set_calc_button_callback
 
 doc = curdoc() 
 
@@ -112,18 +112,9 @@ def dynamicSlider_callback(attr, old, new):
 dynamicSlider.on_change("value",dynamicSlider_callback)
 
 # create Button to trigger beamforming result calculation
-calcButton = Toggle(label="Calculate",button_type="primary", width=150, height=50)
-def calc(arg):
-    if arg:
-        calcButton.label = 'Calculating ...'
-        bv.update()
-        calcButton.active = False
-        calcButton.label = 'Calculate'
-    else:
-        calcButton.label = 'Calculate'
-calcButton.on_click(calc)
+calcButton = Toggle(label="Calculate",button_type="success")
+set_calc_button_callback(bv.update,calcButton)
 
-#%% Plots setup
 
 #MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', 
