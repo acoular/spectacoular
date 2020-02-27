@@ -126,7 +126,9 @@ calcButton.on_click(calc)
 #%% Plots setup
 
 #MicGeomPlot
-mgPlot = figure(title='Microphone Geometry', tools = 'hover,pan,wheel_zoom,reset')
+mgPlot = figure(title='Microphone Geometry', 
+                tools = 'hover,pan,wheel_zoom,reset')
+mgPlot.toolbar.logo=None
 mgPlot.circle(x='x',y='y',source=mgWidgets['mpos_tot'].source)
 
 # beamformerPlot
@@ -136,6 +138,7 @@ bfPlot = figure(title='Beamforming Result',
                 tools = 'pan,wheel_zoom,reset', 
                 width=bfplotwidth,
                 height=500)
+bfPlot.toolbar.logo=None
 bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',
              color_mapper=colorMapper,source=bv.cdsource)
 bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
@@ -152,6 +155,7 @@ f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2',
 freqplot = figure(title="Sector-Integrated Spectrum", plot_width=bfplotwidth, plot_height=300,
                   x_axis_type="log", x_axis_label="f / kHz", 
                   y_axis_label="SPL / dB")
+freqplot.toolbar.logo=None
 freqplot.xaxis.axis_label_text_font_style = "normal"
 freqplot.yaxis.axis_label_text_font_style = "normal"
 freqplot.xgrid.minor_grid_line_color = 'navy'
