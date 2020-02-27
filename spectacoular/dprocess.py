@@ -155,11 +155,11 @@ class PointSpreadFunctionPresenter(BasePresenter):
     cdsource = ColumnDataSource(data={'psf':[],'x':[],'y':[],'dw':[],'dh':[]})
 
     def update(self):
-        data = self.source.psf.reshape(self.source.grid.shape)
-        data /= np.max(np.abs(data))
+        data = L_p(self.source.psf.reshape(self.source.grid.shape))
+        data -= data.max()
         dx = self.source.grid.x_max-self.source.grid.x_min
         dy = self.source.grid.y_max-self.source.grid.y_min
-        self.cdsource.data = {'psf' : [L_p(data).T],
+        self.cdsource.data = {'psf' : [data],
         'x':[self.source.grid.x_min], 
         'y':[self.source.grid.y_min], 
         'dw':[dx], 
