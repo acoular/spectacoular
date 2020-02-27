@@ -9,7 +9,7 @@ from os import path
 import acoular
 from bokeh.layouts import column, row,widgetbox
 from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider
-from bokeh.models import LogColorMapper, ColorBar, PointDrawTool
+from bokeh.models import LinearColorMapper, ColorBar, PointDrawTool
 from bokeh.plotting import figure
 from bokeh.palettes import viridis
 from bokeh.server.server import Server
@@ -52,7 +52,7 @@ def calc():
     grid_index = array([ravel_multi_index(rg.index(*source_pos[:2]), rg.shape)])
     psf.grid_indices = grid_index
     psfPresenter.update()
-calcButton = Toggle(label="Calculate",button_type="success")
+calcButton = Toggle(label="Calculate",button_type="primary")
 set_calc_button_callback(calc,calcButton)
 
 # calculate psf on change of:
@@ -65,7 +65,7 @@ def server_doc(doc):
     mgPlot = figure(title='Microphone Geometry', 
                     tools = 'pan,wheel_zoom,reset,lasso_select',
                     match_aspect=True,)
-    micRenderer = mgPlot.circle_cross(x='x',y='y',size=10,fill_alpha=0.2,
+    micRenderer = mgPlot.circle_cross(x='x',y='y',size=10,fill_alpha=0.6,
                                       source=mgWidgets['mpos_tot'].source)
     drawtool = PointDrawTool(renderers=[micRenderer])
     mgPlot.add_tools(drawtool)
@@ -74,16 +74,18 @@ def server_doc(doc):
     # PSF Plot
     # Tooltips for additional information
     PSF_TOOLTIPS = [
-        ("Level [dB]", "@psf"),
+        ("Level (dB)", "@psf"),
     ("(x,y)", "($x, $y)"),]
     psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
                      tooltips=PSF_TOOLTIPS,match_aspect=True)
     psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
-    cm = LogColorMapper(low=74, high=94,palette=PALETTE)
+    cm = LinearColorMapper(low=-20, high=0,palette=PALETTE, low_color='white')
     psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
                  source=psfPresenter.cdsource, color_mapper=cm)
-    psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Level [dB]",\
-                                title_standoff=10),'right')
+    psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Lp/dB",\
+                            title_standoff=5,
+                            background_fill_color = 'white'),'right')
+
                         
     ### CREATE LAYOUT ### 
     # Tabs
