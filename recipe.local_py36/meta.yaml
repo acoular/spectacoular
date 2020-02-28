@@ -27,13 +27,13 @@ source:
 requirements:
   build:
     - python
-    - acoular::acoular>=20.02
+    - Acoular>=20.02
     - bokeh >=1.2.0
 
 
   run:
     - python >=3.6
-    - acoular::acoular>=20.02
+    - Acoular>=20.02
     - bokeh >=1.2.0
 
 test:
