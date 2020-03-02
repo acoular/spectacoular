@@ -28,14 +28,10 @@ ts       = MaskedTimeSamples(name='example_data.h5')
 tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
 sp       = SpectraInOut(source=ts)
 freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0]))
-
 chidx = [str(i) for i in range(ts.numchannels)]
 
 # create widget to select the channel that should be plotted
 tselect = Select(title="Select Channel:", value="0",options=chidx)
-sselect = MultiSelect(title="Select Channel:", value=["0"],
-                               options=[(i,i) for i in chidx])
-
 # create Button to trigger plot
 plotButton = Toggle(label="Calculate",button_type="success")
 

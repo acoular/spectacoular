@@ -145,7 +145,7 @@ if sd_enabled:
     allWidgetsLayout = row(tsWidgetsCol,pbWidgetCol)
 else:
     allWidgetsLayout = row(tsWidgetsCol)
-spWidgetsCol = widgetbox(plotButton,tselect,spWidgets['window'],
+spWidgetsCol = widgetbox(plotButton,sselect,spWidgets['window'],
                          spWidgets['block_size'],
                          width=400)
 
@@ -154,24 +154,12 @@ tsTab = Panel(child=row(tsPlot,allWidgetsLayout), title='Time Data')
 fdTab = Panel(child=row(freqplot,spWidgetsCol), title='Frequency Data')
 plotTab = Tabs(tabs=[tsTab, fdTab])
 
-def plot(arg):
-    if arg:
-        applyButton.label = 'Plotting ...'
-        if plotTab.active == 0: 
-            tv.update()
-        if plotTab.active == 1: 
-            get_spectra()
-            get_logticks([10, 30000], unit="Hz")
-        applyButton.active = False
-        applyButton.label = 'Plot Data'
-    if not arg:
-        applyButton.label = 'Plot Data'
-applyButton.on_click(plot)
 def plot():
     if plotTab.active == 0: 
         tv.update()
     elif plotTab.active == 1:
         get_spectra()
+        get_logticks([10, 30000], unit="Hz")
 set_calc_button_callback(plot,plotButton)
 
 # add to doc
