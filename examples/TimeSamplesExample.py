@@ -33,7 +33,7 @@ chidx = [str(i) for i in range(ts.numchannels)]
 # create widget to select the channel that should be plotted
 tselect = Select(title="Select Channel:", value="0",options=chidx)
 # create Button to trigger plot
-plotButton = Toggle(label="Calculate",button_type="success")
+plotButton = Toggle(label="Calculate",button_type="primary")
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -57,7 +57,7 @@ def get_spectra():
 if sd_enabled: # in case of audio support
     playback = TimeSamplesPlayback(source=ts)
     # button widget to playback the selected time data
-    playButton = Toggle(label="Playback Time Data", button_type="success")
+    playButton = Toggle(label="Playback Time Data", button_type="primary")
     # Input Device Textfield
     inputDevice = TextInput(title="Input Device Index", value=str(playback.device[0]))
     # Output Device Textfield

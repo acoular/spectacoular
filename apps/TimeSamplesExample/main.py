@@ -12,8 +12,8 @@ from bokeh.layouts import row, widgetbox
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText, \
 Tabs, Panel, MultiSelect
-from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
+from bokeh.palettes import Blues
 from numpy import mean, conj, real, array, log10, logspace,append,sort
 from acoular import L_p
 from numpy import mean, conj, real, array, log10, logspace, append, sort
@@ -26,12 +26,13 @@ try:
 except:
     sd_enabled = False
 
+COLORS = Blues[256][::-3] # for plotting different colors
 doc = curdoc()
 # build processing chain
 ts       = MaskedTimeSamples(name='example_data.h5')
 tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
 sp       = SpectraInOut(source=ts)
-freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0], chn=[0]))
+freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0], chn=[0],color=[0]))
 
 chidx = [str(i) for i in range(ts.numchannels)]
 
@@ -41,7 +42,7 @@ sselect = MultiSelect(title="Select Channel:", value=["0"],
                                options=[(i,i) for i in chidx])
 
 # create Button to trigger plot
-plotButton = Toggle(label="Plot Time Data",button_type="success")
+plotButton = Toggle(label="Plot Time Data",button_type="primary")
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -76,19 +77,20 @@ def get_spectra():
         r.append(res)
     r_mean = list(mean(real(array(r).transpose((0,2,1)) * 
                        conj(array(r).transpose((0,2,1)))),axis=0))
-    r_sel, freq, chn = [], [], []
+    r_sel, freq, chn, color = [], [], [], []
     for sel in sselect.value:
         r_sel.append(L_p(r_mean[int(sel)]))
         freq.append(sp.fftfreq())
         chn.append(int(sel))
-    freqdata.data.update(amp=r_sel, freqs=freq, chn=chn)
+        color.append(COLORS[int(sel)])
+    freqdata.data.update(amp=r_sel, freqs=freq, chn=chn,color=color)
     freqplot.x_range.start = freq[0][1]-20
     freqplot.x_range.end   = freq[0][-1]+20
 
 if sd_enabled: # in case of audio support
     playback = TimeSamplesPlayback(source=ts)
     # button widget to playback the selected time data
-    playButton = Toggle(label="Playback Time Data", button_type="success")
+    playButton = Toggle(label="Playback Time Data", button_type="primary")
     # Input Device Textfield
     inputDevice = TextInput(title="Input Device Index", value=str(playback.device[0]))
     # Output Device Textfield
@@ -138,7 +140,7 @@ freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
                   tooltips=freqplottips, x_range=(40,26000))
 freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
-freqplot.multi_line('freqs', 'amp', source=freqdata)
+freqplot.multi_line('freqs', 'amp',color='color', source=freqdata)
 #create layout
 tsWidgetsCol = widgetbox(plotButton,tselect,*tsWidgets.values(),width=400)
 if sd_enabled: 
