@@ -6,9 +6,9 @@
 """
 Example how to plot TimeData
 """
-from bokeh.layouts import column, row, widgetbox
+from bokeh.layouts import row, widgetbox
 from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText,\
-Tabs,Panel,MultiSelect
+Tabs,Panel
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
 from bokeh.server.server import Server

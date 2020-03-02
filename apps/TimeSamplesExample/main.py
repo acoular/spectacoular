@@ -16,7 +16,6 @@ from bokeh.plotting import figure
 from bokeh.palettes import Blues
 from numpy import mean, conj, real, array, log10, logspace,append,sort
 from acoular import L_p
-from numpy import mean, conj, real, array, log10, logspace, append, sort
 from spectacoular import MaskedTimeSamples, TimeSamplesPresenter, SpectraInOut,\
     set_calc_button_callback
 try:
