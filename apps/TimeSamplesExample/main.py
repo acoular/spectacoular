@@ -7,11 +7,13 @@
 Example how to plot TimeData
 """
 from bokeh.io import curdoc
-from bokeh.layouts import column, row, widgetbox
-from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText,\
-Tabs,Panel,MultiSelect
+from bokeh.layouts import row, widgetbox
+# from bokeh.events import MouseLeave
 from bokeh.models import ColumnDataSource
+from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText, \
+Tabs, Panel, MultiSelect
 from bokeh.plotting import figure
+from bokeh.palettes import Blues
 from numpy import mean, conj, real, array, log10, logspace,append,sort
 from acoular import L_p
 from spectacoular import MaskedTimeSamples, TimeSamplesPresenter, SpectraInOut,\
@@ -23,12 +25,13 @@ try:
 except:
     sd_enabled = False
 
+COLORS = Blues[256][::-3] # for plotting different colors
 doc = curdoc()
 # build processing chain
 ts       = MaskedTimeSamples(name='example_data.h5')
 tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
 sp       = SpectraInOut(source=ts)
-freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0]))
+freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0], chn=[0],color=[0]))
 
 chidx = [str(i) for i in range(ts.numchannels)]
 
@@ -38,7 +41,7 @@ sselect = MultiSelect(title="Select Channel:", value=["0"],
                                options=[(i,i) for i in chidx])
 
 # create Button to trigger plot
-plotButton = Toggle(label="Plot Time Data",button_type="success")
+plotButton = Toggle(label="Plot Time Data",button_type="primary")
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -66,7 +69,6 @@ def get_logticks(frange=[100, 10000], minor_ticks=[5,2,7], unit='kHz'):
     return ticks, override
         
 def get_spectra():
-    freq = sp.fftfreq()  
     result = sp.result() # result is a generator!    
     # get all spectra blocks  
     r = []
@@ -74,13 +76,20 @@ def get_spectra():
         r.append(res)
     r_mean = list(mean(real(array(r).transpose((0,2,1)) * 
                        conj(array(r).transpose((0,2,1)))),axis=0))
-    r_sel  = L_p(r_mean[int(tselect.value)])
-    freqdata.data.update(amp=r_sel, freqs=freq)
+    r_sel, freq, chn, color = [], [], [], []
+    for sel in sselect.value:
+        r_sel.append(L_p(r_mean[int(sel)]))
+        freq.append(sp.fftfreq())
+        chn.append(int(sel))
+        color.append(COLORS[int(sel)])
+    freqdata.data.update(amp=r_sel, freqs=freq, chn=chn,color=color)
+    freqplot.x_range.start = freq[0][1]-20
+    freqplot.x_range.end   = freq[0][-1]+20
 
 if sd_enabled: # in case of audio support
     playback = TimeSamplesPlayback(source=ts)
     # button widget to playback the selected time data
-    playButton = Toggle(label="Playback Time Data", button_type="success")
+    playButton = Toggle(label="Playback Time Data", button_type="primary")
     # Input Device Textfield
     inputDevice = TextInput(title="Input Device Index", value=str(playback.device[0]))
     # Output Device Textfield
@@ -124,19 +133,20 @@ tsPlot.toolbar.logo = None
 tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 # FrequencySignalPlot
+freqplottips = [("Channel", "@chn"),("Frequency in Hz", "$x"),("|P(f)|^2 in dB", "$y")]
 freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
-                  x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB")
+                  x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB",
+                  tooltips=freqplottips, x_range=(40,26000))
 freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
-freqplot.line('freqs', 'amp', source=freqdata)
-
+freqplot.multi_line('freqs', 'amp',color='color', source=freqdata)
 #create layout
 tsWidgetsCol = widgetbox(plotButton,tselect,*tsWidgets.values(),width=400)
 if sd_enabled: 
     allWidgetsLayout = row(tsWidgetsCol,pbWidgetCol)
 else:
     allWidgetsLayout = row(tsWidgetsCol)
-spWidgetsCol = widgetbox(plotButton,tselect,spWidgets['window'],
+spWidgetsCol = widgetbox(plotButton,sselect,spWidgets['window'],
                          spWidgets['block_size'],
                          width=400)
 
@@ -150,6 +160,7 @@ def plot():
         tv.update()
     elif plotTab.active == 1:
         get_spectra()
+        get_logticks([10, 30000], unit="Hz")
 set_calc_button_callback(plot,plotButton)
 
 # add to doc

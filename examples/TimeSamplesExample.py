@@ -6,9 +6,9 @@
 """
 Example how to plot TimeData
 """
-from bokeh.layouts import column, row, widgetbox
+from bokeh.layouts import row, widgetbox
 from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText,\
-Tabs,Panel,MultiSelect
+Tabs,Panel
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
 from bokeh.server.server import Server
@@ -28,16 +28,12 @@ ts       = MaskedTimeSamples(name='example_data.h5')
 tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
 sp       = SpectraInOut(source=ts)
 freqdata = ColumnDataSource(data=dict(amp=[0], freqs=[0]))
-
 chidx = [str(i) for i in range(ts.numchannels)]
 
 # create widget to select the channel that should be plotted
 tselect = Select(title="Select Channel:", value="0",options=chidx)
-sselect = MultiSelect(title="Select Channel:", value=["0"],
-                               options=[(i,i) for i in chidx])
-
 # create Button to trigger plot
-plotButton = Toggle(label="Calculate",button_type="success")
+plotButton = Toggle(label="Calculate",button_type="primary")
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -61,7 +57,7 @@ def get_spectra():
 if sd_enabled: # in case of audio support
     playback = TimeSamplesPlayback(source=ts)
     # button widget to playback the selected time data
-    playButton = Toggle(label="Playback Time Data", button_type="success")
+    playButton = Toggle(label="Playback Time Data", button_type="primary")
     # Input Device Textfield
     inputDevice = TextInput(title="Input Device Index", value=str(playback.device[0]))
     # Output Device Textfield

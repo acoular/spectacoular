@@ -16,6 +16,8 @@ bg_col  = '#2F2F2F'
 txt_col = 'white'
 # Set selection color
 sel_col = '#1f77b4'
+# Set warning button color: [color, hovered color]
+# warning_but_col = ['#fdae61', '#f46d43']
 # Set link color: [color, hovered color]
 link_col = ['green', 'white']
 # Font Sizes
@@ -115,7 +117,16 @@ for path in paths:
                   '  a:active {',
                  f'    color: {link_col[0]};', # set link color
                   '    }',
-#                  '  @import url(https://fonts.googleapis.com/css?family=Noto+Sans);',
+# #                  '  @import url(https://fonts.googleapis.com/css?family=Noto+Sans);',
+#                   '  .bk-root .bk-btn-warning:hover {', # set color of success button if hovered
+#                  f'    background-color: {warning_but_col[1]} !important;',
+#                  f'    border-color: {warning_but_col[1]} !important;',
+#                   '    }',
+                  # '  .bk-root .bk-btn-warning {', # set color of success button
+                  # f'    color: {txt_col} !important;',
+                  # f'    background-color: {warning_but_col[0]} !important;',
+                  # f'    border-color: {warning_but_col[0]} !important;',
+                  # '    }',
                   '  .slick-header-columns, .slick-headerrow-columns, .slick-footerrow-columns {',
                   '    overflow: visible !important;',
   	             f'    border-left: 0px solid {bg_col} !important;', # remove borders in header
@@ -128,6 +139,9 @@ for path in paths:
   	             f'    border-top: 0px solid {txt_col} !important;',
   	             f'    border-bottom: 1px solid {txt_col} !important;', # set bottom rule in header
   	             f'    border-right: 0px solid {bg_col} !important;',
+                  '    }',
+                  '  .bk-root .bk-tabs-header .bk-headers-wrapper {',
+  	             f'    color: #bdbdbd', # set color of non-active tabs
                   '    }',
                   '  .bk {',
                  f'    font-size: {ft_w} !important;', 
