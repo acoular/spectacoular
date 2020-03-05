@@ -54,11 +54,12 @@ def _(str_):
     
 @singledispatch
 def cast_to_bool(value):
-    return bool(value)
+    return value=='True'
 
 @cast_to_bool.register(float)
 def _(float_):
     return bool(int(float_))
+
 
 #%% cast to str type
 
