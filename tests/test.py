@@ -86,7 +86,7 @@ class CArrayWidgetMapping(Test):
     def test( self ):
         widgets = self.get_widgets()
         self._test_textinput(widgets['testIntCArray'])
-        self._test_datatable(widgets['testIntCArray2'])
+        # self._test_datatable(widgets['testIntCArray2'])
         self._test_multidim_datatable(widgets['testFloatCArray'])
         self._test_set_widgets(widgets)
 
