@@ -10,9 +10,9 @@ if __name__ == '__main__':
     
     floatTest = 1.
     intTest = 1
-    boolTest = True
+    trueBoolTest = True
     strTest = '1'
-    strBoolTest = 'True'
+    strtrueBoolTest = 'True'
     strFloatTest = '1.0'
     intList = [1,2,3,4]
     floatList = [1.,2.,3.,4.]
@@ -29,30 +29,34 @@ if __name__ == '__main__':
     
     # cast to float tests
     assert cast_to_float(floatTest) == 1.0
-    assert cast_to_float(boolTest) == 1.0
+    assert cast_to_float(trueBoolTest) == 1.0
     assert cast_to_float(strTest) == 1.0
     assert cast_to_float(strFloatTest) == 1.0
-    assert cast_to_float(strBoolTest) == 1.0    
+    assert cast_to_float(strtrueBoolTest) == 1.0    
     
     # cast to int tests
     assert cast_to_int(floatTest) == 1
-    assert cast_to_int(boolTest) == 1
+    assert cast_to_int(trueBoolTest) == 1
     assert cast_to_int(strTest) == 1
     assert cast_to_int(strFloatTest) == 1
-    assert cast_to_int(strBoolTest) == 1
+    assert cast_to_int(strtrueBoolTest) == 1
 
     # cast to bool tests
-    assert cast_to_bool(floatTest) == True
-    assert cast_to_bool(intTest) == True
-    assert cast_to_bool(strTest) == True
-    assert cast_to_bool(strFloatTest) == True
-    assert cast_to_bool(strBoolTest) == True
+    expected_bool = {1 : True, 
+                     0 : False,
+                     True : True,
+                     False : False,
+                     'True' : True,
+                     'False' : False,
+                     }
+    for k,v in expected_bool.items():
+        assert cast_to_bool(k) == v
 
     # cast to str tests
     assert cast_to_str(floatTest) == '1.0'
     assert cast_to_str(intTest) == '1'
-    assert cast_to_str(boolTest) == 'True'
-    assert cast_to_str(strBoolTest) == 'True'
+    assert cast_to_str(trueBoolTest) == 'True'
+    assert cast_to_str(strtrueBoolTest) == 'True'
     assert cast_to_str(intList) == '1, 2, 3, 4'
     assert cast_to_str(floatList) == '1.0, 2.0, 3.0, 4.0'
     assert cast_to_str(boolList) == 'True, False'
@@ -67,9 +71,9 @@ if __name__ == '__main__':
     # cast to list tests
     assert cast_to_list(floatTest) == [1.0]
     assert cast_to_list(intTest) == [1]
-    assert cast_to_list(boolTest) == [True]
+    assert cast_to_list(trueBoolTest) == [True]
     assert cast_to_list(strTest) == ['1']
-    assert cast_to_list(strBoolTest) == ['True']
+    assert cast_to_list(strtrueBoolTest) == ['True']
     assert cast_to_list(strFloatTest) == ['1.0']
     assert cast_to_list(intList) == intList
     assert cast_to_list(floatList) == floatList

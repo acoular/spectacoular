@@ -228,6 +228,37 @@ class FloatWidgetMapping(Test):
         assert widget.value == '1.0'
 
 
+class BoolWidgetMapping(Test):
+    
+    testTrait1 = Bool(False)
+    
+    testTrait2 = Bool(False)
+
+    
+    trait_widget_mapper = {
+                'testTrait1': TextInput,
+                'testTrait2': Select,
+                }
+    
+    trait_widget_args = {
+                'testTrait1' : {'disabled':False},
+                'testTrait2' : {'disabled':False},
+                }    
+
+    def test( self ):
+        widgets = self.get_widgets()
+        assert widgets['testTrait1'].value == 'False'
+        assert widgets['testTrait2'].value == 'False'
+        widgets['testTrait1'].value = 'True'
+        widgets['testTrait2'].value = 'True'
+        assert self.testTrait1 == True
+        assert self.testTrait2 == True
+        self.testTrait1 = False
+        self.testTrait2 = False
+        assert widgets['testTrait1'].value == 'False'
+        assert widgets['testTrait2'].value == 'False'
+
+
 class FileWidgetMapping(Test):
     
     testTrait = File(filter=['*.xml'])
@@ -513,6 +544,10 @@ if __name__ == '__main__':
     # Float Trait Widget Mapping Test
     floatTest = FloatWidgetMapping()
     floatTest.test()
+    
+    # Bool Trait Widget Mapping Test
+    boolTest = BoolWidgetMapping()
+    boolTest.test()
     
     # File Trait Widget Mapping Test
     fileTest = FileWidgetMapping()

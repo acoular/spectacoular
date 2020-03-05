@@ -54,7 +54,11 @@ def _(str_):
     
 @singledispatch
 def cast_to_bool(value):
-    return value=='True'
+    return bool(value)
+
+@cast_to_bool.register(str)
+def _(str_):
+    return bool(eval(str_))
 
 @cast_to_bool.register(float)
 def _(float_):
