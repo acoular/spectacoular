@@ -127,6 +127,12 @@ for path in paths:
                   # f'    background-color: {warning_but_col[0]} !important;',
                   # f'    border-color: {warning_but_col[0]} !important;',
                   # '    }',
+                  '.bk-root .bk-menu > :not(.bk-divider):hover, .bk-root .bk-menu > :not(.bk-divider).bk-active {',
+                  f'background-color: {bg_col} !important;',
+                  '}', 
+                  '.bk-root .bk-menu > :not(.bk-divider), .bk-root .bk-menu > :not(.bk-divider).bk-active {',
+                  f'background-color: {bg_col} !important;',
+                  '}',
                   '  .slick-header-columns, .slick-headerrow-columns, .slick-footerrow-columns {',
                   '    overflow: visible !important;',
   	             f'    border-left: 0px solid {bg_col} !important;', # remove borders in header

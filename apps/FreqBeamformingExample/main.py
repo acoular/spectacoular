@@ -37,7 +37,7 @@ ts.invalid_channels = invalid
 ts.calib = cal
 mg = MicGeom(from_file=micgeofile,invalid_channels = invalid)
 ps = PowerSpectra(time_data=ts)
-rg = RectGrid(x_min=-0.6, x_max=-0.0, y_min=-0.3, y_max=0.3, z=0.68,increment=0.05)
+rg = RectGrid(x_min=-0.6, x_max=-0.0, y_min=-0.3, y_max=0.3, z=0.68,increment=0.01)
 env = Environment(c = 346.04)
 st = SteeringVector( grid = rg, mics=mg, env=env )    
 
@@ -58,24 +58,25 @@ bgib = BeamformerGIB(freq_data=ps, steer=st, method= 'LassoLars', n=10)
 #%% Beamformer selector
 
 beamformer_dict = {
-                    'Conventional Beamforming': bb,
-                   'Functional Beamforming': bf,
-                   'Capon Beamforming': bc,
-                   'Eigenvalue Beamforming': be,
-                   'Music Beamforming': bm,
-                   'Damas Deconvolution': bd,
-                   'DamasPlus Deconvolution' : bdp,
-                   'Orthogonal Beamforming' : bo,
-                   'CleanSC Deconvolution' : bs,
-                   'Clean Deconvolution' : bl,
-                   'CMF' : bcmf,
-                   'GIB' : bgib
+                    'Conventional Beamforming': (bb,bb.get_widgets()),
+                   'Functional Beamforming': (bf,bf.get_widgets()),
+                   'Capon Beamforming': (bc,bc.get_widgets()),
+                   'Eigenvalue Beamforming': (be,be.get_widgets()),
+                   'Music Beamforming': (bm,bm.get_widgets()),
+                   'Damas Deconvolution': (bd,bd.get_widgets()),
+                   'DamasPlus Deconvolution' : (bdp,bdp.get_widgets()),
+                   'Orthogonal Beamforming' : (bo,bo.get_widgets()),
+                   'CleanSC Deconvolution' : (bs, bs.get_widgets()),
+                   'Clean Deconvolution' : (bl,bl.get_widgets()),
+                   'CMF' : (bcmf,bcmf.get_widgets()),
+                   'GIB' : (bgib,bgib.get_widgets()),
                    }
 
 # create Select Button to select Beamforming Algorithm
-beamformerSelector = Select(title="Select Beamforming Method:",
+beamformerSelector = Select(title="Beamforming Method:",
                         options=list(beamformer_dict.keys()),
-                        value=list(beamformer_dict.keys())[0])
+                        value=list(beamformer_dict.keys())[0],
+                        height=75)
 
 
 #%% Widgets for bf settings
@@ -103,34 +104,33 @@ bvWidgets['freq'].width = 100
 #%% Widgets for display
 
 colorMapper = LinearColorMapper(palette=viridis(100), 
-                              low=30, high=50 ,low_color=(1,1,1,0))
-dynamicSlider = RangeSlider(start=0, end=120, step=1., value=(30,50),
-                            width=220,
+                              low=40, high=50 ,low_color=(1,1,1,0))
+dynamicSlider = RangeSlider(start=0, end=120, step=1., value=(40,50),
+                            width=220,height=50,
                             title="Dynamic Range")
 def dynamicSlider_callback(attr, old, new):
     (colorMapper.low, colorMapper.high) = dynamicSlider.value
 dynamicSlider.on_change("value",dynamicSlider_callback)
 
 # create Button to trigger beamforming result calculation
-calcButton = Toggle(label="Calculate",button_type="primary", width=150,height=50)
+calcButton = Toggle(label="Calculate",button_type="primary", width=175,height=75)
 set_calc_button_callback(bv.update,calcButton)
 
-
-# #MicGeomPlot
-# mgPlot = figure(title='Microphone Geometry', 
-#                 tools = 'hover,pan,wheel_zoom,reset')
-# mgPlot.toolbar.logo=None
-# mgPlot.circle(x='x',y='y',source=mgWidgets['mpos_tot'].source)
-
 # beamformerPlot
-
-bfplotwidth = 600
-bfPlot = figure(title='Beamforming Result', 
+bfplotwidth = 700
+bfPlot = figure(title='Source Map', 
                 tools = 'pan,wheel_zoom,reset', 
                 width=bfplotwidth,
-                height=500)
+                height=700)
+# bfPlot.grid[0].bounds = (rg.x_min,rg.x_max) 
+# bfPlot.grid[1].bounds = (rg.y_min,rg.y_max)
+# bfPlot.grid[0].visible = False
+# bfPlot.grid[1].visible = False
+# ('x', 'y', 'width', 'height', 'angle', 'dilate')
+bfPlot.rect(-0.38, 0.0, 0.2, 0.5,alpha=1.,color='gray',fill_alpha=.8,line_width=5,line_color="#1e3246")
+bfPlot.rect(-.3, 0.0, 0.6, 0.6,alpha=1.,color='#d2d6da',fill_alpha=0,line_width=1)#line_color="#213447")
 bfPlot.toolbar.logo=None
-bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',
+bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',alpha=0.9,
              color_mapper=colorMapper,source=bv.cdsource)
 bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
                            title="dB",
@@ -147,7 +147,7 @@ f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
                     500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
                     20000: '20'}
-freqplot = figure(title="Sector-Integrated Spectrum", plot_width=bfplotwidth, plot_height=300,
+freqplot = figure(title="Sector-Integrated Spectrum", plot_width=bfplotwidth, plot_height=500,
                   x_axis_type="log", x_axis_label="f / kHz", 
                   y_axis_label="SPL / dB")
 freqplot.toolbar.logo=None
@@ -157,28 +157,81 @@ freqplot.xgrid.minor_grid_line_color = 'navy'
 freqplot.xgrid.minor_grid_line_alpha = 0.05
 freqplot.xaxis.ticker = f_ticks
 freqplot.xaxis.major_label_overrides = f_ticks_override
-freqplot.multi_line('freqs', 'amp', source=freqdata)
+freqplot.multi_line('freqs', 'amp',color='#3288bd',line_width=4, source=freqdata)
+
+#%% Layout Grid Column
+from bokeh.layouts import layout
+from bokeh.models.widgets import Div
+
+# rgLayout = layout([ 
+#                     [Div(text='',width=100, height=25)],
+#                     [rgWidgets['x_min'],rgWidgets['x_max']],
+#                     [rgWidgets['y_min'],rgWidgets['y_max']],
+#                     [rgWidgets['z'],rgWidgets['increment']],
+#                     [rgWidgets['nxsteps'],rgWidgets['nysteps']],
+#                     [rgWidgets['size'],rgWidgets['shape']],
+#                     ])
+
 
 
 #%% Property Tabs
-selectedBfWidgets = column(*bbWidgets.values())  
-tsTab = Panel(child=column(*tsWidgets.values()),title='Time Data')
-mgTab = Panel(child=column(*mgWidgets.values()),title='MicGeometry')
-calTab = Panel(child=column(*calWidgets.values()),title='Calibration')
-envTab = Panel(child=column(*envWidgets.values()),title='Environment')
-gridTab = Panel(child=column(*rgWidgets.values()),title='Grid')
-stTab = Panel(child=column(*stWidgets.values()),title='Steering')
-psTab = Panel(child=column(*psWidgets.values()),title='FFT')
-bfTab = Panel(child=column(beamformerSelector,selectedBfWidgets),
-              title='Beamforming')
-propertyTabs = Tabs(tabs=[tsTab,mgTab,calTab,envTab,gridTab,stTab,
-                          psTab,bfTab],width=1100)
+selectedBfWidgets = column(*bbWidgets.values(),height=1000)  
+
+# bfcol = column(beamformerSelector,selectedBfWidgets)
+# tsTab = Panel(child=column(*tsWidgets.values()),title='Time Data')
+# mgTab = Panel(child=column(*mgWidgets.values()),title='MicGeometry')
+# calTab = Panel(child=column(*calWidgets.values()),title='Calibration')
+# envTab = Panel(child=column(*envWidgets.values()),title='Environment')
+# gridTab = Panel(child=rgLayout,title='Grid')
+# stTab = Panel(child=column(*stWidgets.values()),title='Steering')
+# psTab = Panel(child=column(*psWidgets.values()),title='FFT')
+# bfTab = Panel(child=column(beamformerSelector,selectedBfWidgets),
+#               title='Beamforming')
+# propertyTabs = Tabs(tabs=[tsTab,mgTab,calTab,envTab,gridTab,stTab,
+#                           psTab,bfTab],width=1100)
+
+#%%  
+
+# tsWidgets = ts.get_widgets()
+# mgWidgets = mg.get_widgets()
+# envWidgets = env.get_widgets()
+# calWidgets = cal.get_widgets()
+# psWidgets = ps.get_widgets()
+# rgWidgets = rg.get_widgets()
+# stWidgets = st.get_widgets()
+# bbWidgets = bb.get_widgets()
+
+from bokeh.models.widgets import Dropdown, Select
+
+menu = [("Time Data", "tsWidgets"), ("Microphone Geometry","mgWidgets"),
+        ("Environment","envWidgets"),("Calibration","calWidgets"),
+        ("FFT/CSM","psWidgets"),("Focus Grid","rgWidgets"),
+        ("Steering Vector","stWidgets"),("Beamforming Method","bbWidgets"),
+        ]
+dropdown = Dropdown(label="Selcet Setting", button_type="primary", menu=menu,
+                     width=175,height=75)
 
 #%% 
+selectedSettingCol = column(height=1000)  
+def select_setting_handler(attr,old,new):
+    print(attr,old,new)
+    if not new == "bbWidgets":
+        selectedSettingCol.children = list(eval(new).values())
+    else:
+        # selmethod = beamformerSelector.value
+        selectedSettingCol.children = selectedBfWidgets.children 
+        # selectedSettingCol.children = list(beamformer_dict[selmethod][1].values())
+        
+dropdown.on_change("value",select_setting_handler)
+    
 
 def beamformer_handler(attr,old,new):
-    bv.source = beamformer_dict.get(new)
-    selectedBfWidgets.children = list(beamformer_dict.get(new).get_widgets().values())
+    bv.source = beamformer_dict.get(new)[0]
+    # if dropdown.value == "bbWidgets"
+    selectedBfWidgets.children = list(beamformer_dict.get(new)[1].values())
+    if dropdown.value == "bbWidgets":
+        selectedSettingCol.children = selectedBfWidgets.children 
+    print(selectedBfWidgets.children)
 beamformerSelector.on_change('value',beamformer_handler)
 
 #%% Integration sector
@@ -203,30 +256,34 @@ def integrate_result(attr,old,new):
     freqdata.data.update(amp=famp, freqs=ffreq)
 
 
-isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=.4,color='blue', source=sectordata)
+isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=1.,fill_alpha=0.0,color='#3288bd',
+                      line_width=4,source=sectordata)
 tool = BoxEditTool(renderers=[isector])
 bfPlot.add_tools(tool)
 sectordata.on_change('data',integrate_result)
 bv.cdsource.on_change('data',integrate_result)
 #%% Document layout
-from bokeh.models.widgets import Div
 
 vspace = Div(text='',width=10, height=1000) # just for vertical spacing
-hspace = Div(text='',width=400, height=10) # just for horizontal spacing
+vspace2 = Div(text='',width=50, height=20) # just for vertical spacing
+hspace = Div(text='',width=100, height=20) # just for horizontal spacing
+
+midlayout = layout([ 
+         [Div(text='',width=80, height=10),calcButton,beamformerSelector],
+         ])
 
 calcRow = column(
-    row(calcButton,*bvWidgets.values(),dynamicSlider),
-    hspace,
-    propertyTabs
+    midlayout,
+    freqplot,
     )
 
-# Plot Tabs
-# mgPlotTab = Panel(child=mgPlot,title='Microphone Geometry Plot')
+settingsCol = column(dropdown,vspace2,selectedSettingCol)
 
+leftlayout=layout([ 
+        [ Div(text='',width=100, height=0),*bvWidgets.values(),dynamicSlider],
+        [bfPlot],
+        ])
 
-# bfPlotTab = Panel(child=,title='Source Plot')
-# plotTabs = Tabs(tabs=[bfPlotTab], active=0, width=bfplotwidth)
-layout = column(bfPlot,freqplot)
+layout = row(leftlayout,vspace,calcRow,Div(text='',width=20),settingsCol)
 # make Document
-mainlayout = row(layout,vspace,calcRow)
-doc.add_root(mainlayout)
+doc.add_root(layout)
