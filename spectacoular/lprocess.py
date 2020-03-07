@@ -3,13 +3,18 @@
 #------------------------------------------------------------------------------
 # Copyright (c) 2007-2019, Acoular Development Team.
 #------------------------------------------------------------------------------
-"""Implements classes for live processing.
+"""Implements classes for live processing. Some of the classes might move 
+   to Acoular module in the future.
 
 .. autosummary::
     :toctree: generated/
 
     TimeSamplesPhantom
     TimeInOutPresenter
+    CalibHelper
+    FiltOctaveLive
+    TimeSamplesPlayback
+    SpectraInOut
 """
  
 from numpy import logical_and,savetxt,mean,array,newaxis, zeros,\
@@ -20,8 +25,7 @@ from datetime import datetime
 from time import time,sleep
 from bokeh.models.widgets import TextInput,DataTable,TableColumn,\
     NumberEditor, Select
-
-from bokeh.models import ColumnDataSource, LogColorMapper, ColorBar
+from bokeh.models import ColumnDataSource
 from traits.api import Property, File, CArray,Int, Delegate, Trait,\
 cached_property, on_trait_change, Float,Bool, Instance, ListInt
 try:
@@ -41,18 +45,25 @@ from .factory import BaseSpectacoular
 
 
 
-class TimeSamplesPhantom(MaskedTimeSamples):
-
-    time_delay = Float()     
+class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
+    """
+    TimeSamples derived class for propagating signal processing blocks with
+    user-defined time delay.
     
-    # Indicates if samples are collected, helper trait to break result loop
+    The functionality of the class is to deliver existing blocks of data in a
+    certain time interval. Can be used to simulate a measurement (but data
+    is read from file).
+    """
+
+    #: Defines the delay with which the individual data blocks are propagated.
+    #: Defaults to 1/sample_freq
+    time_delay = Float(
+        desc="Time interval between individual blocks of data")     
+    
+    #: Indicates if samples are collected, helper trait to break result loop
     collectsamples = Bool(True,
-        desc="Indicates if samples are collected")
+        desc="Indicates if result function is running")
 
-    get_widgets = get_widgets
-    
-    set_widgets = set_widgets
-    
     trait_widget_mapper = {'name': TextInput,
                            'basename': TextInput,
                            'start' : TextInput,
@@ -116,21 +127,40 @@ class TimeSamplesPhantom(MaskedTimeSamples):
                 i += num        
                 
                 
+                
 class TimeInOutPresenter(TimeInOut,BasePresenter):
     """
-    Base Class for presenting of live data
+    TimeInOut derived class for building an interface from Acoular's generator 
+    pipelines to Bokeh's ColumnDataSource model that serves as a source for
+    plots and tables.
     
-    ColumnDataSource is updated from data trait.
-    
-    Generator fashion
+    ColumnDataSource is updated from result function. Can be used for automatic
+    presenting of live data.   
     """       
 
-    data = ColumnDataSource(data={'data':array([])}) # does not need to be a ColumnDataSource, a simple dict might be enough here
+    #: Bokeh's ColumnDataSource, updated from result loop
+    data = ColumnDataSource(data={'data':array([])}) 
 
     def result(self,num):
+        """
+        Python generator that yields the output block-wise.
+                
+        Parameters
+        ----------
+        num : integer, defaults to 128
+            This parameter defines the size of the blocks to be yielded
+            (i.e. the number of samples per block) .
+        
+        Returns
+        -------
+        Samples in blocks of shape (num, numchannels). 
+            The last block may be shorter than num.
+        """
         for temp in self.source.result(num):
             self.data.data['data'] = temp
             yield temp
+
+
 
 columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
