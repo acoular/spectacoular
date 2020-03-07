@@ -22,10 +22,10 @@ sel_col = '#1f77b4'
 link_col = ['green', 'white']
 # Font Sizes
 ft_for_all = True # if True: font size of ft_f is valid for all
-ft_f       = '10pt' # font of figures
-ft_wt      = '14pt' # font of widgets and tables
+ft_f       = '14pt' # font of figures
+ft_wt      = '18pt' # font of widgets and tables
 # Font
-ft         = "Helvetica" # bokeh default is "Helvetica"
+ft         = "asd " # bokeh default is "Helvetica"
 ft_stl     = "normal" # italic, bold
 
 if ft_for_all:

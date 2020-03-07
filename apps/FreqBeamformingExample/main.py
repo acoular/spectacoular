@@ -116,11 +116,11 @@ calcButton = Toggle(label="Calculate",button_type="primary", width=150,height=50
 set_calc_button_callback(bv.update,calcButton)
 
 
-#MicGeomPlot
-mgPlot = figure(title='Microphone Geometry', 
-                tools = 'hover,pan,wheel_zoom,reset')
-mgPlot.toolbar.logo=None
-mgPlot.circle(x='x',y='y',source=mgWidgets['mpos_tot'].source)
+# #MicGeomPlot
+# mgPlot = figure(title='Microphone Geometry', 
+#                 tools = 'hover,pan,wheel_zoom,reset')
+# mgPlot.toolbar.logo=None
+# mgPlot.circle(x='x',y='y',source=mgWidgets['mpos_tot'].source)
 
 # beamformerPlot
 
@@ -133,8 +133,10 @@ bfPlot.toolbar.logo=None
 bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',
              color_mapper=colorMapper,source=bv.cdsource)
 bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
-                           title="SPL / dB",
+                           title="dB",
                            title_standoff=10),'right')
+bfPlot.circle(x='x',y='y',color='#961400',size=10,alpha=.7,
+              source=mgWidgets['mpos_tot'].source)
 
 # FrequencySignalPlot
 # freqdata = ColumnDataSource(data={'freqs':[list(ps.fftfreq())],
@@ -201,21 +203,30 @@ def integrate_result(attr,old,new):
     freqdata.data.update(amp=famp, freqs=ffreq)
 
 
-isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=.4,color='red', source=sectordata)
+isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=.4,color='blue', source=sectordata)
 tool = BoxEditTool(renderers=[isector])
 bfPlot.add_tools(tool)
 sectordata.on_change('data',integrate_result)
 bv.cdsource.on_change('data',integrate_result)
 #%% Document layout
+from bokeh.models.widgets import Div
 
-calcRow = row(calcButton,*bvWidgets.values(),dynamicSlider)
+vspace = Div(text='',width=10, height=1000) # just for vertical spacing
+hspace = Div(text='',width=400, height=10) # just for horizontal spacing
+
+calcRow = column(
+    row(calcButton,*bvWidgets.values(),dynamicSlider),
+    hspace,
+    propertyTabs
+    )
 
 # Plot Tabs
-mgPlotTab = Panel(child=mgPlot,title='Microphone Geometry Plot')
+# mgPlotTab = Panel(child=mgPlot,title='Microphone Geometry Plot')
 
-bfPlotTab = Panel(child=column(calcRow, bfPlot,freqplot),title='Source Plot')
-plotTabs = Tabs(tabs=[mgPlotTab,bfPlotTab], active=1, width=bfplotwidth)
 
+# bfPlotTab = Panel(child=,title='Source Plot')
+# plotTabs = Tabs(tabs=[bfPlotTab], active=0, width=bfplotwidth)
+layout = column(bfPlot,freqplot)
 # make Document
-mainlayout = row(plotTabs,propertyTabs)
+mainlayout = row(layout,vspace,calcRow)
 doc.add_root(mainlayout)
