@@ -135,8 +135,8 @@ bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',alpha=0.9,
 bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
                            title="dB",
                            title_standoff=10),'right')
-bfPlot.circle(x='x',y='y',color='#961400',size=10,alpha=.7,
-              source=mgWidgets['mpos_tot'].source)
+# bfPlot.circle(x='x',y='y',color='#961400',size=10,alpha=.7,
+#               source=mgWidgets['mpos_tot'].source)
 
 # FrequencySignalPlot
 # freqdata = ColumnDataSource(data={'freqs':[list(ps.fftfreq())],
