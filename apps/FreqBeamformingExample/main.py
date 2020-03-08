@@ -116,6 +116,9 @@ dynamicSlider.on_change("value",dynamicSlider_callback)
 calcButton = Toggle(label="Calculate",button_type="primary", width=175,height=75)
 set_calc_button_callback(bv.update,calcButton)
 
+RED = "#961400"
+BLUE = "#3288bd"
+
 # beamformerPlot
 bfplotwidth = 700
 bfPlot = figure(title='Source Map', 
@@ -157,7 +160,7 @@ freqplot.xgrid.minor_grid_line_color = 'navy'
 freqplot.xgrid.minor_grid_line_alpha = 0.05
 freqplot.xaxis.ticker = f_ticks
 freqplot.xaxis.major_label_overrides = f_ticks_override
-freqplot.multi_line('freqs', 'amp',color='#3288bd',line_width=4, source=freqdata)
+freqplot.multi_line('freqs', 'amp',color=RED,alpha=.8,line_width=4, source=freqdata)
 
 #%% Layout Grid Column
 from bokeh.layouts import layout
@@ -256,7 +259,7 @@ def integrate_result(attr,old,new):
     freqdata.data.update(amp=famp, freqs=ffreq)
 
 
-isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=1.,fill_alpha=0.0,color='#3288bd',
+isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=1.,fill_alpha=0.0,color=RED,
                       line_width=4,source=sectordata)
 tool = BoxEditTool(renderers=[isector])
 bfPlot.add_tools(tool)
