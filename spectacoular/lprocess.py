@@ -166,11 +166,11 @@ columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEdit
            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
 
 class CalibHelper(TimeInOut, BaseSpectacoular):
-    
-    '''
-    Only in chain with TimeAverage!
-    '''
-    
+    """
+    Class for calibration of individual source channels 
+    """
+
+    #: Data source; :class:`~acoular.sources.TimeAverage` or derived object.
     source = Instance(TimeAverage)
     
     #: Name of the file to be saved. If none is given, the name will be
@@ -178,20 +178,27 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
     name = File(filter=['*.txt'], 
         desc="name of data file")    
 
-    #: calibration level [dB] or pressure [Pa] of calibration device 
-    magnitude = Float(114)
+    #: calibration level (e. g. dB or Pa) of calibration device 
+    magnitude = Float(114,
+        desc="calibration level of calibration device")
     
-    # calib values of source channels
-    calibdata = CArray(dtype=float)
+    #: calibration values determined during evaluation of :meth:`result`.
+    #: array of floats with dimension (numchannels, numchannels)
+    calibdata = CArray(dtype=float,
+       desc="determined calibration values")
 
-    #: max elements/averaged blocks in buffer to calculate calib value. 
-    buffer_size = Int(100)
+    #: max elements/averaged blocks to calculate calibration value. 
+    buffer_size = Int(100,
+       desc="number of blocks considered to determine calibration value" )
 
-    # standarddeviation
-    calibstd = Float(.5)
+    #: channel-wise allowed standard deviation of calibration values in buffer 
+    calibstd = Float(.5,
+       desc="allowed standard deviation of calibration values in buffer")
 
-    #: delta of magnitude to consider a channels as calibrating
-    delta = Float(10)
+    #: minimum allowed difference in magnitude between the channel to be 
+    #: calibrated and remaining channels.
+    delta = Float(10,
+      desc="magnitude difference between calibrating channel and remaining channels")
     
     # internal identifier
     digest = Property( depends_on = ['source.digest', '__class__'])
@@ -233,17 +240,19 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 
     def result(self, num):
         """
+        Python generator that yields the output block-wise.
+                
         Parameters
         ----------
-        num : TYPE
-            DESCRIPTION.
-
+        num : integer, defaults to 128
+            This parameter defines the size of the blocks to be yielded
+            (i.e. the number of samples per block) .
+        
         Returns
         -------
-        None.
-
+        Samples in blocks of shape (num, numchannels). 
+            The last block may be shorter than num.
         """
-        
         self.adjust_calib_values()
         nc = self.numchannels
         buffer = zeros((self.buffer_size,nc))
