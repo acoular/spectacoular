@@ -320,17 +320,27 @@ if sd_enabled:
 
     class TimeSamplesPlayback(TimeInOut,BaseSpectacoular):
         """
+        Naive class implementation to allow audio playback of .h5 file contents. 
+        
+        The class uses the devices available to the sounddevice library for 
+        audio playback. Input and output devices can be listed by
+        
+        >>>    import sounddevice
+        >>>    sounddevice.query_devices()
+        
         In the future, this class should work in buffer mode and 
-        also write the current frame that is played to its columndatasource.
+        also write the current frame that is played to a class attribute.
         """
         
         # internal identifier
         digest = Property( depends_on = ['source.digest', '__class__'])
     
-        #: index of the channel to play
-        channels = ListInt()
+        #: list containing indices of the channels to be played back.
+        channels = ListInt(
+            desc="channel indices to be played back")
         
-        # device property
+        #: two-element list containing indices of input and output device to 
+        #: be used for audio playback. 
         device = Property()
         
         # current frame played back
@@ -354,7 +364,7 @@ if sd_enabled:
         
         def play( self ):
             '''
-            normalized playback of channel
+            normalized playback of source channels given by :attr:`channels` trait
             '''
             if self.channels:
                 if isinstance(self.source,MaskedTimeSamples):
@@ -368,9 +378,7 @@ if sd_enabled:
                         blocking=False)
             
         def stop( self ):
-            '''
-            simply stops playback of file
-            '''
+            ''' method stops audio playback of file content '''
             sd.stop()
 
 
