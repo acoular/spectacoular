@@ -280,6 +280,10 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
     """
     Octave or third-octave filter (not zero-phase).
+    
+    This class is similar to Acoular's :class:`~acoular.tprocess.FiltFiltOctave`.
+    The only difference is that the filter coefficients can be changed while 
+    the result function is executed. 
     """
 
     trait_widget_mapper = {'band': TextInput,
