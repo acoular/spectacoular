@@ -13,12 +13,10 @@
     PointSpreadFunctionPresenter
     TimeSamplesPresenter
 """
-from bokeh.models.widgets import TextInput, Button, RangeSlider,Select
+from bokeh.models.widgets import TextInput
 from bokeh.models import ColumnDataSource
-from traits.api import Trait, HasPrivateTraits, Property, Int, Float, \
-cached_property, on_trait_change, Instance, ListInt
+from traits.api import Trait, Int, Float, on_trait_change, Instance, ListInt
 import numpy as np
-from acoular.internal import digest
 from acoular import TimeSamples,BeamformerBase, L_p, MicGeom, SteeringVector,\
 PointSpreadFunction, MaskedTimeSamples
 from .factory import BaseSpectacoular
@@ -37,7 +35,7 @@ class BasePresenter(BaseSpectacoular):
     transformation can be accessed via the :meth:`get_widgets` method.
     
     This class has no real functionality on its own and should not be 
-    used directly.    
+    used.    
     """
 
     #: Data source (Model)
@@ -46,14 +44,12 @@ class BasePresenter(BaseSpectacoular):
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
     cdsource = ColumnDataSource()
 
-    # # internal identifier
-    # digest = Property( depends_on = ['source.digest'])
-
     def update(self,attr,old,new):
         """
-        Function that updates the `cdsource` trait.    
-        No processing since `BasePresenter` only represents a base class to derive
-        other classes from.             
+        Function that updates the `cdsource` attribute.    
+        
+        No processing here, since `BasePresenter` only represents a base class 
+        to derive other classes from.             
         """
         pass
 
@@ -76,7 +72,7 @@ class MicGeomPresenter(BasePresenter):
     """
 
     #: Data source; :class:`~acoular.microphones.MicGeom` or derived object.
-    source = Trait(MicGeom)
+    source = Instance(MicGeom)
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
     cdsource = ColumnDataSource(data={'x':[],'y':[], 'channels':[]})
@@ -91,7 +87,6 @@ class MicGeomPresenter(BasePresenter):
                     'x' : self.source.mpos[0,:],
                     'y' : self.source.mpos[1,:],
                     'channels' : [str(_) for _ in range(self.source.num_mics)],
-#                    'sizes' : [1 for _ in range(self.source.num_mics)]
                     }        
         else:
             self.cdsource.data = {'x':[],'y':[], 'channels':[]}        
@@ -102,7 +97,7 @@ class BeamformerPresenter(BasePresenter):
     """
     This class provides data for visualization of beamformed data.
     
-    The data of its ColumnDataSource fits to bokehs image glyph.
+    The data of its ColumnDataSource fits to Bokeh's image glyph.
     """
     
     #: Data source; :class:`~acoular.fbeamform.BeamformerBase` or derived object.
@@ -134,6 +129,14 @@ class BeamformerPresenter(BasePresenter):
                      }
     
     def update(self):
+        """
+        Function that updates the keys and values of :attr:`cdsource` attribute.    
+        
+        Returns
+        -------
+        None.
+
+        """
         res = self.source.synthetic(float(self.freq), int(self.num))
         if res.size > 0: 
             dx = self.steer.grid.x_max-self.steer.grid.x_min
@@ -155,6 +158,14 @@ class PointSpreadFunctionPresenter(BasePresenter):
     cdsource = ColumnDataSource(data={'psf':[],'x':[],'y':[],'dw':[],'dh':[]})
 
     def update(self):
+        """
+        Function that updates the keys and values of :attr:`cdsource` attribute.    
+        
+        Returns
+        -------
+        None.
+
+        """
         data = L_p(self.source.psf.reshape(self.source.grid.shape)).T
         data -= data.max()
         dx = self.source.grid.x_max-self.source.grid.x_min
@@ -190,6 +201,7 @@ class TimeSamplesPresenter(BasePresenter):
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
     cdsource = ColumnDataSource(data={'xs':[],'ys':[]})
     
+    #: Indices of channel to be considered for updating of ColumnDataSource 
     channels = ListInt([])
     
     # Number of samples to appear in the plot, best practice is to use the width of the plot
@@ -202,7 +214,14 @@ class TimeSamplesPresenter(BasePresenter):
                      }
 
     def update(self):
+        """
+        Function that updates the keys and values of :attr:`cdsource` attribute.    
         
+        Returns
+        -------
+        None.
+
+        """
         numSelected = len(self.channels)
 
         
