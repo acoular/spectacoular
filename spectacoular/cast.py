@@ -3,6 +3,8 @@
 #------------------------------------------------------------------------------
 # Copyright (c) 2020-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
+""" defines basic cast functions for type casting """
+
 
 from traits.api import CArray,  TraitListObject
 from numpy import array, ndarray
