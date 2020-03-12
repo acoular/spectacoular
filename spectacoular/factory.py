@@ -9,7 +9,6 @@
     :toctree: generated/
 
     BaseSpectacoular
-    TraitWidgetMapper
     TextInputMapper
     SelectMapper
     SliderMapper
@@ -302,20 +301,43 @@ class TraitWidgetMapper(object):
 
 
 class TextInputMapper(TraitWidgetMapper):
+    """
+    Factory that creates TextInput widget from a class trait attribute.
+    """
     
     def create_widget(self,**kwargs):
-        '''
-        creates a bokeh TextInput instance 
-        '''
+        """
+        creates a Bokeh TextInput instance 
+
+        Parameters
+        ----------
+        **kwargs : args of TextInput
+            additional arguments of TextInput widget.
+
+        Returns
+        -------
+        instance(TextInput).
+
+        """
         self.widget = TextInput(title=self.traitname,**kwargs)
         self._set_widgetvalue(self.traitvalue)
         self._set_callbacks()
         return self.widget
 
     def set_widget(self, widget):
-        '''
-        sets a bokeh TextInput instance 
-        '''
+        """
+        connects a Bokeh TextInput widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(TextInput)
+            instance of a TextInput widget.
+
+        Returns
+        -------
+        None.
+
+        """
         self.widget = widget
         cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
@@ -325,10 +347,19 @@ class TextInputMapper(TraitWidgetMapper):
 class SelectMapper(TraitWidgetMapper):
     
     def create_widget(self,**kwargs):
-        '''
-        creates a bokeh Select instance with on trait change listeners
-        and on widget change listeners.
-        '''
+        """
+        creates a Bokeh Select widget instance 
+
+        Parameters
+        ----------
+        **kwargs : args of Select
+            additional arguments of Select widget.
+
+        Returns
+        -------
+        instance(Select).
+
+        """
         self.widget = Select(title=self.traitname,**kwargs)
         self._set_widgetvalue(self.traitvalue)
         self._set_options()
@@ -336,25 +367,48 @@ class SelectMapper(TraitWidgetMapper):
         return self.widget
 
     def set_widget(self, widget):
-        '''
-        sets a bokeh Select widget instance 
-        '''
+        """
+        connects a Bokeh Select widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(Select)
+            instance of a Select widget.
+
+        Returns
+        -------
+        None.
+
+        """
         self.widget = widget
         cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
         self._set_callbacks()
 
     def _set_options(self):
-        ''' sets the options of a select widget '''
+        """
+        sets the :attr:`options` of a :class:`Select` widget
+
+        Returns
+        -------
+        None.
+
+        """
         if not self.widget.options:
             self.widget.options = self._get_options()
 
     @as_str_list
     def _get_options(self): 
-        '''
-        get settable trait values as options for Select Widget
-        returns options as string list
-        '''
+        """
+        gets settable trait values as string list to be used as options of 
+        Select widget
+
+        Returns
+        -------
+        list
+            settable trait attribute values.
+
+        """
         return self.traitdispatcher.get_settable_trait_values()
 
 
