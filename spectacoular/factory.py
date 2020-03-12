@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) 2020-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
 """Implements factory for trait to widget translation.
 
@@ -9,48 +9,53 @@
     :toctree: generated/
 
     BaseSpectacoular
-    TraitWidgetMapper
     TextInputMapper
     SelectMapper
     SliderMapper
     DataTableMapper
-    TraitDispatch
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
 TableColumn, NumberEditor, StringEditor
 from bokeh.models import ColumnDataSource
 from traits.api import TraitEnum, TraitMap, CArray, Any, \
-List,Float, Str, Int, Enum, Range, Bool, Tuple, Long,\
-CLong, HasPrivateTraits, TraitCoerceType, File, TraitCompound,\
+List,Float, Int, Range, Long,\
+CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
 Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
 BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate
-from numpy import array, ndarray,newaxis,isscalar,nan_to_num
+from numpy import ndarray,newaxis,isscalar,nan_to_num
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
 
 NUMERIC_TYPES = (Int,Long,CLong,int, # Complex Numbers Missing at the Moment
                  Float,float, 
                  Complex, complex)
-BOOLEAN_TYPES = (Bool,bool)   
-SEQUENCE_TYPES = (Str,File,str,
-                  Tuple,
-                  List,
-                  CArray)
-SPECIAL_TYPES = (BaseRange,Range,Enum,TraitEnum,TraitMap,TraitCompound)
+
 
 def as_str_list(func):
+    """ decorator to wrap list entries into string type """
     def wrapper(*args):
         list_ = func(*args)
         return [str(val) for val in list_]
     return wrapper
 
 
-def get_widgets(self): # TODO: maybe rename to 'create_widgets(self)'
-    '''
-    This function is implemented in all spectAcoular classes. It builds widgets 
-    from corresponding traits defined in bokehview.py
-    '''
+def get_widgets(self): 
+    """
+    Get instances of the widgets defined in :attr:`trait_widget_mapper`. 
+    
+    This function is implemented in all SpectAcoular classes and is added to
+    Acoular's classes in bokehview.py. It builds Bokeh widgets from 
+    corresponding class trait attributes by utilizing the :class:`TraitWidgetMapper` 
+    factory. The desired mapping is defined in the :attr:`trait_widget_mapper` 
+    dictionary. 
+     
+
+    Returns
+    -------
+    None.
+
+    """
     widgetdict = {}
     for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
         widgetMapper = TraitWidgetMapper.factory(self,traitname,widgetType)
@@ -60,51 +65,99 @@ def get_widgets(self): # TODO: maybe rename to 'create_widgets(self)'
 
 
 def set_widgets(self,**kwargs):
-    '''
-    This function allows to link an existing widget to a certain class trait.
-    Expects a dictionary with the traitname as key and the widget instance as 
-    value. For example: 
-        $ widgetmapping = {'traitname' : Slider(), ... }
-        $ set_widgets(**widgetmapping)
+    """
+    Set instances of Bokeh widgets to certain trait attributes 
+    
+    This function is implemented in all SpectAcoular classes and is added to
+    Acoular's classes in bokehview.py.
+    It allows to reference an existing widget to a certain class trait attribute.
+    Expects a class traits name as parameter and the widget instance as 
+    value. 
+    
+    For example: 
+        >>> from spectacoular import RectGrid
+        >>> from bokeh.models.widgets import Select
+        >>>
+        >>> rg = RectGrid()
+        >>> sl = Select(value="10.0")
+        >>> rg.set_widgets(x_max=sl)
     
     The value of the trait attribute changes to the widgets value when it is 
-    different.
-    '''
+    different.    
+
+    Parameters
+    ----------
+    **kwargs : 
+        The name of the class trait attributes. Depends on the class.
+
+    Returns
+    -------
+    None.
+
+    """
     for traitname, widget in kwargs.items():
         widgetMapper = TraitWidgetMapper.factory(self,traitname,widget.__class__)
         widgetMapper.set_widget(widget)
         
 
+
 class BaseSpectacoular(HasPrivateTraits):
+    """
+    Base class for any class defined in the SpectAcoular module.
     
+    It provides the necessary methods to create widgets from trait attributes 
+    and to assign Bokeh's widgets to trait attributes.
+    This class has no real functionality on its own and should not be 
+    used directly.
+    """
+    
+    #: dictionary containing the mapping between a class trait attribute and 
+    #: a Bokeh widget. Keys: name of the trait attribute. Values: Bokeh widget.
     trait_widget_mapper = {
                        }
 
+    #: dictionary containing arguments that belongs to a widget that is created
+    #: from a trait attribute and should be considered when the widget is built.
+    #:  For example: {"traitname":{'disabled':True,'background_color':'red',...}}.
     trait_widget_args = {
                      }
     
+    #: function to create widgets from class trait attributes 
     get_widgets = get_widgets
     
+    #: function to assign widget instances to class trait attributes
     set_widgets = set_widgets
 
 
 
 class TraitWidgetMapper(object):
-    '''
-    Widget Factory for trait objects. Implements dependencies between a class 
-    trait and a corresponding widget.
-    '''
+    """
+    Widget Factory which depending on the trait and widget type returns the 
+    corresponding mapper class to instantiate the widget.
+    
+    The :class:`TraitWidgetMapper` derived classes are used to create an instance
+    of the desired widget.
+    Further, they implement dependencies between a class trait attribute and
+    the corresponding widget.
+    """
 
+    #: name of the class trait attribute to be mapped (type: str)
     traitname = object()
     
+    #: value of the class trait attribute. Can be of arbitrary type
     traitvalue = object()
     
+    #: type of the class trait attribute
     traittype = object()
     
-    obj = None # the source object the trait belongs to.
+    #: the class object that the trait attribute belongs to
+    obj = None 
 
+    #: instance of a Bokeh widget that is created by the :class:`TraitWidgetMapper`
     widget = object()
     
+    #: instance of a :class:`TraitDispatch` to dispatch between the widget 
+    #: value type and the trait attribute type
     traitdispatcher = object()
     
     def __init__(self,obj,traitname):
@@ -118,35 +171,88 @@ class TraitWidgetMapper(object):
         self.traitdispatcher = traitdispatcher.factory(self,self.traittype)
         
     def factory(obj,traitname,widgetType): 
-        '''
+        """
         returns an instance of a TraitWidgetMapper class that corresponds
         to the desired widget type.
-        '''
+
+        Parameters
+        ----------
+        obj : class object 
+            the class object that the trait attribute belongs to.
+        traitname : str
+            name of the class trait attribute to be mapped.
+        widgetType : cls
+            type of the widget.
+
+        Raises
+        ------
+        NotImplementedError
+            raises error when widget type is not supported.
+
+        Returns
+        -------
+        None.
+
+        """
         if widgetType is TextInput: return TextInputMapper(obj,traitname) 
         elif widgetType is Select: return SelectMapper(obj,traitname)
         elif widgetType is Slider: return SliderMapper(obj,traitname) 
         elif widgetType is DataTable: return DataTableMapper(obj,traitname) 
-        else: raise ValueError("mapping for widget type {} does not exist!".format(widgetType))
+        else: raise NotImplementedError(
+            "mapping for widget type {} does not exist!".format(widgetType))
     
     def _set_traitvalue(self,widgetvalue):
-        ''' set traitvalue to widgetvalue '''
+        """
+        Sets the value of a class trait attribute to the widgets value.       
+
+        Parameters
+        ----------
+        widgetvalue : str
+            value of the widget.
+
+        Returns
+        -------
+        None.
+        
+        """
 #        print("set traitvalue for trait {}".format(self.traitname))
         setattr(self.obj,self.traitname,widgetvalue)
 
     def _set_widgetvalue(self,traitvalue):
-        ''' set widgetvalue to traitvalue '''
+        """
+        Sets the value of a widget to the class traits attribute value.
+        In case, the widget value and the trait value are of different type, 
+        a cast function is used.        
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
         if not isinstance(traitvalue,str):
             traitvalue = cast_to_str(traitvalue)
         self.widget.value = traitvalue
 
     def create_trait_setter_func(self):
-        ''' 
-        traitdispatcher returns a function that casts given widget values
-        to a certain traittype
-        value of Select, TextInput, ..., widgets are always type str. However,
-        traitvalues can be of arbitrary dtype. Thus, widgetvalues are casted to
-        traits dtype before. 
-        '''
+        """
+        creates a function that casts the type of a widget value into the type
+        of the class trait attribute.
+        
+        the function is evoked every time the widget value changes. The value 
+        of a Select, TextInput, ..., widget is always type str. However,
+        traitvalues can be of arbitrary type. Thus, widgetvalues need to 
+        be casted. 
+
+        Returns
+        -------
+        callable.
+
+        """
         cast_func = self.traitdispatcher.get_trait_cast_func()
         def callback(attr, old, new):
 #            print(self.obj,self.traitname,new)
@@ -156,19 +262,36 @@ class TraitWidgetMapper(object):
         return callback
     
     def create_widget_setter_func(self):
+        """
+        creates a function that casts a variable `new` into a valid type
+        to be set as the widget value.
+
+        Returns
+        -------
+        callable.
+
+        """
         def callback(new):
 #            print("{} widget changed".format(self.traitname))
             self._set_widgetvalue(new)
         return callback
 
     def _set_callbacks(self):
-        '''
+        """
+        function that sets on_change callbacks between widget and class trait 
+        attribute.
+        
         function implements:
             1. dynamic trait listener. on changes of 'traitvalue' -> widget.value
             is set
             2. widget listener. On changes of 'widget.value' -> attribute of traitvalue
             is set
-        '''
+
+        Returns
+        -------
+        None.
+
+        """
         widget_setter_func = self.create_widget_setter_func()
         self.obj.on_trait_change(widget_setter_func,self.traitname)
         if not self.widget.disabled:
@@ -178,20 +301,43 @@ class TraitWidgetMapper(object):
 
 
 class TextInputMapper(TraitWidgetMapper):
+    """
+    Factory that creates :class:`TextInput` widget from a class trait attribute.
+    """
     
     def create_widget(self,**kwargs):
-        '''
-        creates a bokeh TextInput instance 
-        '''
+        """
+        creates a Bokeh TextInput instance 
+
+        Parameters
+        ----------
+        **kwargs : args of TextInput
+            additional arguments of TextInput widget.
+
+        Returns
+        -------
+        instance(TextInput).
+
+        """
         self.widget = TextInput(title=self.traitname,**kwargs)
         self._set_widgetvalue(self.traitvalue)
         self._set_callbacks()
         return self.widget
 
     def set_widget(self, widget):
-        '''
-        sets a bokeh TextInput instance 
-        '''
+        """
+        connects a Bokeh TextInput widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(TextInput)
+            instance of a TextInput widget.
+
+        Returns
+        -------
+        None.
+
+        """
         self.widget = widget
         cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
@@ -199,12 +345,24 @@ class TextInputMapper(TraitWidgetMapper):
 
 
 class SelectMapper(TraitWidgetMapper):
-    
+    """
+    Factory that creates :class:`Select` widget from a class trait attribute.
+    """
+
     def create_widget(self,**kwargs):
-        '''
-        creates a bokeh Select instance with on trait change listeners
-        and on widget change listeners.
-        '''
+        """
+        creates a Bokeh Select widget instance 
+
+        Parameters
+        ----------
+        **kwargs : args of Select
+            additional arguments of Select widget.
+
+        Returns
+        -------
+        instance(Select).
+
+        """
         self.widget = Select(title=self.traitname,**kwargs)
         self._set_widgetvalue(self.traitvalue)
         self._set_options()
@@ -212,37 +370,76 @@ class SelectMapper(TraitWidgetMapper):
         return self.widget
 
     def set_widget(self, widget):
-        '''
-        sets a bokeh Select widget instance 
-        '''
+        """
+        connects a Bokeh Select widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(Select)
+            instance of a Select widget.
+
+        Returns
+        -------
+        None.
+
+        """
         self.widget = widget
         cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
         self._set_callbacks()
 
     def _set_options(self):
-        ''' sets the options of a select widget '''
+        """
+        sets the :attr:`options` of a :class:`Select` widget
+
+        Returns
+        -------
+        None.
+
+        """
         if not self.widget.options:
             self.widget.options = self._get_options()
 
     @as_str_list
     def _get_options(self): 
-        '''
-        get settable trait values as options for Select Widget
-        returns options as string list
-        '''
+        """
+        gets settable trait values as string list to be used as options of 
+        Select widget
+
+        Returns
+        -------
+        list
+            settable trait attribute values.
+
+        """
         return self.traitdispatcher.get_settable_trait_values()
 
 
 
 class SliderMapper(TraitWidgetMapper):
+    """
+    Factory that creates :class:`Slider` widget from a class trait attribute.
+    """
     
     def create_widget(self,**kwargs):
-        '''
-        creates a bokeh Slider instance 
-        ´value´, ´start´ and ´end´ attributes of Slider instance need to be 
-        of type float
-        '''
+        """
+        creates a Bokeh :class:`Slider` widget instance from class trait
+        attribute. 
+        
+        Currently, only attributes of type :class:`Range` are 
+        supported.
+
+        Parameters
+        ----------
+        **kwargs : args of Slider
+            additional arguments of Slider widget. :attr:´value´, :attr:´start´
+            and :attr:´end´ are of type float
+
+        Returns
+        -------
+        instance(Slider).
+
+        """
         if not isinstance(self.traittype,Range):
             self.raise_unsupported_traittype()
         
@@ -253,15 +450,34 @@ class SliderMapper(TraitWidgetMapper):
         return self.widget
     
     def set_widget(self, widget):
-        '''
-        sets a bokeh Slider widget instance 
-        '''
+        """
+        connects a Bokeh Slider widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(Slider)
+            instance of a Slider widget.
+
+        Returns
+        -------
+        None.
+
+        """
         self.widget = widget
         cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
         self._set_callbacks()
 
     def _set_range(self):
+        """
+        sets the :attr:´start´ and :attr:´end´ of the Slider widget, depending
+        on trait attribute value
+
+        Returns
+        -------
+        None.
+
+        """
         if not self.widget.start:
             if self.traittype._low:
                 self.widget.start = self.traittype._low
@@ -270,29 +486,58 @@ class SliderMapper(TraitWidgetMapper):
                 self.widget.end = self.traittype._high
 
     def _set_widgetvalue(self,traitvalue):
-        '''
-        widgetvalue needs to be always of type str  
-        '''
+        """
+        Sets the value of the Slider widget to the class traits attribute value.
+        
+        The Slider value is always of type float. In case, the widget value 
+        and the trait value are of different type, a cast function is used. 
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
         if not isinstance(traitvalue,float):
             traitvalue = cast_to_float(traitvalue)
         self.widget.value = traitvalue
 
     def raise_unsupported_traittype(self):
-        raise ValueError("currently unsupported trait-type {} for \
+        raise NotImplementedError("currently unsupported trait-type {} for \
                          mapping to RangeSlider widget".format(self.traittype))
 
 
     
 class DataTableMapper(TraitWidgetMapper):
-
+    """
+    Factory that creates :class:`DataTable` widget from a class trait attribute.
+    """
+    
     transposed = False
     
     def create_widget(self,**kwargs):
-        '''
-        creates a bokeh DataTable instance. For transposed arrays that are 
+        """
+        creates a Bokeh :class:`DataTable` widget instance from class trait
+        attribute. 
+        
+        Creates a bokeh DataTable instance. For transposed arrays that are 
         mapped to the DataTable, array data is reshaped and casted to fit the
         required dictionary format of the ColumnDataSource.
-        '''
+
+        Parameters
+        ----------
+        **kwargs : args of DataTable
+            additional arguments of DataTable widget. 
+
+        Returns
+        -------
+        instance(DataTable).
+
+        """
         #self.widget.source = ColumnDataSource() # TODO: this would not work! -> report bug to bokeh 
         self.widget = DataTable(source=ColumnDataSource(),**kwargs) 
         self.create_columns()
@@ -303,9 +548,19 @@ class DataTableMapper(TraitWidgetMapper):
         return self.widget
 
     def set_widget(self, widget):
-        '''
-        sets a bokeh DataTable widget instance 
-        '''
+        """
+        connects a Bokeh DataTable widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(DataTable)
+            instance of a DataTable widget.
+
+        Returns
+        -------
+        None.
+
+        """
         self.widget = widget
         cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.source.data)) # set traitvalue to widgetvalue
@@ -324,6 +579,7 @@ class DataTableMapper(TraitWidgetMapper):
             self._set_celleditor()
             
     def _set_celleditor( self ):
+        ''' adds a cell editor to the DataTable depending on table content '''
         if self.widget.editable:
             if isinstance(self.traittype, NUMERIC_TYPES):
                 editor = NumberEditor()
@@ -333,14 +589,40 @@ class DataTableMapper(TraitWidgetMapper):
                 col.editor = editor
             
     def _set_widgetvalue(self,traitvalue):
-        ''' changes data in ColumnDataSource of DataTable widget '''
+        """
+        Sets the data of the DataTable's ColumnDataSource to the class traits 
+        attribute value.
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
         newData = self.cast_to_dict(traitvalue)
         if not self.widget.source.data == newData:
             self.widget.source.data = newData
-        return
 
     def _set_callbacks( self ):
-        ''' function implements dynmic trait listener and widget listener '''
+        """
+        function that sets on_change callbacks between widget and class trait 
+        attribute.
+        
+        function implements:
+            1. dynamic trait listener. on changes of 'traitvalue' -> ColumnDataSource.data
+            is set
+            2. widget listener. On changes of 'ColumnDataSource.data' -> attribute of traitvalue
+            is set
+
+        Returns
+        -------
+        None.
+
+        """
         widget_setter_func = self.create_widget_setter_func()
         self.obj.on_trait_change(widget_setter_func,self.traitname)
         if self.widget.editable:
@@ -348,13 +630,20 @@ class DataTableMapper(TraitWidgetMapper):
             self.widget.source.on_change('data',trait_setter_func)
 
     def create_trait_setter_func(self):
-        ''' 
-        traitdispatcher returns a function that casts given widget values
-        to a certain traittype
-        value of Select, TextInput, ..., widgets are always type str. However,
-        traitvalues can be of arbitrary dtype. Thus, widgetvalues are casted to
-        traits dtype before. 
-        '''
+        """
+        creates a function that casts the type of a widget value into the type
+        of the class trait attribute.
+        
+        the function is evoked every time the widget value changes. The value 
+        of a Select, TextInput, ..., widget is always type str. However,
+        traitvalues can be of arbitrary type. Thus, widgetvalues need to 
+        be casted. 
+
+        Returns
+        -------
+        callable.
+
+        """
         cast_func = self.traitdispatcher.get_trait_cast_func()
         def callback(attr, old, new): # any how old and new are always the same when the callback is triggered
             old = getattr(self.obj,self.traitname) # 
@@ -367,6 +656,7 @@ class DataTableMapper(TraitWidgetMapper):
         return callback
 
     def is_equal(self,old,new):
+        """ helper function to check if data of ColumnDataSource has changed """
 #        print("old values:",old, old.shape,"new values:",new, new.shape)
 #        print(old == new)
         if isinstance(new,ndarray) and isinstance(old,ndarray):

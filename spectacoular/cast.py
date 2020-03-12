@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 #pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) 2020-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
+""" defines basic  for type casting """
+
 
 from traits.api import CArray,  TraitListObject
 from numpy import array, ndarray

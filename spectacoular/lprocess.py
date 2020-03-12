@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
 #pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) 2007-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
-"""Implements classes for live processing.
+"""Implements classes for the use in live processing applications. Some of the 
+    classes might move to Acoular module in the future.
 
 .. autosummary::
     :toctree: generated/
 
     TimeSamplesPhantom
     TimeInOutPresenter
+    CalibHelper
+    FiltOctaveLive
+    TimeSamplesPlayback
+    SpectraInOut
 """
  
 from numpy import logical_and,savetxt,mean,array,newaxis, zeros,\
@@ -20,8 +25,7 @@ from datetime import datetime
 from time import time,sleep
 from bokeh.models.widgets import TextInput,DataTable,TableColumn,\
     NumberEditor, Select
-
-from bokeh.models import ColumnDataSource, LogColorMapper, ColorBar
+from bokeh.models import ColumnDataSource
 from traits.api import Property, File, CArray,Int, Delegate, Trait,\
 cached_property, on_trait_change, Float,Bool, Instance, ListInt
 try:
@@ -41,18 +45,25 @@ from .factory import BaseSpectacoular
 
 
 
-class TimeSamplesPhantom(MaskedTimeSamples):
-
-    time_delay = Float()     
+class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
+    """
+    TimeSamples derived class for propagating signal processing blocks with
+    user-defined time delay.
     
-    # Indicates if samples are collected, helper trait to break result loop
+    The functionality of the class is to deliver existing blocks of data in a
+    certain time interval. Can be used to simulate a measurement (but data
+    is read from file).
+    """
+
+    #: Defines the delay with which the individual data blocks are propagated.
+    #: Defaults to 1/sample_freq
+    time_delay = Float(
+        desc="Time interval between individual blocks of data")     
+    
+    #: Indicates if samples are collected, helper trait to break result loop
     collectsamples = Bool(True,
-        desc="Indicates if samples are collected")
+        desc="Indicates if result function is running")
 
-    get_widgets = get_widgets
-    
-    set_widgets = set_widgets
-    
     trait_widget_mapper = {'name': TextInput,
                            'basename': TextInput,
                            'start' : TextInput,
@@ -116,31 +127,50 @@ class TimeSamplesPhantom(MaskedTimeSamples):
                 i += num        
                 
                 
+                
 class TimeInOutPresenter(TimeInOut,BasePresenter):
     """
-    Base Class for presenting of live data
+    TimeInOut derived class for building an interface from Acoular's generator 
+    pipelines to Bokeh's ColumnDataSource model that serves as a source for
+    plots and tables.
     
-    ColumnDataSource is updated from data trait.
-    
-    Generator fashion
+    ColumnDataSource is updated from result function. Can be used for automatic
+    presenting of live data.   
     """       
 
-    data = ColumnDataSource(data={'data':array([])}) # does not need to be a ColumnDataSource, a simple dict might be enough here
+    #: Bokeh's ColumnDataSource, updated from result loop
+    data = ColumnDataSource(data={'data':array([])}) 
 
     def result(self,num):
+        """
+        Python generator that yields the output block-wise.
+                
+        Parameters
+        ----------
+        num : integer, defaults to 128
+            This parameter defines the size of the blocks to be yielded
+            (i.e. the number of samples per block) .
+        
+        Returns
+        -------
+        Samples in blocks of shape (num, numchannels). 
+            The last block may be shorter than num.
+        """
         for temp in self.source.result(num):
             self.data.data['data'] = temp
             yield temp
+
+
 
 columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
 
 class CalibHelper(TimeInOut, BaseSpectacoular):
-    
-    '''
-    Only in chain with TimeAverage!
-    '''
-    
+    """
+    Class for calibration of individual source channels 
+    """
+
+    #: Data source; :class:`~acoular.sources.TimeAverage` or derived object.
     source = Instance(TimeAverage)
     
     #: Name of the file to be saved. If none is given, the name will be
@@ -148,20 +178,27 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
     name = File(filter=['*.txt'], 
         desc="name of data file")    
 
-    #: calibration level [dB] or pressure [Pa] of calibration device 
-    magnitude = Float(114)
+    #: calibration level (e. g. dB or Pa) of calibration device 
+    magnitude = Float(114,
+        desc="calibration level of calibration device")
     
-    # calib values of source channels
-    calibdata = CArray(dtype=float)
+    #: calibration values determined during evaluation of :meth:`result`.
+    #: array of floats with dimension (numchannels, numchannels)
+    calibdata = CArray(dtype=float,
+       desc="determined calibration values")
 
-    #: max elements/averaged blocks in buffer to calculate calib value. 
-    buffer_size = Int(100)
+    #: max elements/averaged blocks to calculate calibration value. 
+    buffer_size = Int(100,
+       desc="number of blocks considered to determine calibration value" )
 
-    # standarddeviation
-    calibstd = Float(.5)
+    #: channel-wise allowed standard deviation of calibration values in buffer 
+    calibstd = Float(.5,
+       desc="allowed standard deviation of calibration values in buffer")
 
-    #: delta of magnitude to consider a channels as calibrating
-    delta = Float(10)
+    #: minimum allowed difference in magnitude between the channel to be 
+    #: calibrated and remaining channels.
+    delta = Float(10,
+      desc="magnitude difference between calibrating channel and remaining channels")
     
     # internal identifier
     digest = Property( depends_on = ['source.digest', '__class__'])
@@ -203,17 +240,19 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 
     def result(self, num):
         """
+        Python generator that yields the output block-wise.
+                
         Parameters
         ----------
-        num : TYPE
-            DESCRIPTION.
-
+        num : integer, defaults to 128
+            This parameter defines the size of the blocks to be yielded
+            (i.e. the number of samples per block) .
+        
         Returns
         -------
-        None.
-
+        Samples in blocks of shape (num, numchannels). 
+            The last block may be shorter than num.
         """
-        
         self.adjust_calib_values()
         nc = self.numchannels
         buffer = zeros((self.buffer_size,nc))
@@ -241,6 +280,10 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
     """
     Octave or third-octave filter (not zero-phase).
+    
+    This class is similar to Acoular's :class:`~acoular.tprocess.FiltFiltOctave`.
+    The only difference is that the filter coefficients can be changed while 
+    the result function is executed. 
     """
 
     trait_widget_mapper = {'band': TextInput,
@@ -277,17 +320,27 @@ if sd_enabled:
 
     class TimeSamplesPlayback(TimeInOut,BaseSpectacoular):
         """
+        Naive class implementation to allow audio playback of .h5 file contents. 
+        
+        The class uses the devices available to the sounddevice library for 
+        audio playback. Input and output devices can be listed by
+        
+        >>>    import sounddevice
+        >>>    sounddevice.query_devices()
+        
         In the future, this class should work in buffer mode and 
-        also write the current frame that is played to its columndatasource.
+        also write the current frame that is played to a class attribute.
         """
         
         # internal identifier
         digest = Property( depends_on = ['source.digest', '__class__'])
     
-        #: index of the channel to play
-        channels = ListInt()
+        #: list containing indices of the channels to be played back.
+        channels = ListInt(
+            desc="channel indices to be played back")
         
-        # device property
+        #: two-element list containing indices of input and output device to 
+        #: be used for audio playback. 
         device = Property()
         
         # current frame played back
@@ -311,7 +364,7 @@ if sd_enabled:
         
         def play( self ):
             '''
-            normalized playback of channel
+            normalized playback of source channels given by :attr:`channels` trait
             '''
             if self.channels:
                 if isinstance(self.source,MaskedTimeSamples):
@@ -325,9 +378,7 @@ if sd_enabled:
                         blocking=False)
             
         def stop( self ):
-            '''
-            simply stops playback of file
-            '''
+            ''' method stops audio playback of file content '''
             sd.stop()
 
 
