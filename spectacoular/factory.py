@@ -513,15 +513,31 @@ class SliderMapper(TraitWidgetMapper):
 
     
 class DataTableMapper(TraitWidgetMapper):
-
+    """
+    Factory that creates :class:`DataTable` widget from a class trait attribute.
+    """
+    
     transposed = False
     
     def create_widget(self,**kwargs):
-        '''
-        creates a bokeh DataTable instance. For transposed arrays that are 
+        """
+        creates a Bokeh :class:`DataTable` widget instance from class trait
+        attribute. 
+        
+        Creates a bokeh DataTable instance. For transposed arrays that are 
         mapped to the DataTable, array data is reshaped and casted to fit the
         required dictionary format of the ColumnDataSource.
-        '''
+
+        Parameters
+        ----------
+        **kwargs : args of DataTable
+            additional arguments of DataTable widget. 
+
+        Returns
+        -------
+        instance(DataTable).
+
+        """
         #self.widget.source = ColumnDataSource() # TODO: this would not work! -> report bug to bokeh 
         self.widget = DataTable(source=ColumnDataSource(),**kwargs) 
         self.create_columns()
@@ -532,9 +548,19 @@ class DataTableMapper(TraitWidgetMapper):
         return self.widget
 
     def set_widget(self, widget):
-        '''
-        sets a bokeh DataTable widget instance 
-        '''
+        """
+        connects a Bokeh DataTable widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(DataTable)
+            instance of a DataTable widget.
+
+        Returns
+        -------
+        None.
+
+        """
         self.widget = widget
         cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.source.data)) # set traitvalue to widgetvalue
@@ -553,6 +579,7 @@ class DataTableMapper(TraitWidgetMapper):
             self._set_celleditor()
             
     def _set_celleditor( self ):
+        ''' adds a cell editor to the DataTable depending on table content '''
         if self.widget.editable:
             if isinstance(self.traittype, NUMERIC_TYPES):
                 editor = NumberEditor()
@@ -562,14 +589,40 @@ class DataTableMapper(TraitWidgetMapper):
                 col.editor = editor
             
     def _set_widgetvalue(self,traitvalue):
-        ''' changes data in ColumnDataSource of DataTable widget '''
+        """
+        Sets the data of the DataTable's ColumnDataSource to the class traits 
+        attribute value.
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
         newData = self.cast_to_dict(traitvalue)
         if not self.widget.source.data == newData:
             self.widget.source.data = newData
-        return
 
     def _set_callbacks( self ):
-        ''' function implements dynmic trait listener and widget listener '''
+        """
+        function that sets on_change callbacks between widget and class trait 
+        attribute.
+        
+        function implements:
+            1. dynamic trait listener. on changes of 'traitvalue' -> ColumnDataSource.data
+            is set
+            2. widget listener. On changes of 'ColumnDataSource.data' -> attribute of traitvalue
+            is set
+
+        Returns
+        -------
+        None.
+
+        """
         widget_setter_func = self.create_widget_setter_func()
         self.obj.on_trait_change(widget_setter_func,self.traitname)
         if self.widget.editable:
@@ -577,13 +630,20 @@ class DataTableMapper(TraitWidgetMapper):
             self.widget.source.on_change('data',trait_setter_func)
 
     def create_trait_setter_func(self):
-        ''' 
-        traitdispatcher returns a function that casts given widget values
-        to a certain traittype
-        value of Select, TextInput, ..., widgets are always type str. However,
-        traitvalues can be of arbitrary dtype. Thus, widgetvalues are casted to
-        traits dtype before. 
-        '''
+        """
+        creates a function that casts the type of a widget value into the type
+        of the class trait attribute.
+        
+        the function is evoked every time the widget value changes. The value 
+        of a Select, TextInput, ..., widget is always type str. However,
+        traitvalues can be of arbitrary type. Thus, widgetvalues need to 
+        be casted. 
+
+        Returns
+        -------
+        callable.
+
+        """
         cast_func = self.traitdispatcher.get_trait_cast_func()
         def callback(attr, old, new): # any how old and new are always the same when the callback is triggered
             old = getattr(self.obj,self.traitname) # 
@@ -596,6 +656,7 @@ class DataTableMapper(TraitWidgetMapper):
         return callback
 
     def is_equal(self,old,new):
+        """ helper function to check if data of ColumnDataSource has changed """
 #        print("old values:",old, old.shape,"new values:",new, new.shape)
 #        print(old == new)
         if isinstance(new,ndarray) and isinstance(old,ndarray):
