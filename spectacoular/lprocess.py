@@ -270,7 +270,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
                 # print(buffer[:,idx].std())
                 if buffer[:,idx].std() < self.calibstd:
                     calibdata = self.calibdata.copy()
-                    calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
+                    calibdata[idx,:] = [mean(buffer[:,idx]), self.magnitude]
                     # self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
                     self.calibdata = calibdata
                     # print(self.calibdata[idx,:])
