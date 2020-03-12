@@ -302,7 +302,7 @@ class TraitWidgetMapper(object):
 
 class TextInputMapper(TraitWidgetMapper):
     """
-    Factory that creates TextInput widget from a class trait attribute.
+    Factory that creates :class:`TextInput` widget from a class trait attribute.
     """
     
     def create_widget(self,**kwargs):
@@ -345,7 +345,10 @@ class TextInputMapper(TraitWidgetMapper):
 
 
 class SelectMapper(TraitWidgetMapper):
-    
+    """
+    Factory that creates :class:`Select` widget from a class trait attribute.
+    """
+
     def create_widget(self,**kwargs):
         """
         creates a Bokeh Select widget instance 
@@ -414,13 +417,29 @@ class SelectMapper(TraitWidgetMapper):
 
 
 class SliderMapper(TraitWidgetMapper):
+    """
+    Factory that creates :class:`Slider` widget from a class trait attribute.
+    """
     
     def create_widget(self,**kwargs):
-        '''
-        creates a bokeh Slider instance 
-        ´value´, ´start´ and ´end´ attributes of Slider instance need to be 
-        of type float
-        '''
+        """
+        creates a Bokeh :class:`Slider` widget instance from class trait
+        attribute. 
+        
+        Currently, only attributes of type :class:`Range` are 
+        supported.
+
+        Parameters
+        ----------
+        **kwargs : args of Slider
+            additional arguments of Slider widget. :attr:´value´, :attr:´start´
+            and :attr:´end´ are of type float
+
+        Returns
+        -------
+        instance(Slider).
+
+        """
         if not isinstance(self.traittype,Range):
             self.raise_unsupported_traittype()
         
@@ -431,15 +450,34 @@ class SliderMapper(TraitWidgetMapper):
         return self.widget
     
     def set_widget(self, widget):
-        '''
-        sets a bokeh Slider widget instance 
-        '''
+        """
+        connects a Bokeh Slider widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(Slider)
+            instance of a Slider widget.
+
+        Returns
+        -------
+        None.
+
+        """
         self.widget = widget
         cast_func = self.traitdispatcher.get_trait_cast_func()
         self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
         self._set_callbacks()
 
     def _set_range(self):
+        """
+        sets the :attr:´start´ and :attr:´end´ of the Slider widget, depending
+        on trait attribute value
+
+        Returns
+        -------
+        None.
+
+        """
         if not self.widget.start:
             if self.traittype._low:
                 self.widget.start = self.traittype._low
@@ -448,15 +486,28 @@ class SliderMapper(TraitWidgetMapper):
                 self.widget.end = self.traittype._high
 
     def _set_widgetvalue(self,traitvalue):
-        '''
-        widgetvalue needs to be always of type str  
-        '''
+        """
+        Sets the value of the Slider widget to the class traits attribute value.
+        
+        The Slider value is always of type float. In case, the widget value 
+        and the trait value are of different type, a cast function is used. 
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
         if not isinstance(traitvalue,float):
             traitvalue = cast_to_float(traitvalue)
         self.widget.value = traitvalue
 
     def raise_unsupported_traittype(self):
-        raise ValueError("currently unsupported trait-type {} for \
+        raise NotImplementedError("currently unsupported trait-type {} for \
                          mapping to RangeSlider widget".format(self.traittype))
 
 
