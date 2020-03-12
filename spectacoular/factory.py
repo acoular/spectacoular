@@ -28,28 +28,33 @@ from numpy import array, ndarray,newaxis,isscalar,nan_to_num
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
 
+
 NUMERIC_TYPES = (Int,Long,CLong,int, # Complex Numbers Missing at the Moment
                  Float,float, 
                  Complex, complex)
-BOOLEAN_TYPES = (Bool,bool)   
-SEQUENCE_TYPES = (Str,File,str,
-                  Tuple,
-                  List,
-                  CArray)
-SPECIAL_TYPES = (BaseRange,Range,Enum,TraitEnum,TraitMap,TraitCompound)
+
 
 def as_str_list(func):
+    """ decorator to wrap list entries into string type """
     def wrapper(*args):
         list_ = func(*args)
         return [str(val) for val in list_]
     return wrapper
 
 
-def get_widgets(self): # TODO: maybe rename to 'create_widgets(self)'
-    '''
-    This function is implemented in all spectAcoular classes. It builds widgets 
-    from corresponding traits defined in bokehview.py
-    '''
+def get_widgets(self): 
+    """
+    This function is implemented in all SpectAcoular classes and is added to
+    Acoular's classes in bokehview.py. It builds Bokeh widgets from 
+    corresponding class trait attributes. The desired mapping is defined in the 
+    `trait_widget_mapper` dictionary. 
+     
+
+    Returns
+    -------
+    None.
+
+    """
     widgetdict = {}
     for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
         widgetMapper = TraitWidgetMapper.factory(self,traitname,widgetType)
@@ -59,22 +64,50 @@ def get_widgets(self): # TODO: maybe rename to 'create_widgets(self)'
 
 
 def set_widgets(self,**kwargs):
-    '''
-    This function allows to link an existing widget to a certain class trait.
-    Expects a dictionary with the traitname as key and the widget instance as 
-    value. For example: 
-        $ widgetmapping = {'traitname' : Slider(), ... }
-        $ set_widgets(**widgetmapping)
+    """
+    This function is implemented in all SpectAcoular classes and is added to
+    Acoular's classes in bokehview.py.
+    
+    It allows to reference an existing widget to a certain class trait attribute.
+    Expects a class traits name as parameter and the widget instance as 
+    value. 
+    
+    For example: 
+        >>> from spectacoular import RectGrid
+        >>> from bokeh.models.widgets import Select
+        >>>
+        >>> rg = RectGrid()
+        >>> sl = Select(value="10.0")
+        >>> rg.set_widgets(x_max=sl)
     
     The value of the trait attribute changes to the widgets value when it is 
-    different.
-    '''
+    different.    
+
+    Parameters
+    ----------
+    **kwargs : 
+        The name of the class trait attributes. Depends on the class.
+
+    Returns
+    -------
+    None.
+
+    """
     for traitname, widget in kwargs.items():
         widgetMapper = TraitWidgetMapper.factory(self,traitname,widget.__class__)
         widgetMapper.set_widget(widget)
         
 
+
 class BaseSpectacoular(HasPrivateTraits):
+    """
+    Base class for any class defined in the SpectAcoular module.
+    
+    It provides the necessary methods to create widgets from trait attributes 
+    and to assign Bokeh's widgets to trait attributes.
+    This class has no real functionality on its own and should not be 
+    used directly.
+    """
     
     trait_widget_mapper = {
                        }
@@ -89,10 +122,10 @@ class BaseSpectacoular(HasPrivateTraits):
 
 
 class TraitWidgetMapper(object):
-    '''
+    """
     Widget Factory for trait objects. Implements dependencies between a class 
     trait and a corresponding widget.
-    '''
+    """
 
     traitname = object()
     
