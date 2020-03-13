@@ -273,7 +273,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
                     calibdata[idx,:] = [mean(buffer[:,idx]), self.magnitude]
                     # self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
                     self.calibdata = calibdata
-                    # print(self.calibdata[idx,:])
+                    print(self.calibdata[idx,:])
             yield temp
             
             
