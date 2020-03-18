@@ -169,6 +169,19 @@ calWidgets = ch.get_widgets()
 ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
 ti_savename = TextInput(value="", title="Filename:",disabled=True)
 
+# DataTable
+from bokeh.models.widgets import TableColumn,NumberEditor,DataTable
+columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
+           TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
+calibCDS = ColumnDataSource(data={"calibvalue":[],"caliblevel":[]})
+calibTable = DataTable(source=calibCDS,columns=columns)
+
+def _calibtable_callback():
+    calibCDS.data = {"calibvalue":ch.calibdata[:,0],
+                     "caliblevel":ch.calibdata[:,1]}
+calibtable_callback = lambda: doc.add_next_tick_callback(_calibtable_callback)
+ch.on_trait_change(calibtable_callback,"calibdata")
+
 # save calib button
 savecal = Button(label="save calibration",button_type="warning")
 savecal.on_click(lambda: ch.save())
@@ -180,6 +193,7 @@ MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
                                     'sizes':np.array([MICSCALE]*micGeo.num_mics),
                                     'channels':[str(_) for _ in range(micGeo.num_mics)]}) 
 BeamfCDS = ColumnDataSource({'beamformer_data':[]})
+
 
 #
 freqSlider = Slider(start=50, end=10000, value=CFREQ, 
@@ -498,8 +512,8 @@ emptyspace2 = Div(text='',width=250, height=30) # just for vertical spacing
 emptyspace3 = Div(text='',width=250, height=10) # just for vertical spacing
 
 # Columns
-calWidgets['calibdata'].height = 750
-calCol = row(calWidgets['calibdata'], emptyspace, column(
+# calWidgets['calibdata'].height = 750
+calCol = row(calibTable, emptyspace, column(
                     savecal,calWidgets['name'], calWidgets['magnitude'],
                     calWidgets['delta'],width=300,height=400))
 mgWidgetCol = column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
