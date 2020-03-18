@@ -479,11 +479,9 @@ class SliderMapper(TraitWidgetMapper):
 
         """
         if not self.widget.start:
-            if self.traittype._low:
-                self.widget.start = self.traittype._low
+            self.widget.start = self.traittype._low
         if not self.widget.end:
-            if self.traittype._high:
-                self.widget.end = self.traittype._high
+            self.widget.end = self.traittype._high
 
     def _set_widgetvalue(self,traitvalue):
         """

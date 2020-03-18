@@ -278,35 +278,63 @@ class FileWidgetMapping(Test):
         assert self.testTrait == 'test.xml'
 
 class RangeWidgetMapping(Test):
-    
+    """
+    from traits.api doc of Range:
+        
+        Default Value
+        -------------
+        *value*; if *value* is None or omitted, the default value is *low*,
+        unless *low* is None or omitted, in which case the default value is
+        *high*.
+    """
+    # low,high,value    
     testTrait = Range(0.01, 1.0, 0.6)
+    
+    testTrait1 = Range(0.01, 1.0, None)
+
+    testTrait2 = Range(0, 10, 5)
+
 
 # TODO: Range to TextInput Mapping. Currently raises error     
 #    testTrait2 = Range(0.01, 1.0, 0.6)  
     
     trait_widget_mapper = {
                 'testTrait' : Slider,
-#                'testTrait2' : TextInput
+                'testTrait1' : Slider,
+                'testTrait2' : Slider
                 }
     
     trait_widget_args = {
                 'testTrait' : {'disabled':False, 'step':0.01},
-#                'testTrait2' : {'disabled':False},
+                'testTrait1' : {'disabled':False},
+                'testTrait2' : {'disabled':False},
                 }
     
     def test( self ):
         widgets = self.get_widgets()
         # test Slider Mapping 
         widget = widgets['testTrait']
+        widget1 = widgets['testTrait1']
+        widget2 = widgets['testTrait2']
         assert (widget.start, widget.end, widget.value) == (0.01, 1.0, 0.6)
+        assert (widget1.start, widget1.end, widget1.value) == (0.01, 1.0, 0.01)
+        assert (widget2.start, widget2.end, widget2.value) == (0, 10, 5)
         # assign value to widget
         widget.value = 1.0
+        widget1.value = 1.0 
+        widget2.value = 1 
         # prove correct change of trait value
         assert self.testTrait == 1.0
+        assert self.testTrait1 == 1.0
+        assert self.testTrait2 == 1
         # assign value to trait
         self.testTrait = 0.6
+        self.testTrait1 = 0.6
+        self.testTrait2 = 6
         # prove widget value
         assert widget.value == 0.6
+        assert widget1.value == 0.6
+        assert widget2.value == 6
 # test Textfield Mapping
 # widget = widgets[1]    
 # widget.value = 1.0
