@@ -413,6 +413,10 @@ class SpectraInOut( TimeInOut ):
     precision = Trait('complex128', 'complex64', 
                       desc="precision csm, eva, eve")
     
+    # internal identifier
+    digest = Property( depends_on = ['source.digest','precision','block_size',
+                                    'window'])
+
     trait_widget_mapper = {
                         'window': Select,
                         'block_size': Select,
@@ -426,6 +430,10 @@ class SpectraInOut( TimeInOut ):
     get_widgets = get_widgets
     
     set_widgets = set_widgets
+
+    @cached_property
+    def _get_digest( self ):
+        return digest(self)
 
     def fftfreq ( self ):
         """
