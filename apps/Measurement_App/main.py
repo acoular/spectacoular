@@ -228,8 +228,6 @@ width = 800
 height = int(width * dy/dx+0.5)
 
 beam_fig = figure(plot_width=width, plot_height=height,
-                  x_range=[grid.x_min,grid.x_max], 
-                  y_range=[grid.y_min,grid.y_max],
                    tools = 'pan,wheel_zoom,save,reset')
 if cam_enabled:
     beam_fig.image_rgba(image='image_data',
@@ -245,6 +243,8 @@ if cam_enabled: set_alpha_callback(bfImage)
 #                      background_fill_color = '#2F2F2F',
 #                      border_line_color=None, location=(0,0))
 #beam_fig.add_layout(color_bar, 'right')
+
+
 
 
 # =============================================================================
@@ -315,6 +315,20 @@ dynamicSlider.on_change('value', dynamic_slider_callback)
 #     elif arg == [0]:
 #         f.accumulate = True
 # checkbox_paint_mode.on_click(checkbox_paint_mode_callback)
+
+def update_bfImage_axis(attr,old,new):
+    dx = grid.x_max-grid.x_min
+    dy = grid.y_max-grid.y_min
+    bfImage.glyph.x = grid.x_min
+    bfImage.glyph.y = grid.y_min
+    bfImage.glyph.dw = dx
+    bfImage.glyph.dh = dy
+    bfImage.glyph.update()
+
+rgWidgets['x_min'].on_change('value',update_bfImage_axis)
+rgWidgets['x_max'].on_change('value',update_bfImage_axis)
+rgWidgets['y_min'].on_change('value',update_bfImage_axis)
+rgWidgets['y_max'].on_change('value',update_bfImage_axis)
   
 def select_micgeom_callback(attr, old, new):
     MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
@@ -464,7 +478,7 @@ calib_toggle.on_click(calibtoggle_handler)
 bfdata = {'data':np.array([])}
 def get_bf_data(num):
     for temp in bf_used.result(num):
-        bfdata['data'] = L_p(temp)#L_p(synthetic(temp,f.fftfreq(),bfFilt.band,1))
+        bfdata['data'] = L_p(temp.reshape(grid.shape)).T #L_p(synthetic(temp,f.fftfreq(),bfFilt.band,1))
         yield
 
 def update_amp_bar_plot():
@@ -478,7 +492,7 @@ def update_mic_geom_plot():
 
 def update_beamforming_plot():
     if bfdata['data'].size > 0:
-        BeamfCDS.data['beamformer_data'] = [((np.reshape(bfdata['data'],(grid.nxsteps,grid.nysteps))).T)[:,::-1]]
+        BeamfCDS.data['beamformer_data'] = [bfdata['data'][:,::-1]]
         if checkbox_autolevel_mode.active:
             dynamicValue = (dynamicSlider.value[1] - dynamicSlider.value[0])
             maxValue = bfdata['data'].max()
@@ -490,7 +504,7 @@ if sinus_enabled:
                   to_txt_buffer,ChLevelsCDS,checkbox_micgeom,amp_fig,
                   MicGeomCDS,micGeo)
 
-def update_app():  # only update figure when necesampSplitary
+def update_app():  # only update figure when tab is active
     if figureTabs.active == 0: 
         update_amp_bar_plot()
     if figureTabs.active ==1:
@@ -502,6 +516,7 @@ def update_app():  # only update figure when necesampSplitary
 
 def periodic_update_log():
     text_user_info.text = "\n".join(msg for msg in txt_buffer)
+
 
 # =============================================================================
 #  Set Up Bokeh Document Layout
