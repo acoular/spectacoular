@@ -40,6 +40,38 @@ def as_str_list(func):
     return wrapper
 
 
+def widget_mapper_factory(obj,traitname,widgetType): 
+    """
+    returns an instance of a TraitWidgetMapper class that corresponds
+    to the desired widget type.
+
+    Parameters
+    ----------
+    obj : class object 
+        the class object that the trait attribute belongs to.
+    traitname : str
+        name of the class trait attribute to be mapped.
+    widgetType : cls
+        type of the widget.
+
+    Raises
+    ------
+    NotImplementedError
+        raises error when widget type is not supported.
+
+    Returns
+    -------
+    None.
+
+    """
+    if widgetType is TextInput: return TextInputMapper(obj,traitname) 
+    elif widgetType is Select: return SelectMapper(obj,traitname)
+    elif widgetType is Slider: return SliderMapper(obj,traitname) 
+    elif widgetType is DataTable: return DataTableMapper(obj,traitname) 
+    else: raise NotImplementedError(
+        "mapping for widget type {} does not exist!".format(widgetType))
+
+
 def get_widgets(self): 
     """
     Get instances of the widgets defined in :attr:`trait_widget_mapper`. 
@@ -58,7 +90,7 @@ def get_widgets(self):
     """
     widgetdict = {}
     for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
-        widgetMapper = TraitWidgetMapper.factory(self,traitname,widgetType)
+        widgetMapper = widget_mapper_factory(self,traitname,widgetType)
         widgetdict[traitname] = widgetMapper.create_widget(
                                         **self.trait_widget_args[traitname])
     return widgetdict
@@ -96,7 +128,7 @@ def set_widgets(self,**kwargs):
 
     """
     for traitname, widget in kwargs.items():
-        widgetMapper = TraitWidgetMapper.factory(self,traitname,widget.__class__)
+        widgetMapper = widget_mapper_factory(self,traitname,widget.__class__)
         widgetMapper.set_widget(widget)
         
 
@@ -168,39 +200,8 @@ class TraitWidgetMapper(object):
             self.traitvalue = getattr(obj,traitname)
         except AttributeError: # in case of Delegate
             self.traitvalue = None
-        self.traitdispatcher = traitdispatcher.factory(self,self.traittype)
-        
-    def factory(obj,traitname,widgetType): 
-        """
-        returns an instance of a TraitWidgetMapper class that corresponds
-        to the desired widget type.
-
-        Parameters
-        ----------
-        obj : class object 
-            the class object that the trait attribute belongs to.
-        traitname : str
-            name of the class trait attribute to be mapped.
-        widgetType : cls
-            type of the widget.
-
-        Raises
-        ------
-        NotImplementedError
-            raises error when widget type is not supported.
-
-        Returns
-        -------
-        None.
-
-        """
-        if widgetType is TextInput: return TextInputMapper(obj,traitname) 
-        elif widgetType is Select: return SelectMapper(obj,traitname)
-        elif widgetType is Slider: return SliderMapper(obj,traitname) 
-        elif widgetType is DataTable: return DataTableMapper(obj,traitname) 
-        else: raise NotImplementedError(
-            "mapping for widget type {} does not exist!".format(widgetType))
-    
+        self.traitdispatcher = trait_dispatch_factory(self,self.traittype)
+            
     def _set_traitvalue(self,widgetvalue):
         """
         Sets the value of a class trait attribute to the widgets value.       
@@ -716,6 +717,46 @@ class DataTableMapper(TraitWidgetMapper):
 # =============================================================================
 # Trait Dispatch classes
 # =============================================================================
+
+
+def trait_dispatch_factory(traitwidgetmapper,traittype): 
+    '''
+    returns an instance of a TraitDispatch class that corresponds
+    to the desired trait type.
+    '''
+    if isinstance(traittype,(BaseInt,BaseLong)): 
+        return IntDispatch(traitwidgetmapper)
+    elif isinstance(traittype,BaseFloat): 
+        return FloatDispatch(traitwidgetmapper)
+    elif isinstance(traittype,BaseBool): 
+        return BoolDispatch(traitwidgetmapper)
+    elif isinstance(traittype,(BaseStr,BaseFile)): 
+        return StrDispatch(traitwidgetmapper)
+    elif isinstance(traittype,BaseRange):
+        return RangeDispatch(traitwidgetmapper)
+    elif isinstance(traittype,List):
+        return ListDispatch(traitwidgetmapper)
+    elif isinstance(traittype,BaseTuple):
+        return TupleDispatch(traitwidgetmapper)
+    elif isinstance(traittype,CArray):
+        return ArrayDispatch(traitwidgetmapper)
+    elif isinstance(traittype,(BaseEnum,TraitEnum)):
+        return EnumDispatch(traitwidgetmapper)
+    elif isinstance(traittype,Any) or (traittype is Any): # is Any can be True for Property() function
+        return AnyDispatch(traitwidgetmapper)
+    elif isinstance(traittype,TraitCompound):
+        return TraitCompoundDispatch(traitwidgetmapper)
+    elif isinstance(traittype,TraitMap):
+        return TraitMapDispatch(traitwidgetmapper)
+    elif isinstance(traittype,Delegate):
+        return
+    else:
+        raise NotImplementedError('No Dispatcher class defined for "{}"-trait of class "{}" which is type "{}" defined.'.format(
+                traitwidgetmapper.traitname,
+                traitwidgetmapper.obj.__class__.__name__,
+                traittype)) 
+
+
         
 class TraitDispatch(object):
     '''
@@ -726,43 +767,6 @@ class TraitDispatch(object):
     
     def __init__(self,traitwidgetmapper=None):
         self.traitwidgetmapper = traitwidgetmapper
-
-    def factory(self,traitwidgetmapper,traittype): 
-        '''
-        returns an instance of a TraitDispatch class that corresponds
-        to the desired trait type.
-        '''
-        if isinstance(traittype,(BaseInt,BaseLong)): 
-            return IntDispatch(traitwidgetmapper)
-        elif isinstance(traittype,BaseFloat): 
-            return FloatDispatch(traitwidgetmapper)
-        elif isinstance(traittype,BaseBool): 
-            return BoolDispatch(traitwidgetmapper)
-        elif isinstance(traittype,(BaseStr,BaseFile)): 
-            return StrDispatch(traitwidgetmapper)
-        elif isinstance(traittype,BaseRange):
-            return RangeDispatch(traitwidgetmapper)
-        elif isinstance(traittype,List):
-            return ListDispatch(traitwidgetmapper)
-        elif isinstance(traittype,BaseTuple):
-            return TupleDispatch(traitwidgetmapper)
-        elif isinstance(traittype,CArray):
-            return ArrayDispatch(traitwidgetmapper)
-        elif isinstance(traittype,(BaseEnum,TraitEnum)):
-            return EnumDispatch(traitwidgetmapper)
-        elif isinstance(traittype,Any) or (traittype is Any): # is Any can be True for Property() function
-            return AnyDispatch(traitwidgetmapper)
-        elif isinstance(traittype,TraitCompound):
-            return TraitCompoundDispatch(traitwidgetmapper)
-        elif isinstance(traittype,TraitMap):
-            return TraitMapDispatch(traitwidgetmapper)
-        elif isinstance(traittype,Delegate):
-            return
-        else:
-            raise NotImplementedError('No Dispatcher class defined for "{}"-trait of class "{}" which is type "{}" defined.'.format(
-                    traitwidgetmapper.traitname,
-                    traitwidgetmapper.obj.__class__.__name__,
-                    traittype)) 
 
     def get_undefined_cast_func(self):
         if type(self.traitwidgetmapper.traitvalue) == str: return cast_to_str
@@ -778,8 +782,6 @@ class TraitDispatch(object):
                         self.traitwidgetmapper.obj.__class__.__name__,
                         self.traitwidgetmapper.traitvalue,
                         self.traitwidgetmapper.traittype.__class__))   
-
-traitdispatcher = TraitDispatch()
 
 
 class IntDispatch(TraitDispatch):
@@ -858,7 +860,7 @@ class ListDispatch(TraitDispatch):
             itemType = itemType.aType # returns basic type str, float, ...
             return itemType
         else: # in case no item defined -> List(Str())
-            dispatch = traitdispatcher.factory(self.traitwidgetmapper,itemType)
+            dispatch = trait_dispatch_factory(self.traitwidgetmapper,itemType)
             return dispatch.get_trait_cast_func()
 
 
