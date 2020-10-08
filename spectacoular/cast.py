@@ -38,7 +38,7 @@ def _(str_):
     if str_:
         str_ = eval(str_)
         if str_: return int(float(str_))
-        else: return
+        else: return 0
     else:
         return 0
     
