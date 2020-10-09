@@ -10,4 +10,5 @@ from .controller import *
 from .dprocess import *
 from .lprocess import *
 from .cast import *
+from .consumer import TimeConsumer, TimeBandsConsumer
 
