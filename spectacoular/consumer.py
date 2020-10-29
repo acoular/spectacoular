@@ -87,7 +87,7 @@ class TimeConsumer(TimeInOut):
         self.elapsed = 0.0
         self.updated = threading.Event()
         self.updated.set()
-        self.init_ds()
+        doc.add_next_tick_callback(self.init_ds)
         for temp in self.source.result(self.num):
             if not getattr(self.thread, "do_run", True):
                 break
