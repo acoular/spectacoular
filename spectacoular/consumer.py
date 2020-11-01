@@ -9,13 +9,13 @@
     :toctree: generated/
 
 """
-
+import threading
 from numpy import arange
 from acoular import TimeInOut
 from bokeh.models import ColumnDataSource
 from traits.api import List, Int, Trait, Float, Bool, Array, Property, on_trait_change,\
     cached_property, Function 
-import threading
+
 
 
 
@@ -34,7 +34,7 @@ class TimeConsumer(TimeInOut):
     length of :attr:`rollover` samples. The elapsed time in seconds is stored in :attr:`elapsed`
     """       
     #: Bokeh's ColumnDataSource, updated from result loop
-    ds = ColumnDataSource()
+    ds = Trait(ColumnDataSource)
 
     #: channels to have in the output
     channels = List(Int)
@@ -66,6 +66,8 @@ class TimeConsumer(TimeInOut):
         data['t'] = []
         for ch in self.ch_names():
             data[ch] = []
+        if not self.ds:
+            self.ds = ColumnDataSource()
         self.ds.data = data # ColumnDataSource wants all columns at once
 
     def ch_names(self):
@@ -173,7 +175,6 @@ class TimeBandsConsumer(TimeConsumer):
             newdata['t'] = self.lfunc(self.bands)
             self.elapsed += self.num/self.sample_freq
             data = self.data[0].reshape((self.numbands,-1))
-            print(data.shape)
             for i,ch in zip(self.channels,self.ch_names()):
                 newdata[ch] = data[:,i]
             self.ds.data = newdata
