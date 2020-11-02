@@ -32,15 +32,17 @@ requirements:
 
 
   run:
-    - python >=3.6
+    - python >=3.8
     - Acoular>=20.10
     - bokeh >=1.2.0
 
 test:
   # Python imports
 
- files: # from recipe folder
+  files: # from recipe folder
  #   - some file
+
+
   imports:
     - spectacoular
 

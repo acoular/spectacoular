@@ -1,6 +1,6 @@
 package:
   name: spectacoular
-  version: "20.02"
+  version: "20.11"
 
 source:
   path: ../../spectacoular
@@ -27,13 +27,13 @@ source:
 requirements:
   build:
     - python
-    - Acoular>=20.02
+    - Acoular>=20.10
     - bokeh >=1.2.0
 
 
   run:
     - python >=3.6
-    - Acoular>=20.02
+    - Acoular>=20.10
     - bokeh >=1.2.0
 
 test:
