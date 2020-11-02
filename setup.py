@@ -7,7 +7,7 @@ from os.path import join, abspath, dirname
 import os
 
 
-bf_version = "20.02"
+bf_version = "20.11"
 bf_author = "spectAcoular Development Team"
 
 # Get the long description from the relevant file
