@@ -1,8 +1,6 @@
 Installation
 ============
 
-Depending on your operating system and python distribution, there are different options (see below) how to install SpectAcoular.
-
 Requirements
 ------------
 
@@ -12,11 +10,9 @@ In order to install SpectAcoular you need a Python 3 environment with the follow
     * `Acoular <http://www.acoular.org/>`_, 
     * `Bokeh <https://docs.bokeh.org/en/latest/index.html#>`_, 
 
-The recommended option 1 below ensures that the required packages will be installed properly.
-If you do not chose option 1 below for installation, you may have to take care that these are all installed on your machine before you can install SpectAcoular.
+The recommended Anaconda installation below ensures that the required packages will be installed properly. 
 
-
-Option 1 (recommended): Anaconda (Windows and Linux)
+Anaconda (Windows and Linux)
 ----------------------------------------------------
 
 This option assumes that you have the `Anaconda <https://www.anaconda.com/download/>`_ Python-distribution installed on your computer. If this is not the case you may `download <https://www.anaconda.com/download/>`_ and install it (highly recommended). **You may install Anaconda alongside any other Python installation on your system**, without the need to interfere with the other Python installation.
@@ -30,17 +26,5 @@ In the command line, type
 
 This will install SpectAcoular in your Anaconda Python environment and make the SpectAcoular library available from Python. In addition, this will install all dependencies (those other packages mentioned above) if they are not already present on your system.
 Depending on your type of Anaconda installation (single user or system-wide), you may be asked for admin privileges in order to start the installation process.
-
-Option 2: Source install
-------------------------
-You may download the `source tarball <https://pypi.python.org/pypi/spectacoular>`_. Unzip it and change into the "spectacoular" directory, then type
-
-.. code-block:: console
-
-    $ python setup.py install
-
-to compile and install the software. This requires a properly set up system with all installed dependencies and a compiler.  
-Another option to get the source is to clone or fork from `Github <https://github.com/acoular/acoular>`_.
-
 
 
