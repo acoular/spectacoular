@@ -150,7 +150,7 @@ class BaseSpectacoular(HasPrivateTraits):
 
     #: dictionary containing arguments that belongs to a widget that is created
     #: from a trait attribute and should be considered when the widget is built.
-    #:  For example: {"traitname":{'disabled':True,'background_color':'red',...}}.
+    #: For example: {"traitname":{'disabled':True,'background_color':'red',...}}.
     trait_widget_args = {
                      }
     
@@ -245,8 +245,8 @@ class TraitWidgetMapper(object):
         of the class trait attribute.
         
         the function is evoked every time the widget value changes. The value 
-        of a Select, TextInput, ..., widget is always type str. However,
-        traitvalues can be of arbitrary type. Thus, widgetvalues need to 
+        of a :class:`Select`, :class: `TextInput`, ..., widget is always type str. 
+        However, traitvalues can be of arbitrary type. Thus, widgetvalues need to 
         be casted. 
 
         Returns

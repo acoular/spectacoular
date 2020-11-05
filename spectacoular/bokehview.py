@@ -6,6 +6,11 @@
 """
 Implements trait-widget mapping functionality to Acoular classes. Defines which
 attribute is to be mapped into which Bokeh widget type.
+
+.. autosummary::
+    :toctree: generated/
+
+    add_bokeh_attr
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable,\

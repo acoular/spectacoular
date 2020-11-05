@@ -1,0 +1,8 @@
+MicGeomPresenter
+======================================
+
+.. currentmodule:: spectacoular.dprocess
+
+.. autoclass:: MicGeomPresenter
+    :members:
+    :show-inheritance:

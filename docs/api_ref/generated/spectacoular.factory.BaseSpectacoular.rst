@@ -1,0 +1,8 @@
+BaseSpectacoular
+=====================================
+
+.. currentmodule:: spectacoular.factory
+
+.. autoclass:: BaseSpectacoular
+    :members:
+    :show-inheritance:

@@ -1,0 +1,8 @@
+BeamformerPresenter
+=========================================
+
+.. currentmodule:: spectacoular.dprocess
+
+.. autoclass:: BeamformerPresenter
+    :members:
+    :show-inheritance:

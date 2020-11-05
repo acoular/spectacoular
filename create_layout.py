@@ -22,10 +22,10 @@ sel_col = '#1f77b4'
 link_col = ['green', 'white']
 # Font Sizes
 ft_for_all = True # if True: font size of ft_f is valid for all
-ft_f       = '10pt' # font of figures
-ft_wt      = '14pt' # font of widgets and tables
+ft_f       = '14pt' # font of figures
+ft_wt      = '18pt' # font of widgets and tables
 # Font
-ft         = "Helvetica" # bokeh default is "Helvetica"
+ft         = "asd " # bokeh default is "Helvetica"
 ft_stl     = "normal" # italic, bold
 
 if ft_for_all:
@@ -127,6 +127,12 @@ for path in paths:
                   # f'    background-color: {warning_but_col[0]} !important;',
                   # f'    border-color: {warning_but_col[0]} !important;',
                   # '    }',
+                  '.bk-root .bk-menu > :not(.bk-divider):hover, .bk-root .bk-menu > :not(.bk-divider).bk-active {',
+                  f'background-color: {bg_col} !important;',
+                  '}', 
+                  '.bk-root .bk-menu > :not(.bk-divider), .bk-root .bk-menu > :not(.bk-divider).bk-active {',
+                  f'background-color: {bg_col} !important;',
+                  '}',
                   '  .slick-header-columns, .slick-headerrow-columns, .slick-footerrow-columns {',
                   '    overflow: visible !important;',
   	             f'    border-left: 0px solid {bg_col} !important;', # remove borders in header

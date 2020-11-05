@@ -4,7 +4,7 @@
 # Copyright (c) 2007-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
 """Implements classes for the use in live processing applications. Some of the 
-    classes might move to Acoular module in the future.
+classes might move to Acoular module in the future.
 
 .. autosummary::
     :toctree: generated/
@@ -130,7 +130,7 @@ class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
                 
 class TimeInOutPresenter(TimeInOut,BasePresenter):
     """
-    TimeInOut derived class for building an interface from Acoular's generator 
+    :class:`TimeInOut` derived class for building an interface from Acoular's generator 
     pipelines to Bokeh's ColumnDataSource model that serves as a source for
     plots and tables.
     
@@ -383,9 +383,9 @@ if sd_enabled:
 
 
 class SpectraInOut( TimeInOut ):
-    """Provides the spectra of multichannel time data.   
-        Returns Spectra per block over a Generator.
+    """Provides the spectra of multichannel time data. 
     
+    Returns Spectra per block over a Generator.       
     """
     
     #: Data source; :class:`~acoular.sources.SamplesGenerator` or derived object.

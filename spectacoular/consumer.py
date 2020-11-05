@@ -7,7 +7,9 @@
 
 .. autosummary::
     :toctree: generated/
-
+    
+    TimeConsumer
+    TimeBandsConsumer
 """
 import threading
 from numpy import arange
