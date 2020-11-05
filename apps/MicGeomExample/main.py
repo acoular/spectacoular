@@ -4,19 +4,15 @@
 # Copyright (c) 2007-2019, Acoular Development Team.
 #------------------------------------------------------------------------------
 import os
-import sys
 from os import path
 import acoular
-from numpy import shape
 from bokeh.io import curdoc
 from bokeh.layouts import column, row,widgetbox
-from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider, StringFormatter, TableColumn, DataTable
+from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider
 from bokeh.models import LinearColorMapper, ColorBar, PointDrawTool, ColumnDataSource
 from bokeh.events import Reset
 from bokeh.plotting import figure
 from bokeh.palettes import Viridis256 
-from bokeh.server.server import Server
-from bokeh.themes import Theme
 from spectacoular import MicGeom, SteeringVector, RectGrid, PointSpreadFunction,\
 PointSpreadFunctionPresenter,set_calc_button_callback
 from pylab import ravel_multi_index, array
@@ -56,7 +52,6 @@ psf.set_widgets(**{'freq':psfFreqSlider}) # set from file attribute with select 
 
 #%%
 
-
 src_pos = ColumnDataSource(data={'x':[0],'y':[0]})
 # create Button to trigger PSF calculation
 def calc():
@@ -70,25 +65,17 @@ set_calc_button_callback(calc,calcButton)
 # calculate psf on change of:
 psf_update = lambda attr, old, new: psfPresenter.update()        
 psfFreqSlider.on_change('value',psf_update) # change psf plot when frequency changes
-# mgWidgets['mpos_tot'].source.on_change('data',psf_update)
-
-
-
-
-
 
 #%% MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', 
                 tools = 'pan,wheel_zoom,reset,lasso_select',
                 plot_width=600, plot_height=600)
-                #match_aspect=True,)
-micRenderer = mgPlot.circle_cross(x='x',y='y',size=10,fill_alpha=.8,
+mgPlot.toolbar.logo=None
+micRenderer = mgPlot.circle_cross(x='x',y='y',size=20,fill_alpha=.8,
                                   source=mgWidgets['mpos_tot'].source)
 drawtool = PointDrawTool(renderers=[micRenderer])
 mgPlot.add_tools(drawtool)
 mgPlot.toolbar.active_tap = drawtool
-
-
 
 
 #%% PSF Plot
@@ -99,6 +86,7 @@ PSF_TOOLTIPS = [
 psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
                  tooltips=PSF_TOOLTIPS,
                  plot_width=600, plot_height=600)
+psfPlot.toolbar.logo=None
 psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
 cm = LinearColorMapper(low=-20, high=0,palette=PALETTE, low_color= '#2F2F2F')
 psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
@@ -128,19 +116,40 @@ def resetpos(event):
 psfPlot.on_event(Reset, resetpos)
 
 
-
-                  
 #%% CREATE LAYOUT ### 
+from bokeh.models.widgets import NumberFormatter,Div
+
+vspace = Div(text='',width=10, height=1000) # just for vertical spacing
+hspace = Div(text='',width=400, height=10) # just for horizontal spacing
+twidth = 600
+
+formatter = NumberFormatter(format="0.00")
+for f in mgWidgets['mpos_tot'].columns:
+    f.formatter = formatter
+
 # Tabs
-mgTab = Panel(child=column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
-                           mgWidgets['num_mics'],mgWidgets['mpos_tot']),
-        title='Microphone Geometry')
-psfTab = Panel(child=column(*psfWidgets.values()),title='Point-Spread Function')
-gridTab = Panel(child=column(*rgWidgets.values()),title='Grid')
+mgWidgets['mpos_tot'].height = 280
+mgTab = Panel(child=column(mgWidgets['from_file'],
+                           row( mgWidgets['invalid_channels'],mgWidgets['num_mics'],width = twidth),
+                           hspace,
+                          mgWidgets['mpos_tot']),
+                          title='Microphone Geometry')
+psfTab = Panel(child=column(*psfWidgets.values()),
+               title='Point-Spread Function')
+gridTab = Panel(child=column(
+                        row(rgWidgets['x_min'],rgWidgets['x_max'],width = twidth),
+                        row(rgWidgets['y_min'],rgWidgets['y_max'],width = twidth),
+                        row(rgWidgets['z'],rgWidgets['increment'],width = twidth),
+                        row(rgWidgets['nxsteps'],rgWidgets['nysteps'],width = twidth),),
+                title='Grid')
 stTab = Panel(child=column(*stWidgets.values()),title='Steering')
 ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab])
 
+ControlBox = widgetbox(hspace,
+        row(calcButton,psfFreqSlider,width=600,height=80),
+        #hspace,
+        ControlTabs,width=400)
+    
 # make Document
-doc.add_root(row(mgPlot,psfPlot,widgetbox(
-    calcButton,psfFreqSlider,ControlTabs,width=600)))
+doc.add_root(row(vspace,mgPlot,psfPlot,vspace,ControlBox))
 
