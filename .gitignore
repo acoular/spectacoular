@@ -7,6 +7,7 @@ __pycache__/
 cache/
 td/
 build/
+_build/
 
 apps/Measurement_App/static/two_sources_one_moving_10s.h5
 

@@ -7,6 +7,7 @@
 
 .. autosummary::
     :toctree: generated/
+
     BasePresenter
     MicGeomPresenter
     BeamformerPresenter
@@ -57,7 +58,7 @@ class BasePresenter(BaseSpectacoular):
 
 class MicGeomPresenter(BasePresenter):
     """
-    This class provides data for visualization of a Microphone Geometrie.
+    This class provides data for visualization of a Microphone Geometry.
     
     The data of its ColumnDataSource fits to different bokeh glyphs (e.g. circle).
    

@@ -1,0 +1,4 @@
+﻿controller
+=======================
+
+.. automodule:: spectacoular.controller
