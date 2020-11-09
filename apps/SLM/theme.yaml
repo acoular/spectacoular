@@ -1,0 +1,53 @@
+attrs:
+    Figure:
+        background_fill_color: "#2F2F2F"
+        border_fill_color: "#2F2F2F"
+        outline_line_color: "white"
+    Axis:
+        axis_line_color: "white"
+        axis_label_text_color: "white"
+        major_label_text_color: "white"
+        major_label_text_font_size: "8pt"
+        major_label_text_font: "Helvetica"
+        major_tick_line_color: "white"
+        minor_tick_line_color: "white"
+        minor_tick_line_color: "white"
+        axis_label_text_font_size: "14pt"
+        axis_label_text_font: "Helvetica"
+        axis_label_text_font_style: "normal"
+    Grid:
+        grid_line_dash: [6, 4]
+        grid_line_alpha: .3
+        grid_line_color: "white"
+        minor_grid_line_color: "white"
+        minor_grid_line_alpha: .1
+    Title:
+        background_fill_color: "#2F2F2F"
+        text_color: "white"
+        text_font_size: "14pt"
+        text_font: "Helvetica"
+    Widget:
+        background: "#2F2F2F"
+    Label:
+        background_fill_color: "#2F2F2F"
+        text_color: "white"
+        text_font: "Helvetica"
+    Legend:
+        background_fill_color: "#2F2F2F"
+        border_line_color: "#2F2F2F"
+        title_text_color: "white"
+        title_text_font: "Helvetica"
+        label_text_color: "white"
+        label_text_font: "Helvetica"
+        label_text_font_size: "14pt"
+    ColorBar:
+        background_fill_color: "#2F2F2F"
+        title_text_color: "white"
+        title_text_font_size: "14pt"
+        title_text_font: "Helvetica"
+        major_tick_line_color: "white"
+        minor_tick_line_color: "white"
+        major_label_text_color: "white"
+        major_label_text_font: "Helvetica"
+        label_standoff: 7
+        major_label_text_font_size: "14pt"
