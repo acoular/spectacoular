@@ -76,7 +76,7 @@ tp = TimePower(source=fw)
 te = TimeExpAverage(source=tp, weight='F')
 tca = TimeCumAverage(source=tp)
 tic = TimeConsumer(source=te,down=1024,channels=[0,],
-    num=8192,rollover=2*96)
+    num=8192,rollover=16*2*96)
 
 # spectrum chain
 fob = OctaveFilterBank(source=ts, fraction='Third octave')
@@ -99,7 +99,17 @@ ts.set_widgets(device=device_select)
 
 # button to stop the server
 exit_button = Button(label="Exit", button_type="danger",sizing_mode="stretch_width",width=100)
+def exit_callback(arg):
+    from time import sleep
+    sleep(1)
+    sys.exit()
+
 exit_button.on_click(lambda : sys.exit())
+exit_button.js_on_click(CustomJS( code='''
+    setTimeout(function(){
+        window.location.href = "about:blank";
+    }, 500);
+    '''))
 
 # button to start / stop measurement
 def toggle_handler(arg):
@@ -170,6 +180,7 @@ levelhistory.text(x='t', y=60, text=transform(ch,tofixed),
             source=tic.ds, view = view, color='orange')
 levelhistory.line(x='t', y=transform(ch,todB), source=tic.ds, color='orange')
 levelhistory.add_tools(WheelPanTool(dimension="height"))
+levelhistory.x_range = DataRange1d(follow='end', follow_interval=10, range_padding=0)
 
 
 # bar graph plot for 3rd octave average
@@ -198,6 +209,11 @@ scope.x_range = DataRange1d(follow='end', follow_interval=10, range_padding=0)
 xzoom_widget = Slider(start=1, end=10, step=1, value=10, title='time range')
 xzoom_widget.js_link('value', scope.x_range, 'follow_interval')
 
+# xzoom for levelhistory
+xzoom_widget2 = Slider(start=5, end=60, step=5, value=10, title='time range')
+xzoom_widget2.js_link('value', levelhistory.x_range, 'follow_interval')
+
+
 # data save buttons
 save_spectrum = Button(label="Download data", button_type="warning")
 save_spectrum.js_on_click(CustomJS(args={'source' :tbc.ds},
@@ -205,7 +221,7 @@ save_spectrum.js_on_click(CustomJS(args={'source' :tbc.ds},
         '''
         var length = source.get_length();
         var data = source.data;
-        var out = "frequency [Hz], mean square sound pressure [Pa^2]\\n";
+        var out = "frequency / Hz, mean square sound pressure / Pa^2\\n";
         for (var i = 0; i < length; i++) {
             out += data['t'][i] + "," + data['timedata0'][i] + "\\n";
         }
@@ -226,7 +242,7 @@ save_levelhistory.js_on_click(CustomJS(args={'source' :tic.ds},
         '''
         var length = source.get_length();
         var data = source.data;
-        var out = "time [s], mean square sound pressure [Pa^2]\\n";
+        var out = "time / s, mean square sound pressure / Pa^2\\n";
         for (var i = 0; i < length; i++) {
             out += data['t'][i] + "," + data['timedata0'][i] + "\\n";
         }
@@ -262,7 +278,7 @@ time_weight_widget.title = 'exponential weighting scheme'
 elapsed_widget = tbc.get_widgets()['elapsed']
 elapsed_widget.title = 'elapsed time / s'
 
-average_controls = column(lin_or_exp,time_weight_widget,elapsed_widget)
+average_controls = column(lin_or_exp,time_weight_widget)
 
 # weight control
 freq_weight_widget = fw.get_widgets()['weight']
@@ -280,7 +296,7 @@ spectrum_tab = Panel(child=row(
 
 level_tab = Panel(child=row(
                         column(every,save_levelhistory,
-                        Spacer(height_policy='max'),freq_weight_widget,average_controls),
+                        Spacer(height_policy='max'),freq_weight_widget,average_controls,xzoom_widget2),
                         levelhistory
                         ),
                     title="Sound level meter")
