@@ -8,7 +8,7 @@ creates html and yaml layout for spectAcoular Apps
 """
 # App folder
 paths = ['MicGeomExample', 'FreqBeamformingExample', 'LiveViewExample',
-         'TimeSamplesExample','Measurement_App','RotatingExample']
+         'TimeSamplesExample','Measurement_App','RotatingExample','SLM']
 ############### THEME COLOR SELECTIONS ################
 # Set background color
 bg_col  = '#2F2F2F'
@@ -23,9 +23,10 @@ link_col = ['green', 'white']
 # Font Sizes
 ft_for_all = True # if True: font size of ft_f is valid for all
 ft_f       = '14pt' # font of figures
+ft_f_major = '10pt' # major label font text size
 ft_wt      = '18pt' # font of widgets and tables
 # Font
-ft         = "asd " # bokeh default is "Helvetica"
+ft         = "Helvetica" # bokeh default is "Helvetica"
 ft_stl     = "normal" # italic, bold
 
 if ft_for_all:
@@ -50,7 +51,7 @@ for path in paths:
                   f'        axis_line_color: "{txt_col}"',
                   f'        axis_label_text_color: "{txt_col}"',
                   f'        major_label_text_color: "{txt_col}"',
-                  f'        major_label_text_font_size: "{ft_f}"',
+                  f'        major_label_text_font_size: "{ft_f_major}"',
                   f'        major_label_text_font: "{ft}"',
                   f'        major_tick_line_color: "{txt_col}"',
                   f'        minor_tick_line_color: "{txt_col}"',
