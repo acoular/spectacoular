@@ -15,7 +15,7 @@ from numpy import array, searchsorted, polyfit, argsort, cumsum, log10
 
 from bokeh.layouts import column, row
 from bokeh.models.widgets import Panel, Tabs, Button, Toggle, Select, TextInput, RadioGroup,\
-    TableColumn, DataTable, Paragraph
+    TableColumn, DataTable, Div
 from bokeh.models import CDSView, CustomJSFilter, CustomJSTransform, HoverTool,\
      CustomJSHover, CustomJS, Spacer, WheelPanTool, Range1d, DataRange1d, Slider,\
          LegendItem, Legend, Slope, ColumnDataSource, NumberFormatter
@@ -197,7 +197,7 @@ levelhistory.x_range = DataRange1d(follow='end', follow_interval=10, range_paddi
 
 # plot for band level time history
 levelhistory2 = figure(output_backend='webgl', tools='pan,wheel_zoom,xbox_select,reset,xbox_zoom',
-                    active_drag="xbox_select",
+                    active_drag="xbox_select",plot_width=800, plot_height=600,
                     y_range=Range1d(start=10,end=90,bounds='auto',min_interval=40))
 levelhistory2.xaxis.axis_label = 'time / s'
 levelhistory2.yaxis.axis_label = 'sound pressure level / dB'
@@ -288,11 +288,11 @@ Tcolumns = [
 data_table = DataTable(source=T60ds, columns=Tcolumns, width=300,#autosize_mode="force_fit", 
     sizing_mode="stretch_both", width_policy="min",index_position=None)
 
-instruction_T60 = Paragraph(text="""To estimate reverberation time T60, make recording and use 
+instruction_T60 = Div(text='''To estimate reverberation time T, make recording and use 
 the select tool to carefully select the decay part of the time history. Make sure not to select 
-parts of the time history before and after decay. T60 is then automatically computed for both the 
+parts of the time history before and after decay. T is then automatically computed for both the 
 case of interrupted noise and impulse excitation.
-""")
+''')
 
 # data save buttons
 save_spectrum = Button(label="Download data", button_type="warning")
@@ -337,6 +337,26 @@ save_levelhistory.js_on_click(CustomJS(args={'source' :tic.ds},
         )
     )
 
+save_reverberation_time = Button(label="Download data", button_type="warning")
+save_reverberation_time.js_on_click(CustomJS(args={'source' :T60ds},
+        code=
+        '''
+        var length = source.get_length();
+        var data = source.data;
+        var out = "band / Hz, T /s (interrupted noise), T /s (impulse excitation)\\n";
+        for (var i = 0; i < length; i++) {
+            out += data['f'][i] + "," + data['T60a'][i] + "," + data['T60b'][i] + "\\n";
+        }
+        var file = new Blob([out], {type: 'text/plain'});
+        var elem = window.document.createElement('a');
+        elem.href = window.URL.createObjectURL(file);
+        elem.download = 'reverberation_time.txt';
+        document.body.appendChild(elem);
+        elem.click();
+        document.body.removeChild(elem);
+        '''
+        )
+    )
 # average controls
 def le_callback(a,old,new):
     if new==0:
@@ -382,11 +402,12 @@ level_tab = Panel(child=row(
                     title="Sound level meter")
 
 band_level_tab = Panel(child=row(
-                        column(every,#save_levelhistory,
+                        column(every,
                         instruction_T60,
                         data_table,
-                        #Spacer(height_policy='max'),
-                        xzoom_widget2),
+                        save_reverberation_time,
+                        #xzoom_widget2,
+                        height=600),
                         levelhistory2
                         ),
                     title="Band sound level meter")
