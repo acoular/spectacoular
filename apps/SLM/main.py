@@ -9,22 +9,27 @@ bokeh serve --show SLM
 """
 import threading
 import sys
+from itertools import cycle
 
-from numpy import array, searchsorted
+from numpy import array, searchsorted, polyfit, argsort, cumsum, log10
 
 from bokeh.layouts import column, row
-from bokeh.models.widgets import Panel, Tabs, Button, Toggle, Select, TextInput, RadioGroup
+from bokeh.models.widgets import Panel, Tabs, Button, Toggle, Select, TextInput, RadioGroup,\
+    TableColumn, DataTable, Paragraph
 from bokeh.models import CDSView, CustomJSFilter, CustomJSTransform, HoverTool,\
-    CustomJSHover, CustomJS, Spacer, WheelPanTool, Range1d, DataRange1d, Slider
+     CustomJSHover, CustomJS, Spacer, WheelPanTool, Range1d, DataRange1d, Slider,\
+         LegendItem, Legend, Slope, ColumnDataSource, NumberFormatter
 from bokeh.transform import transform
 from bokeh.plotting import figure, curdoc
 from bokeh.server.server import Server
+from bokeh.palettes import Category10_10
 from spectacoular import TimeAverage, add_bokeh_attr, TimeBandsConsumer, TimeConsumer
 from acoular import TimePower, FiltOctave, TimeExpAverage, FiltFreqWeight,\
-    TimeCumAverage, OctaveFilterBank, SoundDeviceSamplesGenerator
+    TimeCumAverage, OctaveFilterBank, SoundDeviceSamplesGenerator, L_p
 
 import sounddevice as sd
 
+palette = cycle(Category10_10)
 
 # spectacoular related definitions
 trait_widget_mapper = {'device': TextInput,
@@ -82,6 +87,13 @@ tic = TimeConsumer(source=te,down=1024,channels=[0,],
 fob = OctaveFilterBank(source=ts, fraction='Third octave')
 tbc = TimeBandsConsumer(source=te,channels=[0,],num=8192, lfunc=bands_label)
 
+# band slm chain
+fob2 = OctaveFilterBank(source=ts, fraction='Octave')
+tp2 = TimePower(source=fob2)
+ta = TimeAverage(source=tp2, naverage=512) # hack for *about* 50~ms average
+tic3 = TimeConsumer(source=ta,down=1,channels=list(range(ta.numchannels)),
+    num=32,rollover=16*2*96)
+
 # oscilloscope chain
 tic2 = TimeConsumer(source=ts,down=32,channels=[0,],
     num=8192,rollover=32*4*96)
@@ -117,12 +129,13 @@ def toggle_handler(arg):
         device_select.disabled = True
         lin_or_exp.disabled = True
         exit_button.disabled = True
-        active_consumer = (tic,tbc,tic2)[layout.active]
+        active_consumer = (tic,tbc,tic2,tic3)[layout.active]
+        print(active_consumer.numchannels)
         active_consumer.thread = threading.Thread(target=active_consumer.consume,args=[curdoc(),])
         active_consumer.thread.start()
         play_button.label = "⏹︎"
     if not arg:
-        for consumer in (tic,tbc,tic2):
+        for consumer in (tic,tbc,tic2,tic3):
             if consumer.thread:
                 consumer.thread.do_run = False
         device_select.disabled = False
@@ -182,6 +195,23 @@ levelhistory.line(x='t', y=transform(ch,todB), source=tic.ds, color='orange')
 levelhistory.add_tools(WheelPanTool(dimension="height"))
 levelhistory.x_range = DataRange1d(follow='end', follow_interval=10, range_padding=0)
 
+# plot for band level time history
+levelhistory2 = figure(output_backend='webgl', tools='pan,wheel_zoom,xbox_select,reset,xbox_zoom',
+                    active_drag="xbox_select",
+                    y_range=Range1d(start=10,end=90,bounds='auto',min_interval=40))
+levelhistory2.xaxis.axis_label = 'time / s'
+levelhistory2.yaxis.axis_label = 'sound pressure level / dB'
+#litems = []
+slopes = {}
+for ch,color,band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands)):
+    levelhistory2.circle(x='t', y=transform(ch,todB), source=tic3.ds, color=None, \
+        selection_color=color)
+    levelhistory2.line(x='t', y=transform(ch,todB), source=tic3.ds, color=color, \
+        legend_label=band)
+    slopes[ch] = Slope(gradient=0, y_intercept=0,
+                line_color=color, line_dash='dashed', line_width=2)
+    levelhistory2.add_layout(slopes[ch])  
+levelhistory2.x_range = DataRange1d(follow='end', follow_interval=10, range_padding=0)
 
 # bar graph plot for 3rd octave average
 barplot = figure(x_range=tbc.lfunc(fob.bands), y_range=(0,80),
@@ -213,6 +243,56 @@ xzoom_widget.js_link('value', scope.x_range, 'follow_interval')
 xzoom_widget2 = Slider(start=5, end=60, step=5, value=10, title='time range')
 xzoom_widget2.js_link('value', levelhistory.x_range, 'follow_interval')
 
+T60ds = ColumnDataSource(data={'f':[],'T60a':[],'T60b':[]}) 
+
+# select callback for reverberation time
+def selection_change(attrname, old, new):
+    t = tic3.ds.data['t'][new]
+    bands = []
+    T60a = []
+    T60b = []
+    # iterate over bands
+    for ch,color,band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands)):
+        levels = L_p(tic3.ds.data[ch][new])
+        # dynamic range should be at least 20 dB
+        if len(new)>2 and levels.ptp() > 20:
+            levels1 = levels[levels>levels.min()+10]
+            # do not consider the lowest 10 dB
+            t1 = t[levels>levels.min()+10]
+            if len(levels1)>2:
+                # fit line for interrupted noise
+                gradient, y_intercept = polyfit(t1,levels1,1)
+                # backward integration (impulse response)
+                levels2 = (tic3.ds.data[ch][new][argsort(t)])
+                # fit on backward integrated imp. response squared
+                gradient2, _ = polyfit(t,10*log10(levels2[::-1].cumsum()[::-1]),1)
+                # reverberation time
+                bands.append(band)
+                T60a.append(-60/gradient)
+                T60b.append(-60/gradient2)
+        else:
+            gradient, y_intercept = 0,0
+        slopes[ch].gradient=gradient
+        slopes[ch].y_intercept=y_intercept     
+    T60ds.data = {'f':bands,'T60a':T60a,'T60b':T60b}
+
+tic3.ds.selected.on_change('indices', selection_change)
+
+# data table widget
+Tcolumns = [
+    TableColumn(field="f", title="band / Hz", width=100),
+    TableColumn(field="T60a", title="T60 noise / s", formatter=NumberFormatter(format="0.00"), width=100),
+    TableColumn(field="T60b", title="T60 impulse / s", formatter=NumberFormatter(format="0.00"), width=100)
+]
+
+data_table = DataTable(source=T60ds, columns=Tcolumns, width=300,#autosize_mode="force_fit", 
+    sizing_mode="stretch_both", width_policy="min",index_position=None)
+
+instruction_T60 = Paragraph(text="""To estimate reverberation time T60, make recording and use 
+the select tool to carefully select the decay part of the time history. Make sure not to select 
+parts of the time history before and after decay. T60 is then automatically computed for both the 
+case of interrupted noise and impulse excitation.
+""")
 
 # data save buttons
 save_spectrum = Button(label="Download data", button_type="warning")
@@ -289,7 +369,7 @@ every = column( row(play_button,exit_button),device_select)
 # tabs
 spectrum_tab = Panel(child=row(
                         column(every,save_spectrum,
-                        Spacer(height_policy='max'),average_controls),
+                        Spacer(height_policy='max'),average_controls,elapsed_widget),
                         barplot
                         ),
                     title="Third octave band average")
@@ -301,15 +381,25 @@ level_tab = Panel(child=row(
                         ),
                     title="Sound level meter")
 
+band_level_tab = Panel(child=row(
+                        column(every,#save_levelhistory,
+                        instruction_T60,
+                        data_table,
+                        #Spacer(height_policy='max'),
+                        xzoom_widget2),
+                        levelhistory2
+                        ),
+                    title="Band sound level meter")
+
 scope_tab = Panel(child=row(
-                        column(every,
+                        column(every, 
                         Spacer(height_policy='max'),xzoom_widget),
                         scope
                         ),
                     title="Oscilloscope")
 
 # overall layout 
-layout = Tabs(tabs=[level_tab,spectrum_tab,scope_tab],active=0)
+layout = Tabs(tabs=[level_tab,spectrum_tab,scope_tab,band_level_tab],active=0)
 
 # rearrange processing chain
 def layout_callback(a,old,new):
