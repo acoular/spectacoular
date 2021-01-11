@@ -161,7 +161,7 @@ todB = CustomJSTransform(v_func=
 
 # plot for level time history
 ch = list(tic.ch_names())[0]
-levelhistory = figure(output_backend="webgl",
+levelhistory = figure(output_backend="webgl",plot_width=800, plot_height=600,
                     y_range=Range1d(start=10,end=90,bounds='auto',min_interval=40))
 levelhistory.xaxis.axis_label = 'time / s'
 levelhistory.yaxis.axis_label = 'sound pressure level / dB'
@@ -174,7 +174,7 @@ levelhistory.add_tools(WheelPanTool(dimension="height"))
 
 # bar graph plot for 3rd octave average
 barplot = figure(x_range=tbc.lfunc(fob.bands), y_range=(0,80),
-                 output_backend="webgl")
+                 plot_width=800, plot_height=600, output_backend="webgl")
 barplot.xaxis.axis_label = 'band center frequency / Hz'
 barplot.yaxis.axis_label = 'sound pressure level / dB'
 barplot.add_tools(HoverTool(tooltips = [("val","@timedata0{custom}")], 
@@ -187,7 +187,7 @@ barplot.vbar(x='t', top=transform(ch,todB), source=tbc.ds,
 
 # plot for scope
 ch = list(tic2.ch_names())[0]
-scope = figure(output_backend="webgl")
+scope = figure(output_backend="webgl",plot_width=800, plot_height=600)
 scope.xaxis.axis_label = 'time / s'
 scope.yaxis.axis_label = 'sound pressure / Pa'
 scope.line(x='t', y=ch, source=tic2.ds, color='orange')
