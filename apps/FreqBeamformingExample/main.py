@@ -11,9 +11,9 @@ from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
 from bokeh.models.tools import BoxEditTool
 from bokeh.models import LinearColorMapper,ColorBar,ColumnDataSource, Range1d
-from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider,Div
+from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider,Div, Paragraph
 from bokeh.plotting import figure
-from bokeh.palettes import viridis
+from bokeh.palettes import viridis, Spectral11
 from numpy import array, nan, zeros
 import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
@@ -22,6 +22,8 @@ BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth
 BeamformerCleansc, BeamformerClean, BeamformerPresenter,\
 BeamformerCMF,BeamformerGIB,Environment,Calib,set_calc_button_callback
 
+
+COLORS = list(Spectral11)
 doc = curdoc() 
 
 #%% Build processing chain
@@ -144,7 +146,8 @@ bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
 
 # FrequencySignalPlot
 freqdata = ColumnDataSource(data={'freqs':[],
-                                  'amp':[]})
+                                  'amp':[],
+                                  'colors':[]})
 f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
                     500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
@@ -160,7 +163,7 @@ freqplot.xgrid.minor_grid_line_alpha = 0.05
 freqplot.xaxis.ticker = f_ticks
 freqplot.x_range=Range1d(20, 20000)
 freqplot.xaxis.major_label_overrides = f_ticks_override
-freqplot.multi_line('freqs', 'amp',color=RED,alpha=.8,line_width=4, source=freqdata)
+freqplot.multi_line('freqs', 'amp',color='colors',alpha=.8,line_width=3, source=freqdata)
 
 
 
@@ -201,10 +204,11 @@ beamformerSelector.on_change('value',beamformer_handler)
 #%% Integration sector
 
 sectordata = ColumnDataSource(data={'x':[],'y':[],'width':[], 'height':[]})
-                                    
+
 def integrate_result(attr,old,new):
     famp = []
     ffreq = []
+    colors = []
     for i in range(len(sectordata.data['x'])):
         sector = array([
             sectordata.data['x'][i]-sectordata.data['width'][i]/2, 
@@ -217,15 +221,27 @@ def integrate_result(attr,old,new):
         specamp[specamp<-300] = nan
         famp.append(specamp)
         ffreq.append(ps.fftfreq())
-    freqdata.data.update(amp=famp, freqs=ffreq)
+        colors.append(COLORS[i])
+    freqdata.data.update(amp=famp, freqs=ffreq, colors=colors)
 
-
-isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=1.,fill_alpha=0.0,color=RED,
-                      line_width=4,source=sectordata)
-tool = BoxEditTool(renderers=[isector])
+   
+isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=1.,fill_alpha=0.2,color=COLORS[0],
+                      line_width=3,source=sectordata)
+tool = BoxEditTool(renderers=[isector],num_objects=len(COLORS)) # allow only as many boxes as Colors
 bfPlot.add_tools(tool)
 sectordata.on_change('data',integrate_result)
-bv.cdsource.on_change('data',integrate_result)
+bv.cdsource.on_change('data',integrate_result) # also change integration result when source map changes
+
+#%% Instructions
+
+instruction_calculation = Paragraph(text="""To calculate a source map, select a desired beamforming method via the "Beamforming Method" widget and press the Calculate Button.
+Depending on the method, this may take some time. You may also want to change the desired frequency and bandwith of interest with the "freq" and "num" Textfield widget.
+""")
+
+instruction_sector_integration =Paragraph(text="""To integrate over a certain sector in the source map after calculation, select the "Box Edit Tool" in the upper right corner of the source map figure.
+Hold down the shift key and draw an integration sector. A sector-integrated spectrum should appear. One can remove the sector by pressing the Backspace key.
+""")
+
 #%% Document layout
 
 vspace = Div(text='',width=10, height=1000) # just for vertical spacing
@@ -238,7 +254,9 @@ midlayout = layout([
 
 calcRow = column(
     midlayout,
+    instruction_calculation,
     freqplot,
+    instruction_sector_integration
     )
 
 settingsCol = column(settingSelector,vspace2,selectedSettingCol)
