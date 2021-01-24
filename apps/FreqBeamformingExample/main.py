@@ -10,7 +10,7 @@ from os import path
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
 from bokeh.models.tools import BoxEditTool
-from bokeh.models import LinearColorMapper,ColorBar,ColumnDataSource, Range1d
+from bokeh.models import LinearColorMapper,ColorBar,ColumnDataSource, Range1d, HoverTool, Spacer
 from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider,Div, Paragraph
 from bokeh.plotting import figure
 from bokeh.palettes import viridis, Spectral11
@@ -132,29 +132,40 @@ BLUE = "#3288bd"
 bfplotwidth = 700
 bfPlot = figure(title='Source Map', 
                 tools = 'pan,wheel_zoom,reset', 
+                #tooltips=bftooltips,
                 width=bfplotwidth,
                 height=700)
 # ('x', 'y', 'width', 'height', 'angle', 'dilate')
 bfPlot.rect(-0.38, 0.0, 0.2, 0.5,alpha=1.,color='gray',fill_alpha=.8,line_width=5,line_color="#1e3246")
 bfPlot.rect(-.3, 0.0, 0.6, 0.6,alpha=1.,color='#d2d6da',fill_alpha=0,line_width=1)#line_color="#213447")
 bfPlot.toolbar.logo=None
-bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',alpha=0.9,
+bfImage = bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',alpha=0.9,
              color_mapper=colorMapper,source=bv.cdsource)
 bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
                            title="dB",
                            title_standoff=10),'right')
+bftooltips = [
+    ("L_p (dB)", "@bfdata"),
+]
+hover = HoverTool(tooltips=bftooltips, mode="mouse",
+                    renderers=[bfImage]) # only use hover tool for image renderer
+bfPlot.add_tools(hover)
+
 
 # FrequencySignalPlot
-freqdata = ColumnDataSource(data={'freqs':[],
-                                  'amp':[],
-                                  'colors':[]})
+# freqdata = ColumnDataSource(data={'freqs':[],
+#                                   'amp':[],
+#                                   'colors':[]})
 f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
+freqdata = ColumnDataSource(data={'freqs':[array(f_ticks)], # initialize
+                                  'amp':[array([0]*len(f_ticks))],
+                                  'colors':['white']})
 f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
                     500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
                     20000: '20'}
-freqplot = figure(title="Sector-Integrated Spectrum", plot_width=bfplotwidth, plot_height=500,
+freqplot = figure(title="Sector-Integrated Spectrum", plot_width=bfplotwidth, plot_height=700,
                   x_axis_type="log", x_axis_label="f / kHz", 
-                  y_axis_label="SPL / dB")
+                  y_axis_label="SPL / dB", )#tooltips=TOOLTIPS)
 freqplot.toolbar.logo=None
 freqplot.xaxis.axis_label_text_font_style = "normal"
 freqplot.yaxis.axis_label_text_font_style = "normal"
@@ -163,14 +174,10 @@ freqplot.xgrid.minor_grid_line_alpha = 0.05
 freqplot.xaxis.ticker = f_ticks
 freqplot.x_range=Range1d(20, 20000)
 freqplot.xaxis.major_label_overrides = f_ticks_override
-freqplot.multi_line('freqs', 'amp',color='colors',alpha=.8,line_width=3, source=freqdata)
-
-
-
+frLine = freqplot.multi_line('freqs', 'amp',color='colors',alpha=0.0,line_width=3, source=freqdata)
 
 #%% Property Tabs
 selectedBfWidgets = column(*bbWidgets.values(),height=1000)  
-
 
 # create Select Button to select Beamforming Algorithm
 settingSelector = Select(title="Select Setting",
@@ -185,7 +192,7 @@ def select_setting_handler(attr, old, new):
     """changes column layout (changes displayed widgets) 
     according to selected Acoular object
     """
-    print(attr,old,new)
+    #print(attr,old,new)
     if not new == "Beamforming Method":
         selectedSettingCol.children = list(settings_dict[new].values())
     else:
@@ -206,26 +213,34 @@ beamformerSelector.on_change('value',beamformer_handler)
 sectordata = ColumnDataSource(data={'x':[],'y':[],'width':[], 'height':[]})
 
 def integrate_result(attr,old,new):
-    famp = []
-    ffreq = []
-    colors = []
-    for i in range(len(sectordata.data['x'])):
-        sector = array([
-            sectordata.data['x'][i]-sectordata.data['width'][i]/2, 
-            sectordata.data['y'][i]-sectordata.data['height'][i]/2, 
-            sectordata.data['x'][i]+sectordata.data['width'][i]/2, 
-            sectordata.data['y'][i]+sectordata.data['height'][i]/2
-            ])
-        print(sector)
-        specamp = acoular.L_p(bv.source.integrate(sector))
-        specamp[specamp<-300] = nan
-        famp.append(specamp)
-        ffreq.append(ps.fftfreq())
-        colors.append(COLORS[i])
-    freqdata.data.update(amp=famp, freqs=ffreq, colors=colors)
+    numsectors = len(sectordata.data['x']) 
+    if numsectors > 0:
+        frLine.glyph.line_alpha=0.8 
+        famp = []
+        ffreq = []
+        colors = []
+        for i in range(numsectors):
+            sector = array([
+                sectordata.data['x'][i]-sectordata.data['width'][i]/2, 
+                sectordata.data['y'][i]-sectordata.data['height'][i]/2, 
+                sectordata.data['x'][i]+sectordata.data['width'][i]/2, 
+                sectordata.data['y'][i]+sectordata.data['height'][i]/2
+                ])
+            print(sector)
+            specamp = acoular.L_p(bv.source.integrate(sector))
+            specamp[specamp<-300] = nan
+            famp.append(specamp)
+            ffreq.append(ps.fftfreq())
+            colors.append(COLORS[i])
+        freqdata.data.update(amp=famp, freqs=ffreq, colors=colors)
+    else:
+        frLine.glyph.line_alpha=0.0 # make transparent if no integration sector exist
+        freqdata.data = {'freqs':[array(f_ticks)],
+                        'amp':[array([0]*len(f_ticks))],
+                        'colors':['white']}
 
    
-isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=1.,fill_alpha=0.2,color=COLORS[0],
+isector = bfPlot.rect('x', 'y', 'width', 'height',alpha=1.,fill_alpha=0.2,color='black',
                       line_width=3,source=sectordata)
 tool = BoxEditTool(renderers=[isector],num_objects=len(COLORS)) # allow only as many boxes as Colors
 bfPlot.add_tools(tool)
@@ -234,13 +249,15 @@ bv.cdsource.on_change('data',integrate_result) # also change integration result 
 
 #%% Instructions
 
-instruction_calculation = Paragraph(text="""To calculate a source map, select a desired beamforming method via the "Beamforming Method" widget and press the Calculate Button.
+
+instruction_calculation = Div(text="""<p><b>Calculate Source Map:</b></p> <b>Select a desired beamforming method</b> via the "Beamforming Method" widget and <b>press the Calculate Button</b>.
 Depending on the method, this may take some time. You may also want to change the desired frequency and bandwith of interest with the "freq" and "num" Textfield widget.
 """)
 
-instruction_sector_integration =Paragraph(text="""To integrate over a certain sector in the source map after calculation, select the "Box Edit Tool" in the upper right corner of the source map figure.
-Hold down the shift key and draw an integration sector. A sector-integrated spectrum should appear. One can remove the sector by pressing the Backspace key.
+instruction_sector_integration = Div(text="""<p><b>Integrate over Source Map Region:</b></p> <b>Select the "Box Edit Tool"</b> in the upper right corner of the source map figure after calculating the source map.
+<b>Hold down the shift key to draw an integration sector</b> in the Source Map. A sector-integrated spectrum should appear. One can <b>remove the sector by pressing the Backspace key</b>.
 """)
+
 
 #%% Document layout
 
@@ -254,18 +271,18 @@ midlayout = layout([
 
 calcRow = column(
     midlayout,
-    instruction_calculation,
     freqplot,
-    instruction_sector_integration
     )
 
 settingsCol = column(settingSelector,vspace2,selectedSettingCol)
+
+instructionsCol = column(instruction_calculation, instruction_sector_integration)
 
 leftlayout=layout([ 
         [ Div(text='',width=100, height=0),*bvWidgets.values(),dynamicSlider],
         [bfPlot],
         ])
 
-layout = row(leftlayout,vspace,calcRow,Div(text='',width=20),settingsCol)
+layout = row(leftlayout,vspace,calcRow,Spacer(width=20),settingsCol,Spacer(width=40),instructionsCol)
 # make Document
 doc.add_root(layout)
