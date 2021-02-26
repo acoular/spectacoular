@@ -16,7 +16,7 @@
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
-TableColumn, NumberEditor, StringEditor
+TableColumn, NumberEditor, StringEditor, NumericInput
 from bokeh.models import ColumnDataSource
 from traits.api import TraitEnum, TraitMap, CArray, Any, \
 List,Float, Int, Range, Long,\
@@ -31,6 +31,15 @@ NUMERIC_TYPES = (Int,Long,CLong,int, # Complex Numbers Missing at the Moment
                  Float,float, 
                  Complex, complex)
 
+ALLOWED_WIDGET_TRAIT_MAPPINGS = {
+    NumericInput : [Int,Float,Long]
+}
+
+DEFAULT_TRAIT_WIDGET_MAPPINGS = {
+    Int : NumericInput,
+    Float : NumericInput,
+    Long: NumericInput,
+    }
 
 def as_str_list(func):
     """ decorator to wrap list entries into string type """
@@ -39,6 +48,14 @@ def as_str_list(func):
         return [str(val) for val in list_]
     return wrapper
 
+def validate_mapping_is_allowed(obj,traitname,widgetType):
+    allowed_trait_types = ALLOWED_WIDGET_TRAIT_MAPPINGS.get(widgetType)
+    if allowed_trait_types:
+        if any([isinstance(obj.trait(traitname).trait_type,ttype) for ttype in allowed_trait_types]):
+            pass
+        else:
+            raise ValueError(
+        f"{widgetType} widget cannot be connected to trait of type {obj.trait(traitname).trait_type.__class__}!")
 
 def widget_mapper_factory(obj,traitname,widgetType): 
     """
@@ -64,6 +81,10 @@ def widget_mapper_factory(obj,traitname,widgetType):
     None.
 
     """
+    #validation
+    validate_mapping_is_allowed(obj,traitname,widgetType)
+    # factory 
+    if widgetType is NumericInput: return NumericInputMapper(obj,traitname)
     if widgetType is TextInput: return TextInputMapper(obj,traitname) 
     elif widgetType is Select: return SelectMapper(obj,traitname)
     elif widgetType is Slider: return SliderMapper(obj,traitname) 
@@ -88,11 +109,22 @@ def get_widgets(self):
     None.
 
     """
+
     widgetdict = {}
-    for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
-        widgetMapper = widget_mapper_factory(self,traitname,widgetType)
-        widgetdict[traitname] = widgetMapper.create_widget(
-                                        **self.trait_widget_args[traitname])
+    if hasattr(self,'trait_widget_mapper'):    
+        for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
+            widgetMapper = widget_mapper_factory(self,traitname,widgetType)
+            widgetdict[traitname] = widgetMapper.create_widget(
+                                            **self.trait_widget_args[traitname])
+    else:
+        for traitname in self.editable_traits():
+            traittype = self.trait(traitname).trait_type
+            defaultWidgetType = DEFAULT_TRAIT_WIDGET_MAPPINGS.get(traittype.__class__)
+            if defaultWidgetType:
+                widgetMapper = widget_mapper_factory(self,traitname,defaultWidgetType)
+                widgetdict[traitname] = widgetMapper.create_widget()                
+            else:
+                pass #TODO: should we rather raise a warning here?
     return widgetdict
 
 
@@ -299,6 +331,82 @@ class TraitWidgetMapper(object):
             trait_setter_func = self.create_trait_setter_func()
             self.widget.on_change("value",trait_setter_func)
 
+
+class NumericInputMapper(TraitWidgetMapper):
+    """
+    Factory that creates :class:`NumericInput` widget from a class trait attribute of type Int.
+    """
+
+    def create_widget(self,**kwargs):
+        """
+        creates a Bokeh NumericInput instance 
+
+        Parameters
+        ----------
+        **kwargs : args of NumericInput
+            additional arguments of NumericInput widget.
+
+        Returns
+        -------
+        instance(NumericInput).
+
+        """
+        self.widget = NumericInput(title=self.traitname,**kwargs)
+        self._set_widgetvalue(self.traitvalue)
+        self._set_callbacks()
+        return self.widget
+
+    def set_widget(self, widget):
+        """
+        connects a Bokeh NumericInput widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(NumericInput)
+            instance of a NumericInput widget.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.widget = widget
+        self._set_traitvalue(self.widget.value) # set traitvalue to widgetvalue
+        self._set_callbacks()
+
+    def _set_widgetvalue(self,traitvalue):
+        """
+        Sets the value of a widget to the class traits attribute value.
+        In case, the widget value and the trait value are of different type, 
+        a cast function is used.        
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
+        self.widget.value = traitvalue
+
+    def create_trait_setter_func(self):
+        """
+        creates a function that sets the value of a trait on the widget value.
+        
+        The function is evoked every time the widget value changes. No casting 
+        necessary for NumericInput widgets
+
+        Returns
+        -------
+        callable.
+
+        """
+        def callback(attr, old, new):
+            self._set_traitvalue(new)
+        return callback
 
 
 class TextInputMapper(TraitWidgetMapper):
