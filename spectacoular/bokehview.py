@@ -14,7 +14,7 @@ attribute is to be mapped into which Bokeh widget type.
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable,\
-TableColumn, NumberEditor
+TableColumn, NumberEditor, NumericInput
 from .factory import get_widgets, set_widgets
 
 def add_bokeh_attr(cls,trait_widget_mapper,trait_widget_args):
@@ -517,21 +517,21 @@ from acoular import MaskedTimeSamples
 
 trait_widget_mapper = {'name': TextInput,
                        'basename': TextInput,
-                       'start' : TextInput,
-                       'stop' : TextInput,
-                       'numsamples': TextInput,
-                       'sample_freq': TextInput,
+                       'start' : NumericInput,
+                       'stop' : NumericInput,
+                       'numsamples': NumericInput,
+                       'sample_freq': NumericInput,
                        'invalid_channels':TextInput,
-                       'numchannels' : TextInput
+                       'numchannels' : NumericInput
                        }
 trait_widget_args = {'name': {'disabled':False},
                      'basename': {'disabled':True},
-                     'start':  {'disabled':False},
-                     'stop':  {'disabled':False},
-                     'numsamples':  {'disabled':True},
-                     'sample_freq':  {'disabled':True},
+                     'start':  {'disabled':False, 'mode':'int'},
+                     'stop':  {'disabled':False, 'mode':'int'},
+                     'numsamples':  {'disabled':True, 'mode':'int'},
+                     'sample_freq':  {'disabled':True, 'mode':'float'},
                      'invalid_channels': {'disabled':False},
-                     'numchannels': {'disabled':True},
+                     'numchannels': {'disabled':True,'mode':'int'},
                      }
 
 add_bokeh_attr(MaskedTimeSamples,trait_widget_mapper,trait_widget_args)
