@@ -19,7 +19,7 @@ from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
 TableColumn, NumberEditor, StringEditor, NumericInput
 from bokeh.models import ColumnDataSource
 from traits.api import TraitEnum, TraitMap, CArray, Any, \
-List,Float, Int, Range, Long,\
+List,Float, Int, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
 Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
 BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate
@@ -27,18 +27,19 @@ from numpy import ndarray,newaxis,isscalar,nan_to_num
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
 
-NUMERIC_TYPES = (Int,Long,CLong,int, # Complex Numbers Missing at the Moment
-                 Float,float, 
-                 Complex, complex)
+NUMERIC_TYPES = (Int,Long,CLong,int, 
+                 Float,float, )
+                 #Complex, complex) # Complex Numbers Missing at the Moment
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
-    NumericInput : [Int,Float,Long]
+    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate) # (Trait,Property,Delegate)
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
     Int : NumericInput,
-    Float : NumericInput,
     Long: NumericInput,
+    CLong : NumericInput,
+    Float : NumericInput,
     }
 
 def as_str_list(func):
@@ -49,12 +50,17 @@ def as_str_list(func):
     return wrapper
 
 def validate_mapping_is_allowed(obj,traitname,widgetType):
+    """validates that a given trait can is allowed to be mapped to a given Bokeh widget type"""
     allowed_trait_types = ALLOWED_WIDGET_TRAIT_MAPPINGS.get(widgetType)
+    given_trait_type = obj.trait(traitname).trait_type
     if allowed_trait_types:
-        if any([isinstance(obj.trait(traitname).trait_type,ttype) for ttype in allowed_trait_types]):
+        is_allowed_instance = any([isinstance(given_trait_type,allowed_type) for allowed_type in allowed_trait_types])
+        is_allowed_type = given_trait_type in allowed_trait_types
+        if is_allowed_instance or is_allowed_type:
             pass
         else:
-            raise ValueError(
+            raise NotImplementedError(
+                f"cannot create widget for {traitname} attribute of class {obj}." + 
         f"{widgetType} widget cannot be connected to trait of type {obj.trait(traitname).trait_type.__class__}!")
 
 def widget_mapper_factory(obj,traitname,widgetType): 
@@ -114,8 +120,11 @@ def get_widgets(self):
     if hasattr(self,'trait_widget_mapper'):    
         for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
             widgetMapper = widget_mapper_factory(self,traitname,widgetType)
-            widgetdict[traitname] = widgetMapper.create_widget(
-                                            **self.trait_widget_args[traitname])
+            kwargs = self.trait_widget_args.get(traitname)
+            if kwargs:
+                widgetdict[traitname] = widgetMapper.create_widget(**kwargs)
+            else:
+                widgetdict[traitname] = widgetMapper.create_widget()                                            
     else:
         for traitname in self.editable_traits():
             traittype = self.trait(traitname).trait_type
@@ -177,14 +186,14 @@ class BaseSpectacoular(HasPrivateTraits):
     
     #: dictionary containing the mapping between a class trait attribute and 
     #: a Bokeh widget. Keys: name of the trait attribute. Values: Bokeh widget.
-    trait_widget_mapper = {
-                       }
+    trait_widget_mapper = Dict({
+                       })
 
     #: dictionary containing arguments that belongs to a widget that is created
     #: from a trait attribute and should be considered when the widget is built.
     #: For example: {"traitname":{'disabled':True,'background_color':'red',...}}.
-    trait_widget_args = {
-                     }
+    trait_widget_args = Dict({
+                     })
     
     #: function to create widgets from class trait attributes 
     get_widgets = get_widgets
@@ -337,6 +346,12 @@ class NumericInputMapper(TraitWidgetMapper):
     Factory that creates :class:`NumericInput` widget from a class trait attribute of type Int.
     """
 
+    def __init__(self,obj,traitname):
+        self.obj = obj
+        self.traitname = traitname
+        self.traittype = obj.trait(traitname).trait_type
+        self.traitvalue = getattr(obj,traitname)
+
     def create_widget(self,**kwargs):
         """
         creates a Bokeh NumericInput instance 
@@ -390,6 +405,7 @@ class NumericInputMapper(TraitWidgetMapper):
         None.
         
         """
+        #print(f"trait value: {traitvalue}")
         self.widget.value = traitvalue
 
     def create_trait_setter_func(self):
