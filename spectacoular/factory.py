@@ -16,10 +16,10 @@
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
-TableColumn, NumberEditor, StringEditor
+TableColumn, NumberEditor, StringEditor, NumericInput
 from bokeh.models import ColumnDataSource
 from traits.api import TraitEnum, TraitMap, CArray, Any, \
-List,Float, Int, Range, Long,\
+List,Float, Int, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
 Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
 BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate
@@ -27,10 +27,20 @@ from numpy import ndarray,newaxis,isscalar,nan_to_num
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
 
-NUMERIC_TYPES = (Int,Long,CLong,int, # Complex Numbers Missing at the Moment
-                 Float,float, 
-                 Complex, complex)
+NUMERIC_TYPES = (Int,Long,CLong,int, 
+                 Float,float, )
+                 #Complex, complex) # Complex Numbers Missing at the Moment
 
+ALLOWED_WIDGET_TRAIT_MAPPINGS = {
+    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate) # (Trait,Property,Delegate)
+}
+
+DEFAULT_TRAIT_WIDGET_MAPPINGS = {
+    Int : NumericInput,
+    Long: NumericInput,
+    CLong : NumericInput,
+    Float : NumericInput,
+    }
 
 def as_str_list(func):
     """ decorator to wrap list entries into string type """
@@ -39,6 +49,19 @@ def as_str_list(func):
         return [str(val) for val in list_]
     return wrapper
 
+def validate_mapping_is_allowed(obj,traitname,widgetType):
+    """validates that a given trait can is allowed to be mapped to a given Bokeh widget type"""
+    allowed_trait_types = ALLOWED_WIDGET_TRAIT_MAPPINGS.get(widgetType)
+    given_trait_type = obj.trait(traitname).trait_type
+    if allowed_trait_types:
+        is_allowed_instance = any([isinstance(given_trait_type,allowed_type) for allowed_type in allowed_trait_types])
+        is_allowed_type = given_trait_type in allowed_trait_types
+        if is_allowed_instance or is_allowed_type:
+            pass
+        else:
+            raise NotImplementedError(
+                f"cannot create widget for {traitname} attribute of class {obj}." + 
+        f"{widgetType} widget cannot be connected to trait of type {obj.trait(traitname).trait_type.__class__}!")
 
 def widget_mapper_factory(obj,traitname,widgetType): 
     """
@@ -64,6 +87,10 @@ def widget_mapper_factory(obj,traitname,widgetType):
     None.
 
     """
+    #validation
+    validate_mapping_is_allowed(obj,traitname,widgetType)
+    # factory 
+    if widgetType is NumericInput: return NumericInputMapper(obj,traitname)
     if widgetType is TextInput: return TextInputMapper(obj,traitname) 
     elif widgetType is Select: return SelectMapper(obj,traitname)
     elif widgetType is Slider: return SliderMapper(obj,traitname) 
@@ -72,29 +99,90 @@ def widget_mapper_factory(obj,traitname,widgetType):
         "mapping for widget type {} does not exist!".format(widgetType))
 
 
-def get_widgets(self): 
-    """
-    Get instances of the widgets defined in :attr:`trait_widget_mapper`. 
+def get_widgets(self, trait_widget_mapper={}, trait_widget_args={}): 
+    """This function creates a View (a bunch of instanciated widgets without a layout) 
+    defined by the :attr:`trait_widget_mapper` mapping attribute
+    of the given object (or specified via :meth:`get_widgets` method arguments). 
     
     This function is implemented in all SpectAcoular classes and is added to
     Acoular's classes in bokehview.py. It builds Bokeh widgets from 
     corresponding class trait attributes by utilizing the :class:`TraitWidgetMapper` 
-    factory. The desired mapping is defined in the :attr:`trait_widget_mapper` 
+    derived classes. The desired mapping is defined by the :attr:`trait_widget_mapper` 
     dictionary. 
-     
+
+    This function implements multiple cases of View construction:
+
+    * (Case 1 - Default View) get_widgets() is called by a BaseSpectacoular 
+    derived instance without specifying trait_widget_mapper and trait_widget_args 
+    as function arguments. 
+    In this case, the mapping defined by the object instance attributes
+    (`self.trait_widget_mapper`,self.`trait_widget_args`) will be used to 
+    construct the View. 
+    
+    * (Case 2 - Custom View (a)) get_widgets() is called by a BaseSpectacoular 
+    derived instance and the desired mapping is given by the 
+    :meth:`get_widgets` function arguments (trait_widget_mapper and trait_widget_args).
+    In this case, the mapping defined by the function arguments will be used to
+    create the View. The instance attributes (`self.trait_widget_mapper`,self.`trait_widget_args`) 
+    will be superseded. 
+    
+    * (Case 3 - No Predefined View) :meth:`get_widgets` is called and a HasTraits derived instance 
+    is given as the first argument to the function. The instance object has no 
+    trait_widget_mapper and trait_widget_args attributes. 
+    In this case, a default mapping is created from all editable traits to create the view. 
+
+    * (Case 4 - Custom View (b)) :meth:`get_widgets` is called and a HasTraits derived instance 
+    is given as the first argument to the function. The instance object has no 
+    trait_widget_mapper and trait_widget_args attributes, but a mapping is defined by the 
+    second (and third) function argument. 
+    In this case, the mapping defined by the function arguments will be used to create the View. 
+    
+    Parameters
+    ----------
+    trait_widget_mapper : dict, optional
+        contains the desired mapping of a variable name (dict key) 
+        to a Bokeh widget type (dict value), by default {}
+    trait_widget_args : dict, optional
+        contains the desired widget kwargs (dict values) for each variable name (dict key),
+         by default {}
 
     Returns
     -------
-    None.
-
+    dict
+        A dictionary containing the variable names as the key and the Bokeh widget
+        instance as value.
     """
-    widgetdict = {}
-    for (traitname,widgetType) in list(self.trait_widget_mapper.items()):
-        widgetMapper = widget_mapper_factory(self,traitname,widgetType)
-        widgetdict[traitname] = widgetMapper.create_widget(
-                                        **self.trait_widget_args[traitname])
-    return widgetdict
 
+    widgetdict = {}
+    if not hasattr(self,'trait_widget_mapper'): # in case of classes that are not part of Spectacoular
+        if not trait_widget_mapper: # if no trait_widget_mapper defined, take the default
+            for traitname in self.editable_traits():
+                traittype = self.trait(traitname).trait_type
+                defaultWidgetType = DEFAULT_TRAIT_WIDGET_MAPPINGS.get(traittype.__class__)
+                if defaultWidgetType:
+                    widgetMapper = widget_mapper_factory(self,traitname,defaultWidgetType)
+                    widgetdict[traitname] = widgetMapper.create_widget()                
+                else: # in case no default widget exists, a simple TextInput that is readonly will
+                    #be created
+                    widgetMapper = widget_mapper_factory(self,traitname,TextInput)
+                    widgetdict[traitname] = widgetMapper.create_widget(disabled=True)         
+            return widgetdict
+    else: # in case of BaseSpectacoular derived classes
+        # check if a custom view is defined via function arguments trait_widget_mapper
+        # and trait_widget_args
+        if not trait_widget_mapper:
+            trait_widget_mapper = self.trait_widget_mapper
+        if not trait_widget_args:
+            trait_widget_args = self.trait_widget_args                                           
+    # create widgets for spectacoular derived classes
+    for (traitname,widgetType) in list(trait_widget_mapper.items()):
+        widgetMapper = widget_mapper_factory(self,traitname,widgetType)
+        kwargs = trait_widget_args.get(traitname)
+        if kwargs:
+            widgetdict[traitname] = widgetMapper.create_widget(**kwargs)
+        else:
+            widgetdict[traitname] = widgetMapper.create_widget()          
+    return widgetdict
 
 def set_widgets(self,**kwargs):
     """
@@ -145,14 +233,14 @@ class BaseSpectacoular(HasPrivateTraits):
     
     #: dictionary containing the mapping between a class trait attribute and 
     #: a Bokeh widget. Keys: name of the trait attribute. Values: Bokeh widget.
-    trait_widget_mapper = {
-                       }
+    trait_widget_mapper = Dict({
+                       })
 
     #: dictionary containing arguments that belongs to a widget that is created
     #: from a trait attribute and should be considered when the widget is built.
     #: For example: {"traitname":{'disabled':True,'background_color':'red',...}}.
-    trait_widget_args = {
-                     }
+    trait_widget_args = Dict({
+                     })
     
     #: function to create widgets from class trait attributes 
     get_widgets = get_widgets
@@ -299,6 +387,89 @@ class TraitWidgetMapper(object):
             trait_setter_func = self.create_trait_setter_func()
             self.widget.on_change("value",trait_setter_func)
 
+
+class NumericInputMapper(TraitWidgetMapper):
+    """
+    Factory that creates :class:`NumericInput` widget from a class trait attribute of type Int.
+    """
+
+    def __init__(self,obj,traitname):
+        self.obj = obj
+        self.traitname = traitname
+        self.traittype = obj.trait(traitname).trait_type
+        self.traitvalue = getattr(obj,traitname)
+
+    def create_widget(self,**kwargs):
+        """
+        creates a Bokeh NumericInput instance 
+
+        Parameters
+        ----------
+        **kwargs : args of NumericInput
+            additional arguments of NumericInput widget.
+
+        Returns
+        -------
+        instance(NumericInput).
+
+        """
+        self.widget = NumericInput(title=self.traitname,**kwargs)
+        self._set_widgetvalue(self.traitvalue)
+        self._set_callbacks()
+        return self.widget
+
+    def set_widget(self, widget):
+        """
+        connects a Bokeh NumericInput widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(NumericInput)
+            instance of a NumericInput widget.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.widget = widget
+        self._set_traitvalue(self.widget.value) # set traitvalue to widgetvalue
+        self._set_callbacks()
+
+    def _set_widgetvalue(self,traitvalue):
+        """
+        Sets the value of a widget to the class traits attribute value.
+        In case, the widget value and the trait value are of different type, 
+        a cast function is used.        
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
+        #print(f"trait value: {traitvalue}")
+        self.widget.value = traitvalue
+
+    def create_trait_setter_func(self):
+        """
+        creates a function that sets the value of a trait on the widget value.
+        
+        The function is evoked every time the widget value changes. No casting 
+        necessary for NumericInput widgets
+
+        Returns
+        -------
+        callable.
+
+        """
+        def callback(attr, old, new):
+            self._set_traitvalue(new)
+        return callback
 
 
 class TextInputMapper(TraitWidgetMapper):

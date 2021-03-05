@@ -14,7 +14,7 @@ attribute is to be mapped into which Bokeh widget type.
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable,\
-TableColumn, NumberEditor
+TableColumn, NumberEditor, NumericInput
 from .factory import get_widgets, set_widgets
 
 def add_bokeh_attr(cls,trait_widget_mapper,trait_widget_args):
@@ -52,10 +52,10 @@ def add_bokeh_attr(cls,trait_widget_mapper,trait_widget_args):
 
 from acoular import SampleSplitter
 
-trait_widget_mapper = {'buffer_size': TextInput,
+trait_widget_mapper = {'buffer_size': NumericInput,
                        }
 
-trait_widget_args = {'buffer_size': {'disabled':False},
+trait_widget_args = {'buffer_size': {'disabled':False, 'mode':'int'},
                      }
 
 add_bokeh_attr(SampleSplitter,trait_widget_mapper,trait_widget_args)
@@ -67,12 +67,12 @@ from acoular import Calib
 
 trait_widget_mapper = {'from_file': TextInput,
                        'basename': TextInput,
-                       'num_mics': TextInput,
+                       'num_mics': NumericInput,
                        'data': DataTable,
                        }
 trait_widget_args = {'from_file': {'disabled':False},
                      'basename': {'disabled':True},
-                     'num_mics':  {'disabled':True},
+                     'num_mics':  {'disabled':True,'mode':'int'},
                      'data':  {'disabled':True},
                      }
 
@@ -82,10 +82,10 @@ add_bokeh_attr(Calib,trait_widget_mapper,trait_widget_args)
 
 from acoular import Environment
 
-trait_widget_mapper = {'c': TextInput,
+trait_widget_mapper = {'c': NumericInput,
                        }
 
-trait_widget_args = {'c': {'disabled':False},
+trait_widget_args = {'c': {'disabled':False, 'mode':'float'},
                      }
 
 add_bokeh_attr(Environment,trait_widget_mapper,trait_widget_args)
@@ -105,12 +105,12 @@ add_bokeh_attr(SteeringVector,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerBase
 
 trait_widget_mapper = {'r_diag': Select,
-                       'r_diag_norm': TextInput,
+                       'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Select,
                        }
 trait_widget_args = {'r_diag': {'disabled':False},
-                     'r_diag_norm': {'disabled':False},
+                     'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -120,15 +120,15 @@ add_bokeh_attr(BeamformerBase,trait_widget_mapper,trait_widget_args)
 
 from acoular import BeamformerFunctional
 
-trait_widget_mapper = {'gamma': TextInput,
+trait_widget_mapper = {'gamma': NumericInput,
                        'r_diag': Select,
-                       'r_diag_norm': TextInput,
+                       'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Select,
                        }
-trait_widget_args = {'gamma': {'disabled':False},
+trait_widget_args = {'gamma': {'disabled':False,'mode':'float'},
                      'r_diag': {'disabled':True},
-                     'r_diag_norm': {'disabled':False},
+                     'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -139,12 +139,12 @@ add_bokeh_attr(BeamformerFunctional,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerCapon
 
 trait_widget_mapper = {'r_diag': Select,
-                       'r_diag_norm': TextInput,
+                       'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Select,
                        }
 trait_widget_args = {'r_diag': {'disabled':True},
-                     'r_diag_norm': {'disabled':False},
+                     'r_diag_norm': {'disabled':False,'mode':'float' },
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -154,15 +154,15 @@ add_bokeh_attr(BeamformerCapon,trait_widget_mapper,trait_widget_args)
 
 from acoular import BeamformerEig
 
-trait_widget_mapper = {'n': TextInput,
+trait_widget_mapper = {'n': NumericInput,
                         'r_diag': Select,
-                       'r_diag_norm': TextInput,
+                       'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Select,
                        }
-trait_widget_args = {'n' : {'disabled':False},
+trait_widget_args = {'n' : {'disabled':False,'mode':'int'},
                     'r_diag': {'disabled':False},
-                     'r_diag_norm': {'disabled':False},
+                     'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -172,15 +172,15 @@ add_bokeh_attr(BeamformerEig,trait_widget_mapper,trait_widget_args)
 
 from acoular import BeamformerMusic
 
-trait_widget_mapper = {'n': TextInput,
+trait_widget_mapper = {'n': NumericInput,
                         'r_diag': Select,
-                       'r_diag_norm': TextInput,
+                       'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Select,
                        }
-trait_widget_args = {'n' : {'disabled':False},
+trait_widget_args = {'n' : {'disabled':False, 'mode':'int'},
                     'r_diag': {'disabled':True},
-                     'r_diag_norm': {'disabled':False},
+                     'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -190,14 +190,14 @@ add_bokeh_attr(BeamformerMusic,trait_widget_mapper,trait_widget_args)
 
 from acoular import BeamformerDamas
 
-trait_widget_mapper = {'damp': TextInput,
-                        'n_iter' : TextInput,
+trait_widget_mapper = {'damp': NumericInput,
+                        'n_iter' : NumericInput,
                         'calcmode' : Select,
                         'psf_precision': Select,
                        'cached': Select,
                        }
-trait_widget_args = {'damp' : {'disabled':False},
-                     'n_iter' : {'disabled':False},
+trait_widget_args = {'damp' : {'disabled':False, 'mode':'float'},
+                     'n_iter' : {'disabled':False, 'mode':'int'},
                      'calcmode' : {'disabled':False},
                      'psf_precision': {'disabled':False},
                      'cached': {'disabled':False},
@@ -210,20 +210,20 @@ from acoular import BeamformerDamasPlus
 
 trait_widget_mapper = {'method': Select,
                        'alpha': TextInput,
-                       'max_iter' : TextInput,
+                       'max_iter' : NumericInput,
                        'unit_mult' : TextInput,
-                        'damp': TextInput,
-                        'n_iter' : TextInput,
+                        'damp': NumericInput,
+                        'n_iter' : NumericInput,
                         'calcmode' : Select,
                         'psf_precision': Select,
                        'cached': Select,
                        }
 trait_widget_args = {'method' : {'disabled':False},
                      'alpha' : {'disabled':False},
-                     'max_iter' : {'disabled':False},
+                     'max_iter' : {'disabled':False, 'mode':'int'},
                      'unit_mult' : {'disabled':False},
-                     'damp' : {'disabled':False},
-                     'n_iter' : {'disabled':False},
+                     'damp' : {'disabled':False, 'mode':'float'},
+                     'n_iter' : {'disabled':False, 'mode':'int'},
                      'calcmode' : {'disabled':False},
                      'psf_precision': {'disabled':False},
                      'cached': {'disabled':False},
@@ -235,14 +235,14 @@ add_bokeh_attr(BeamformerDamasPlus,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerOrth
 
 trait_widget_mapper = {'eva_list' : TextInput,
-                        'n' : TextInput,
-                        'r_diag_norm': TextInput,
+                        'n' : NumericInput,
+                        'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Select,
                        }
 trait_widget_args = {'eva_list': {'disabled':False},
-                    'n': {'disabled':False},
-                    'r_diag_norm': {'disabled':False},
+                    'n': {'disabled':False, 'mode':'int'},
+                    'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -253,20 +253,20 @@ add_bokeh_attr(BeamformerOrth,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerCleansc
 
 trait_widget_mapper = {
-                        'n' : TextInput,
+                        'n' : NumericInput,
                         'damp' : Slider,
-                        'stopn' : TextInput,
+                        'stopn' : NumericInput,
                         'r_diag': Select,
-                       'r_diag_norm': TextInput,
+                       'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Select,
                        }
 trait_widget_args = {
-                    'n': {'disabled':False},
+                    'n': {'disabled':False,'mode':'int'},
                     'damp': {'disabled':False,'step':0.01},
-                    'stopn': {'disabled':False},
+                    'stopn': {'disabled':False,'mode':'int'},
                     'r_diag': {'disabled':False},
-                     'r_diag_norm': {'disabled':False},
+                     'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -278,13 +278,13 @@ from acoular import BeamformerClean
 
 trait_widget_mapper = {
                         'damp' : Slider,
-                        'n_iter' : TextInput,
+                        'n_iter' : NumericInput,
                         'calcmode' : Select,
                        'cached': Select,
                        }
 trait_widget_args = {
                     'damp': {'disabled':False,'step':0.01},
-                    'n_iter': {'disabled':False},
+                    'n_iter': {'disabled':False,'mode':'int'},
                     'calcmode' : {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -297,20 +297,20 @@ from acoular import BeamformerCMF
 trait_widget_mapper = {
                         'method' : Select,
                         'alpha' : Slider,
-                        'max_iter' : TextInput,
-                        'unit_mult' : TextInput,
+                        'max_iter' : NumericInput,
+                        'unit_mult' : NumericInput,
                         'r_diag': Select,
-                        'r_diag_norm': TextInput,
+                        'r_diag_norm': NumericInput,
                         'precision': Select,
                        'cached': Select,
                        }
 trait_widget_args = {
                     'method': {'disabled':False},
                     'alpha': {'disabled':False,'step':0.01},
-                    'max_iter': {'disabled':False},
-                    'unit_mult' : {'disabled':False},
+                    'max_iter': {'disabled':False,'mode':'int'},
+                    'unit_mult' : {'disabled':False,'mode':'float'},
                     'r_diag': {'disabled':False},
-                    'r_diag_norm': {'disabled':False},
+                    'r_diag_norm': {'disabled':False,'mode':'float'},
                     'precision': {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -321,32 +321,32 @@ add_bokeh_attr(BeamformerCMF,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerGIB
 
 trait_widget_mapper = {
-                        'unit_mult' : TextInput,
-                        'max_iter' : TextInput,
+                        'unit_mult' : NumericInput,
+                        'max_iter' : NumericInput,
                         'method' : Select,
                         'alpha' : Slider,
-                        'pnorm' : TextInput,
-                        'beta' : TextInput,
-                        'eps_perc' : TextInput,
-                        'm' : TextInput,
-                        'n': TextInput,
+                        'pnorm' : NumericInput,
+                        'beta' : NumericInput,
+                        'eps_perc' : NumericInput,
+                        'm' : NumericInput,
+                        'n': NumericInput,
                         'r_diag': Select,
-                       'r_diag_norm': TextInput,
+                       'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Select,
                        }
 trait_widget_args = {
-                    'unit_mult' : {'disabled':False},
-                    'max_iter': {'disabled':False},
+                    'unit_mult' : {'disabled':False,'mode':'float'},
+                    'max_iter': {'disabled':False,'mode':'int'},
                     'method': {'disabled':False},
                     'alpha': {'disabled':False,'step':0.01},
-                    'pnorm': {'disabled':False},
-                    'beta': {'disabled':False},
-                    'eps_perc': {'disabled':False},
-                    'm': {'disabled':False},
-                    'n' : {'disabled':False},
+                    'pnorm': {'disabled':False,'mode':'float'},
+                    'beta': {'disabled':False,'mode':'float'},
+                    'eps_perc': {'disabled':False,'mode':'float'},
+                    'm': {'disabled':False,'mode':'int'},
+                    'n' : {'disabled':False,'mode':'int'},
                     'r_diag': {'disabled':False},
-                     'r_diag_norm': {'disabled':False},
+                     'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
                      }
@@ -359,13 +359,13 @@ from acoular import PointSpreadFunction
 trait_widget_mapper = {
                         'calcmode' : Select,
                         'precision' : Select,
-                        'freq' : TextInput,
+                        'freq' : NumericInput,
 
                        }
 trait_widget_args = {
                     'calcmode' : {'disabled':False},
                     'precision' : {'disabled':False},
-                    'freq' : {'disabled':False},
+                    'freq' : {'disabled':False,'mode':'float'},
                      }
 
 add_bokeh_attr(PointSpreadFunction,trait_widget_mapper,trait_widget_args)
@@ -375,26 +375,26 @@ add_bokeh_attr(PointSpreadFunction,trait_widget_mapper,trait_widget_args)
 
 from acoular import RectGrid
 
-trait_widget_mapper = {'x_min': TextInput,
-                       'x_max': TextInput,
-                       'y_min' : TextInput,
-                       'y_max' : TextInput,
-                       'z': TextInput,
-                       'increment': TextInput,
-                       'nxsteps':TextInput,
-                       'nysteps' : TextInput,
-                       'size' : TextInput,
+trait_widget_mapper = {'x_min': NumericInput,
+                       'x_max': NumericInput,
+                       'y_min' : NumericInput,
+                       'y_max' : NumericInput,
+                       'z': NumericInput,
+                       'increment': NumericInput,
+                       'nxsteps':NumericInput,
+                       'nysteps' : NumericInput,
+                       'size' : NumericInput,
                        'shape' : TextInput
                        }
-trait_widget_args = {'x_min': {'disabled':False},
-                     'x_max': {'disabled':False},
-                     'y_min':  {'disabled':False},
-                     'y_max':  {'disabled':False},
-                     'z':  {'disabled':False},
-                     'increment':  {'disabled':False},
-                     'nxsteps': {'disabled':True},
-                     'nysteps': {'disabled':True},
-                     'size': {'disabled':True},
+trait_widget_args = {'x_min': {'disabled':False,'mode':'float'},
+                     'x_max': {'disabled':False,'mode':'float'},
+                     'y_min':  {'disabled':False,'mode':'float'},
+                     'y_max':  {'disabled':False,'mode':'float'},
+                     'z':  {'disabled':False,'mode':'float'},
+                     'increment':  {'disabled':False,'mode':'float'},
+                     'nxsteps': {'disabled':True,'mode':'int'},
+                     'nysteps': {'disabled':True,'mode':'int'},
+                     'size': {'disabled':True,'mode':'int'},
                      'shape': {'disabled':True},
                      }
 
@@ -404,32 +404,32 @@ add_bokeh_attr(RectGrid,trait_widget_mapper,trait_widget_args)
 # currently, bokeh library does not support 3D plotting capabilities
 from acoular import RectGrid3D
 
-trait_widget_mapper = {'x_min': TextInput,
-                       'x_max': TextInput,
-                       'y_min' : TextInput,
-                       'y_max' : TextInput,
-                       'z_min' : TextInput,
-                       'z_max' : TextInput,
-                       'z': TextInput,
-                       '_increment': TextInput,
-                       'nxsteps':TextInput,
-                       'nysteps' : TextInput,
-                       'nzsteps' : TextInput,
-                       'size' : TextInput,
+trait_widget_mapper = {'x_min': NumericInput,
+                       'x_max': NumericInput,
+                       'y_min' : NumericInput,
+                       'y_max' : NumericInput,
+                       'z_min' : NumericInput,
+                       'z_max' : NumericInput,
+                       'z': NumericInput,
+                       '_increment': NumericInput,
+                       'nxsteps':NumericInput,
+                       'nysteps' : NumericInput,
+                       'nzsteps' : NumericInput,
+                       'size' : NumericInput,
                        'shape' : TextInput
                        }
-trait_widget_args = {'x_min': {'disabled':False},
-                     'x_max': {'disabled':False},
-                     'y_min':  {'disabled':False},
-                     'y_max':  {'disabled':False},
-                     'z_min':  {'disabled':False},
-                     'z_max':  {'disabled':False},
-                     'z':  {'disabled':False},
-                     '_increment':  {'disabled':False},
-                     'nxsteps': {'disabled':True},
-                     'nysteps': {'disabled':True},
-                     'nzsteps': {'disabled':True},
-                     'size': {'disabled':True},
+trait_widget_args = {'x_min': {'disabled':False,'mode':'float'},
+                     'x_max': {'disabled':False,'mode':'float'},
+                     'y_min':  {'disabled':False,'mode':'float'},
+                     'y_max':  {'disabled':False,'mode':'float'},
+                     'z_min':  {'disabled':False,'mode':'float'},
+                     'z_max':  {'disabled':False,'mode':'float'},
+                     'z':  {'disabled':False,'mode':'float'},
+                     '_increment':  {'disabled':False,'mode':'float'},
+                     'nxsteps': {'disabled':True,'mode':'int'},
+                     'nysteps': {'disabled':True,'mode':'int'},
+                     'nzsteps': {'disabled':True,'mode':'int'},
+                     'size': {'disabled':True,'mode':'int'},
                      'shape': {'disabled':True},
                      }
 
@@ -446,7 +446,7 @@ columns = [TableColumn(field='x', title='X', editor=NumberEditor()),
 trait_widget_mapper = {'from_file': TextInput,
                        'basename': TextInput,
                        'invalid_channels': TextInput,
-                       'num_mics': TextInput,
+                       'num_mics': NumericInput,
                        'center': TextInput,
                        'mpos_tot': DataTable
                        }
@@ -454,7 +454,7 @@ trait_widget_mapper = {'from_file': TextInput,
 trait_widget_args = {'from_file': {'disabled':False},
                      'basename': {'disabled':True},
                      'invalid_channels':  {'disabled':False},
-                     'num_mics':  {'disabled':True},
+                     'num_mics':  {'disabled':True, 'mode':'int'},
                      'center':  {'disabled':True},
                      'mpos_tot':  {'editable':True,'columns':columns},
                      }
@@ -465,28 +465,28 @@ add_bokeh_attr(MicGeom,trait_widget_mapper,trait_widget_args)
 
 from acoular import PowerSpectra
 
-trait_widget_mapper = {'numchannels' :TextInput,
+trait_widget_mapper = {'numchannels' :NumericInput,
                         'block_size': Select,
                        'window' : Select,
                        'overlap' : Select,
-                       'ind_low' : TextInput,
-                       'ind_high' : TextInput,
+                       'ind_low' : NumericInput,
+                       'ind_high' : NumericInput,
                        'freq_range' : TextInput,
                        'cached' : Select,
-                       'num_blocks':TextInput,
+                       'num_blocks':NumericInput,
                        'precision' : Select,
 #                       'indices' : DataTable,
                        }
 
-trait_widget_args = {'numchannels': {'disabled':True},
+trait_widget_args = {'numchannels': {'disabled':True, 'mode':'int'},
                     'block_size': {'disabled':False},
                      'window' : {'disabled':False},
                      'overlap' : {'disabled':False},
-                     'ind_low' :{'disabled':False},
-                     'ind_high' :{'disabled':False},
+                     'ind_low' :{'disabled':False, 'mode':'int'},
+                     'ind_high' :{'disabled':False, 'mode':'int'},
                      'freq_range' :{'disabled':True},
                      'cached' : {'disabled':False},
-                     'num_blocks': {'disabled':True},
+                     'num_blocks': {'disabled':True, 'mode':'float'},
                      'precision' : {'disabled':False},
 #                     'indices' : {'disabled':True},
                      }
@@ -499,15 +499,15 @@ from acoular import TimeSamples
 
 trait_widget_mapper = {'name': TextInput,
                        'basename': TextInput,
-                       'numsamples': TextInput,
-                       'sample_freq': TextInput,
-                       'numchannels' : TextInput
+                       'numsamples': NumericInput,
+                       'sample_freq': NumericInput,
+                       'numchannels' : NumericInput,
                        }
 trait_widget_args = {'name': {'disabled':False},
                      'basename': {'disabled':True},
-                     'numsamples':  {'disabled':True},
-                     'sample_freq':  {'disabled':True},
-                     'numchannels': {'disabled':True},
+                     'numsamples':  {'disabled':True,'mode':'int'},
+                     'sample_freq':  {'disabled':True,'mode':'float'},
+                     'numchannels': {'disabled':True,'mode':'int'},
                      }
 
 add_bokeh_attr(TimeSamples,trait_widget_mapper,trait_widget_args)
@@ -517,21 +517,21 @@ from acoular import MaskedTimeSamples
 
 trait_widget_mapper = {'name': TextInput,
                        'basename': TextInput,
-                       'start' : TextInput,
-                       'stop' : TextInput,
-                       'numsamples': TextInput,
-                       'sample_freq': TextInput,
+                       'start' : NumericInput,
+                       'stop' : NumericInput,
+                       'numsamples': NumericInput,
+                       'sample_freq': NumericInput,
                        'invalid_channels':TextInput,
-                       'numchannels' : TextInput
+                       'numchannels' : NumericInput
                        }
 trait_widget_args = {'name': {'disabled':False},
                      'basename': {'disabled':True},
-                     'start':  {'disabled':False},
-                     'stop':  {'disabled':False},
-                     'numsamples':  {'disabled':True},
-                     'sample_freq':  {'disabled':True},
+                     'start':  {'disabled':False, 'mode':'int'},
+                     'stop':  {'disabled':False, 'mode':'int'},
+                     'numsamples':  {'disabled':True, 'mode':'int'},
+                     'sample_freq':  {'disabled':True, 'mode':'float'},
                      'invalid_channels': {'disabled':False},
-                     'numchannels': {'disabled':True},
+                     'numchannels': {'disabled':True,'mode':'int'},
                      }
 
 add_bokeh_attr(MaskedTimeSamples,trait_widget_mapper,trait_widget_args)
@@ -541,21 +541,21 @@ from acoular import PointSource
 
 trait_widget_mapper = {
                        'loc' : TextInput,
-                       'start_t' : TextInput,
-                       'start' : TextInput,
-                       'up' : TextInput,
-                      'numsamples': TextInput, # is a Delegate -> currently raises error 
-                      'sample_freq': TextInput,
-                      'numchannels' : TextInput
+                       'start_t' : NumericInput,
+                       'start' : NumericInput,
+                       'up' : NumericInput,
+                      'numsamples': NumericInput, # is a Delegate -> currently raises error 
+                      'sample_freq': NumericInput,
+                      'numchannels' : NumericInput
                        }
 trait_widget_args = {
                     'loc':  {'disabled':False},
-                    'start_t':  {'disabled':False},
-                    'start':  {'disabled':False},
-                    'up':  {'disabled':False},
-                    'numsamples':  {'disabled':True},
-                    'sample_freq':  {'disabled':True},
-                    'numchannels': {'disabled':True},
+                    'start_t':  {'disabled':False,'mode':'float'},
+                    'start':  {'disabled':False,'mode':'float'},
+                    'up':  {'disabled':False,'mode':'int'},
+                    'numsamples':  {'disabled':True,'mode':'int'},
+                    'sample_freq':  {'disabled':True,'mode':'float'},
+                    'numchannels': {'disabled':True,'mode':'int'},
                      }
 
 add_bokeh_attr(PointSource,trait_widget_mapper,trait_widget_args)
@@ -565,14 +565,14 @@ add_bokeh_attr(PointSource,trait_widget_mapper,trait_widget_args)
 
 from acoular import TimeAverage
 
-trait_widget_mapper = {'naverage' : TextInput,
-                        'numsamples': TextInput,
-                        'sample_freq': TextInput,
+trait_widget_mapper = {'naverage' : NumericInput,
+                        'numsamples': NumericInput,
+                        'sample_freq': NumericInput,
                        # 'numchannels' : TextInput
                        }
-trait_widget_args = {'naverage':  {'disabled':False},
-                      'numsamples':  {'disabled':True},
-                      'sample_freq':  {'disabled':True},
+trait_widget_args = {'naverage':  {'disabled':False,'mode':'int'},
+                      'numsamples':  {'disabled':True,'mode':'int'},
+                      'sample_freq':  {'disabled':True,'mode':'float'},
                      # 'numchannels': {'disabled':True},
                      }
 
@@ -582,18 +582,18 @@ add_bokeh_attr(TimeAverage,trait_widget_mapper,trait_widget_args)
 
 from acoular import Trigger
 
-trait_widget_mapper = {'threshold' :TextInput,
+trait_widget_mapper = {'threshold' :NumericInput,
                        'trigger_type': Select,
-                       'max_variation_of_duration' : TextInput,
-                       'hunk_length' : TextInput,
+                       'max_variation_of_duration' : NumericInput,
+                       'hunk_length' : NumericInput,
                        'multiple_peaks_in_hunk' : Select,
 #                       'indices' : DataTable,
                        }
 
-trait_widget_args = {'threshold': {'disabled':False},
+trait_widget_args = {'threshold': {'disabled':False,'mode':'float'},
                     'trigger_type': {'disabled':False},
-                     'max_variation_of_duration' : {'disabled':False},
-                     'hunk_length' : {'disabled':False},
+                     'max_variation_of_duration' : {'disabled':False,'mode':'float'},
+                     'hunk_length' : {'disabled':False,'mode':'float'},
                      'multiple_peaks_in_hunk' :{'disabled':False},
 #                     'indices' : {'disabled':True},
                      }
@@ -605,19 +605,19 @@ add_bokeh_attr(Trigger,trait_widget_mapper,trait_widget_args)
 from acoular import AngleTracker
 
 
-trait_widget_mapper = {'trigger_per_revo' :TextInput,
-                       'rot_direction': TextInput,
-                       'interp_points' : TextInput,
-                       'start_angle' : TextInput,
-                       'average_rpm' : TextInput,
+trait_widget_mapper = {'trigger_per_revo' :NumericInput,
+                       'rot_direction': NumericInput,
+                       'interp_points' : NumericInput,
+                       'start_angle' : NumericInput,
+                       'average_rpm' : NumericInput,
 #                       'indices' : DataTable,
                        }
 
-trait_widget_args = {'trigger_per_revo': {'disabled':False},
-                    'rot_direction': {'disabled':False},
-                     'interp_points' : {'disabled':False},
-                     'start_angle' : {'disabled':False},
-                     'average_rpm' :{'disabled':True},
+trait_widget_args = {'trigger_per_revo': {'disabled':False,'mode':'int'},
+                    'rot_direction': {'disabled':False,'mode':'int'},
+                     'interp_points' : {'disabled':False,'mode':'int'},
+                     'start_angle' : {'disabled':False,'mode':'float'},
+                     'average_rpm' :{'disabled':True,'mode':'float'},
 #                     'indices' : {'disabled':True},
                      }
 
@@ -631,16 +631,16 @@ from acoular import SpatialInterpolator
 
 trait_widget_mapper = {'method' :Select,
                         'array_dimension': Select,
-                       'sample_freq' : TextInput,
-                       'numchannels' : TextInput,
+                       'sample_freq' : NumericInput,
+                       'numchannels' : NumericInput,
                        'interp_at_zero' : Select,
 #                       'indices' : DataTable,
                        }
 
 trait_widget_args = {'method': {'disabled':False},
                     'array_dimension': {'disabled':False},
-                     'sample_freq' : {'disabled':True},
-                     'numchannels' : {'disabled':True},
+                     'sample_freq' : {'disabled':True,'mode':'float'},
+                     'numchannels' : {'disabled':True,'mode':'int'},
                      'interp_at_zero' :{'disabled':False},
 #                     'indices' : {'disabled':True},
                      }
@@ -653,16 +653,16 @@ from acoular import SpatialInterpolatorRotation
 
 trait_widget_mapper = {'method' :Select,
                         'array_dimension': Select,
-                       'sample_freq' : TextInput,
-                       'numchannels' : TextInput,
+                       'sample_freq' : NumericInput,
+                       'numchannels' : NumericInput,
                        'interp_at_zero' : Select,
 #                       'indices' : DataTable,
                        }
 
 trait_widget_args = {'method': {'disabled':False},
                     'array_dimension': {'disabled':False},
-                     'sample_freq' : {'disabled':True},
-                     'numchannels' : {'disabled':True},
+                     'sample_freq' : {'disabled':True,'mode':'float'},
+                     'numchannels' : {'disabled':True,'mode':'int'},
                      'interp_at_zero' :{'disabled':False},
 #                     'indices' : {'disabled':True},
                      }
@@ -675,18 +675,18 @@ from acoular import SpatialInterpolatorConstantRotation
 
 trait_widget_mapper = {'method' :Select,
                         'array_dimension': Select,
-                       'sample_freq' : TextInput,
-                       'numchannels' : TextInput,
+                       'sample_freq' : NumericInput,
+                       'numchannels' : NumericInput,
                        'interp_at_zero' : Select,
-                       'rotational_speed' : TextInput,
+                       'rotational_speed' : NumericInput,
                        }
 
 trait_widget_args = {'method': {'disabled':False},
                     'array_dimension': {'disabled':False},
-                     'sample_freq' : {'disabled':True},
-                     'numchannels' : {'disabled':True},
+                     'sample_freq' : {'disabled':True,'mode':'float'},
+                     'numchannels' : {'disabled':True,'mode':'int'},
                      'interp_at_zero' :{'disabled':False},
-                     'rotational_speed' :{'disabled':False},
+                     'rotational_speed' :{'disabled':False,'mode':'float'},
 #                     'indices' : {'disabled':True},
                      }
 
