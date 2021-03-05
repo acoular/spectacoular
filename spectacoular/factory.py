@@ -35,7 +35,7 @@ NUMERIC_TYPES = (Int,Long,CLong,int,
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
     NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate), # (Trait,Property,Delegate)
-    Toggle : (BaseBool,Bool,) + (TraitCompound,Any,Delegate) 
+    Toggle : (Bool,) + (TraitCompound,Any,Delegate) 
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
@@ -441,7 +441,7 @@ class NumericInputMapper(TraitWidgetMapper):
         self._set_traitvalue(self.widget.value) # set traitvalue to widgetvalue
         self._set_callbacks()
 
-    def _set_widgetvalue(self,traitvalue):
+    def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
         """
         Sets the value of a widget to the class traits attribute value.
         In case, the widget value and the trait value are of different type, 
@@ -458,7 +458,8 @@ class NumericInputMapper(TraitWidgetMapper):
         
         """
         #print(f"trait value: {traitvalue}")
-        self.widget.value = traitvalue
+        setattr(self.widget,widgetproperty,traitvalue)
+
 
     def create_trait_setter_func(self):
         """
