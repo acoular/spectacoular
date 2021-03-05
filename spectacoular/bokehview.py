@@ -14,7 +14,7 @@ attribute is to be mapped into which Bokeh widget type.
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable,\
-TableColumn, NumberEditor, NumericInput
+TableColumn, NumberEditor, NumericInput, Toggle
 from .factory import get_widgets, set_widgets
 
 def add_bokeh_attr(cls,trait_widget_mapper,trait_widget_args):
@@ -104,10 +104,10 @@ add_bokeh_attr(SteeringVector,trait_widget_mapper,trait_widget_args)
 
 from acoular import BeamformerBase
 
-trait_widget_mapper = {'r_diag': Select,
+trait_widget_mapper = {'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {'r_diag': {'disabled':False},
                      'r_diag_norm': {'disabled':False,'mode':'float'},
@@ -121,13 +121,13 @@ add_bokeh_attr(BeamformerBase,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerFunctional
 
 trait_widget_mapper = {'gamma': NumericInput,
-                       'r_diag': Select,
+                       #'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {'gamma': {'disabled':False,'mode':'float'},
-                     'r_diag': {'disabled':True},
+                     #'r_diag': {'disabled':True},
                      'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
@@ -138,12 +138,12 @@ add_bokeh_attr(BeamformerFunctional,trait_widget_mapper,trait_widget_args)
 
 from acoular import BeamformerCapon
 
-trait_widget_mapper = {'r_diag': Select,
+trait_widget_mapper = {#'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
-trait_widget_args = {'r_diag': {'disabled':True},
+trait_widget_args = {#'r_diag': {'disabled':True},
                      'r_diag_norm': {'disabled':False,'mode':'float' },
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
@@ -155,10 +155,10 @@ add_bokeh_attr(BeamformerCapon,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerEig
 
 trait_widget_mapper = {'n': NumericInput,
-                        'r_diag': Select,
+                        'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {'n' : {'disabled':False,'mode':'int'},
                     'r_diag': {'disabled':False},
@@ -173,13 +173,13 @@ add_bokeh_attr(BeamformerEig,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerMusic
 
 trait_widget_mapper = {'n': NumericInput,
-                        'r_diag': Select,
+                        #'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {'n' : {'disabled':False, 'mode':'int'},
-                    'r_diag': {'disabled':True},
+                    #'r_diag': {'disabled':True},
                      'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
@@ -194,7 +194,7 @@ trait_widget_mapper = {'damp': NumericInput,
                         'n_iter' : NumericInput,
                         'calcmode' : Select,
                         'psf_precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {'damp' : {'disabled':False, 'mode':'float'},
                      'n_iter' : {'disabled':False, 'mode':'int'},
@@ -216,7 +216,7 @@ trait_widget_mapper = {'method': Select,
                         'n_iter' : NumericInput,
                         'calcmode' : Select,
                         'psf_precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {'method' : {'disabled':False},
                      'alpha' : {'disabled':False},
@@ -238,7 +238,7 @@ trait_widget_mapper = {'eva_list' : TextInput,
                         'n' : NumericInput,
                         'r_diag_norm': NumericInput,
                        'precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {'eva_list': {'disabled':False},
                     'n': {'disabled':False, 'mode':'int'},
@@ -256,10 +256,10 @@ trait_widget_mapper = {
                         'n' : NumericInput,
                         'damp' : Slider,
                         'stopn' : NumericInput,
-                        'r_diag': Select,
+                        'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {
                     'n': {'disabled':False,'mode':'int'},
@@ -280,7 +280,7 @@ trait_widget_mapper = {
                         'damp' : Slider,
                         'n_iter' : NumericInput,
                         'calcmode' : Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {
                     'damp': {'disabled':False,'step':0.01},
@@ -299,10 +299,10 @@ trait_widget_mapper = {
                         'alpha' : Slider,
                         'max_iter' : NumericInput,
                         'unit_mult' : NumericInput,
-                        'r_diag': Select,
+                        'r_diag': Toggle,
                         'r_diag_norm': NumericInput,
                         'precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {
                     'method': {'disabled':False},
@@ -330,10 +330,10 @@ trait_widget_mapper = {
                         'eps_perc' : NumericInput,
                         'm' : NumericInput,
                         'n': NumericInput,
-                        'r_diag': Select,
+                        'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
-                       'cached': Select,
+                       'cached': Toggle,
                        }
 trait_widget_args = {
                     'unit_mult' : {'disabled':False,'mode':'float'},
@@ -472,7 +472,7 @@ trait_widget_mapper = {'numchannels' :NumericInput,
                        'ind_low' : NumericInput,
                        'ind_high' : NumericInput,
                        'freq_range' : TextInput,
-                       'cached' : Select,
+                       'cached' : Toggle,
                        'num_blocks':NumericInput,
                        'precision' : Select,
 #                       'indices' : DataTable,
@@ -633,7 +633,7 @@ trait_widget_mapper = {'method' :Select,
                         'array_dimension': Select,
                        'sample_freq' : NumericInput,
                        'numchannels' : NumericInput,
-                       'interp_at_zero' : Select,
+                       'interp_at_zero' : Toggle,
 #                       'indices' : DataTable,
                        }
 
@@ -655,7 +655,7 @@ trait_widget_mapper = {'method' :Select,
                         'array_dimension': Select,
                        'sample_freq' : NumericInput,
                        'numchannels' : NumericInput,
-                       'interp_at_zero' : Select,
+                       'interp_at_zero' : Toggle,
 #                       'indices' : DataTable,
                        }
 
@@ -677,7 +677,7 @@ trait_widget_mapper = {'method' :Select,
                         'array_dimension': Select,
                        'sample_freq' : NumericInput,
                        'numchannels' : NumericInput,
-                       'interp_at_zero' : Select,
+                       'interp_at_zero' : Toggle,
                        'rotational_speed' : NumericInput,
                        }
 
