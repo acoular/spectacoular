@@ -121,13 +121,13 @@ add_bokeh_attr(BeamformerBase,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerFunctional
 
 trait_widget_mapper = {'gamma': NumericInput,
-                       'r_diag': Toggle,
+                       #'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Toggle,
                        }
 trait_widget_args = {'gamma': {'disabled':False,'mode':'float'},
-                     'r_diag': {'disabled':True},
+                     #'r_diag': {'disabled':True},
                      'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
@@ -138,12 +138,12 @@ add_bokeh_attr(BeamformerFunctional,trait_widget_mapper,trait_widget_args)
 
 from acoular import BeamformerCapon
 
-trait_widget_mapper = {'r_diag': Toggle,
+trait_widget_mapper = {#'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Toggle,
                        }
-trait_widget_args = {'r_diag': {'disabled':True},
+trait_widget_args = {#'r_diag': {'disabled':True},
                      'r_diag_norm': {'disabled':False,'mode':'float' },
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},
@@ -173,13 +173,13 @@ add_bokeh_attr(BeamformerEig,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerMusic
 
 trait_widget_mapper = {'n': NumericInput,
-                        'r_diag': Toggle,
+                        #'r_diag': Toggle,
                        'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Toggle,
                        }
 trait_widget_args = {'n' : {'disabled':False, 'mode':'int'},
-                     'r_diag': {'disabled':True},
+                    #'r_diag': {'disabled':True},
                      'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
                      'cached': {'disabled':False},

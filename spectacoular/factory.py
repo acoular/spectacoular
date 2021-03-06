@@ -24,7 +24,7 @@ from traits.api import TraitEnum, TraitMap, CArray, Any, \
 List,Float, Int, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
 Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
-BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate, Bool, Enum
+BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate, Bool
 from numpy import ndarray,newaxis,isscalar,nan_to_num
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
@@ -34,8 +34,8 @@ NUMERIC_TYPES = (Int,Long,CLong,int,
                  #Complex, complex) # Complex Numbers Missing at the Moment
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
-    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate,Enum), # (Trait,Property,Delegate,Enum)
-    Toggle : (Bool,) + (TraitCompound,Any,Delegate,Enum) 
+    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate), # (Trait,Property,Delegate)
+    Toggle : (Bool,) + (TraitCompound,Any,Delegate) 
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
