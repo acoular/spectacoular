@@ -9,6 +9,8 @@
     :toctree: generated/
 
     BaseSpectacoular
+    NumericInputMapper
+    ToggleMapper
     TextInputMapper
     SelectMapper
     SliderMapper
@@ -16,13 +18,13 @@
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
-TableColumn, NumberEditor, StringEditor, NumericInput
+TableColumn, NumberEditor, StringEditor, NumericInput, Toggle
 from bokeh.models import ColumnDataSource
 from traits.api import TraitEnum, TraitMap, CArray, Any, \
 List,Float, Int, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
 Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
-BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate
+BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate, Bool
 from numpy import ndarray,newaxis,isscalar,nan_to_num
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
@@ -32,7 +34,8 @@ NUMERIC_TYPES = (Int,Long,CLong,int,
                  #Complex, complex) # Complex Numbers Missing at the Moment
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
-    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate) # (Trait,Property,Delegate)
+    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate), # (Trait,Property,Delegate)
+    Toggle : (Bool,) + (TraitCompound,Any,Delegate) 
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
@@ -40,6 +43,7 @@ DEFAULT_TRAIT_WIDGET_MAPPINGS = {
     Long: NumericInput,
     CLong : NumericInput,
     Float : NumericInput,
+    Bool : Toggle,
     }
 
 def as_str_list(func):
@@ -91,6 +95,7 @@ def widget_mapper_factory(obj,traitname,widgetType):
     validate_mapping_is_allowed(obj,traitname,widgetType)
     # factory 
     if widgetType is NumericInput: return NumericInputMapper(obj,traitname)
+    if widgetType is Toggle: return ToggleMapper(obj,traitname)
     if widgetType is TextInput: return TextInputMapper(obj,traitname) 
     elif widgetType is Select: return SelectMapper(obj,traitname)
     elif widgetType is Slider: return SliderMapper(obj,traitname) 
@@ -307,7 +312,7 @@ class TraitWidgetMapper(object):
 #        print("set traitvalue for trait {}".format(self.traitname))
         setattr(self.obj,self.traitname,widgetvalue)
 
-    def _set_widgetvalue(self,traitvalue):
+    def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
         """
         Sets the value of a widget to the class traits attribute value.
         In case, the widget value and the trait value are of different type, 
@@ -325,7 +330,7 @@ class TraitWidgetMapper(object):
         """
         if not isinstance(traitvalue,str):
             traitvalue = cast_to_str(traitvalue)
-        self.widget.value = traitvalue
+        setattr(self.widget,widgetproperty,traitvalue)
 
     def create_trait_setter_func(self):
         """
@@ -350,7 +355,7 @@ class TraitWidgetMapper(object):
             self._set_traitvalue(new)
         return callback
     
-    def create_widget_setter_func(self):
+    def create_widget_setter_func(self, widgetproperty="value"):
         """
         creates a function that casts a variable `new` into a valid type
         to be set as the widget value.
@@ -362,10 +367,10 @@ class TraitWidgetMapper(object):
         """
         def callback(new):
 #            print("{} widget changed".format(self.traitname))
-            self._set_widgetvalue(new)
+            self._set_widgetvalue(new, widgetproperty)
         return callback
 
-    def _set_callbacks(self):
+    def _set_callbacks(self,widgetproperty="value"):
         """
         function that sets on_change callbacks between widget and class trait 
         attribute.
@@ -381,11 +386,11 @@ class TraitWidgetMapper(object):
         None.
 
         """
-        widget_setter_func = self.create_widget_setter_func()
+        widget_setter_func = self.create_widget_setter_func(widgetproperty)
         self.obj.on_trait_change(widget_setter_func,self.traitname)
         if not self.widget.disabled:
             trait_setter_func = self.create_trait_setter_func()
-            self.widget.on_change("value",trait_setter_func)
+            self.widget.on_change(widgetproperty,trait_setter_func)
 
 
 class NumericInputMapper(TraitWidgetMapper):
@@ -436,7 +441,7 @@ class NumericInputMapper(TraitWidgetMapper):
         self._set_traitvalue(self.widget.value) # set traitvalue to widgetvalue
         self._set_callbacks()
 
-    def _set_widgetvalue(self,traitvalue):
+    def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
         """
         Sets the value of a widget to the class traits attribute value.
         In case, the widget value and the trait value are of different type, 
@@ -453,7 +458,8 @@ class NumericInputMapper(TraitWidgetMapper):
         
         """
         #print(f"trait value: {traitvalue}")
-        self.widget.value = traitvalue
+        setattr(self.widget,widgetproperty,traitvalue)
+
 
     def create_trait_setter_func(self):
         """
@@ -470,6 +476,73 @@ class NumericInputMapper(TraitWidgetMapper):
         def callback(attr, old, new):
             self._set_traitvalue(new)
         return callback
+
+
+
+class ToggleMapper(NumericInputMapper):
+    """
+    Factory that creates :class:`Toggle` widget from a class trait attribute of type Bool.
+    """
+    
+    def create_widget(self,**kwargs):
+        """
+        creates a Bokeh Toggle instance 
+
+        Parameters
+        ----------
+        **kwargs : args of Toggle
+            additional arguments of Toggle widget.
+
+        Returns
+        -------
+        instance(Toggle).
+
+        """
+        self.widget = Toggle(label=self.traitname,**kwargs)
+        self._set_widgetvalue(self.traitvalue,widgetproperty="active")
+        self._set_callbacks(widgetproperty="active")
+        return self.widget
+
+    def set_widget(self, widget):
+        """
+        connects a Bokeh Toggle widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(Toggle)
+            instance of a Toggle widget.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.widget = widget
+        self._set_traitvalue(self.widget.active) # set traitvalue to widgetvalue
+        self._set_callbacks(widgetproperty="active")
+
+    def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
+        """ Sets the value of a widget to the class traits attribute value.
+        In case, the widget value and the trait value are of different type, 
+        a cast function is used.        
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+        widgetproperty : str, optional
+            name of the widgets property that is set 
+            to the traitvalue, by default "value"
+
+        Returns
+        -------
+        None.
+
+        """
+        #print(f"trait value: {traitvalue}")
+        self.widget.active = traitvalue
+        setattr(self.widget,widgetproperty,traitvalue)
+
 
 
 class TextInputMapper(TraitWidgetMapper):
