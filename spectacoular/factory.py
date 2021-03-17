@@ -36,7 +36,7 @@ NUMERIC_TYPES = (Int,Long,CLong,int,
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
     NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate), # (Trait,Property,Delegate)
     Toggle : (Bool,) + (TraitCompound,Any,Delegate), 
-    Select : (Enum, TraitEnum, Map, ),
+    Select : (Enum, TraitEnum, Map, TraitMap, ),
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
@@ -48,6 +48,7 @@ DEFAULT_TRAIT_WIDGET_MAPPINGS = {
     Map : Select,
     Enum : Select,
     TraitEnum : Select,
+    TraitMap : Select,
     }
 
 def as_str_list(func):
@@ -754,7 +755,12 @@ class SelectMapper(TraitWidgetMapper):
             settable trait attribute values.
 
         """
-        options = self.traittype.values
+        if isinstance(self.traittype,(Enum,TraitEnum)):
+            options = self.traittype.values
+        elif isinstance(self.traittype,(Map,TraitMap)):
+            options = self.traittype.map.keys()
+        else:
+            raise ValueError(f"Unknown trait type {self.traittype}")
         self._validate_options(options)
         return options
 
