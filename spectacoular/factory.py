@@ -407,8 +407,11 @@ class NumericInputMapper(TraitWidgetMapper):
         self.obj = obj
         self.traitname = traitname
         self.traittype = obj.trait(traitname).trait_type
-        self.traitvalue = getattr(obj,traitname)
-
+        try:
+            self.traitvalue = getattr(obj,traitname)
+        except AttributeError: # in case of Delegate
+            self.traitvalue = None
+            
     def create_widget(self,**kwargs):
         """
         creates a Bokeh NumericInput instance 
