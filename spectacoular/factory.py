@@ -36,7 +36,7 @@ NUMERIC_TYPES = (Int,Long,CLong,int,
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
     NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate), # (Trait,Property,Delegate)
     Toggle : (Bool,) + (TraitCompound,Any,Delegate), 
-    Select : (Enum, TraitEnum, Map, TraitMap, ),
+    Select : (Enum, TraitEnum, Map, TraitMap, BaseStr, BaseFile, ) + NUMERIC_TYPES, # Numeric types and Str types should also be allowed here, to further use the set_widgets method with predefined options
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
@@ -371,7 +371,7 @@ class TraitWidgetMapper(object):
 
         """
         def callback(new):
-#            print("{} widget changed".format(self.traitname))
+        #    print("{} widget changed".format(self.traitname))
             self._set_widgetvalue(new, widgetproperty)
         return callback
 
@@ -685,7 +685,7 @@ class SelectMapper(TraitWidgetMapper):
 
         """
         def callback(attr, old, new):
-#            print(self.obj,self.traitname,new)
+            #print(self.obj,self.traitname,new)
             if not self.traittype.is_valid(self.obj,self.traitname,new): 
                 new = self.traitvaluetype(new)
             self._set_traitvalue(new)
@@ -759,6 +759,8 @@ class SelectMapper(TraitWidgetMapper):
             options = self.traittype.values
         elif isinstance(self.traittype,(Map,TraitMap)):
             options = self.traittype.map.keys()
+        elif isinstance(self.traittype,ALLOWED_WIDGET_TRAIT_MAPPINGS[Select]):
+            options = [self.traitvalue]
         else:
             raise ValueError(f"Unknown trait type {self.traittype}")
         self._validate_options(options)
@@ -794,7 +796,7 @@ class SliderMapper(TraitWidgetMapper):
             self.raise_unsupported_traittype()
         
         self.widget = Slider(title=self.traitname,**kwargs)
-        self._set_widgetvalue(self.traitvalue)
+        self._set_widgetvalue(self.traitvalue, widgetproperty="value")
         self._set_range()
         self._set_callbacks()
         return self.widget
@@ -828,12 +830,11 @@ class SliderMapper(TraitWidgetMapper):
         None.
 
         """
-        if not self.widget.start:
-            self.widget.start = self.traittype._low
-        if not self.widget.end:
-            self.widget.end = self.traittype._high
+        #if not self.widget.start: calling the unset start attribute now raises an Unset Error 
+        self.widget.start = self.traittype._low
+        self.widget.end = self.traittype._high
 
-    def _set_widgetvalue(self,traitvalue):
+    def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
         """
         Sets the value of the Slider widget to the class traits attribute value.
         
@@ -852,7 +853,8 @@ class SliderMapper(TraitWidgetMapper):
         """
         if not isinstance(traitvalue,float):
             traitvalue = cast_to_float(traitvalue)
-        self.widget.value = traitvalue
+        setattr(self.widget,widgetproperty,traitvalue)
+
 
     def raise_unsupported_traittype(self):
         raise NotImplementedError("currently unsupported trait-type {} for \
@@ -936,7 +938,7 @@ class DataTableMapper(TraitWidgetMapper):
             for col in self.widget.columns:
                 col.editor = editor
             
-    def _set_widgetvalue(self,traitvalue):
+    def _set_widgetvalue(self,traitvalue,widget_property="data"):
         """
         Sets the data of the DataTable's ColumnDataSource to the class traits 
         attribute value.
