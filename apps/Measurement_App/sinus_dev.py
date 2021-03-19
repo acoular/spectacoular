@@ -37,8 +37,8 @@ buffer_bar.xgrid.visible = False
 buffer_bar.ygrid.visible = False
 buffer_bar.toolbar.logo = None
 buffer_bar.toolbar_location = None
-buffer_bar.axis.visible = None
-buffer_bar.grid.visible = None
+buffer_bar.axis.visible = False
+buffer_bar.grid.visible = False
 barbuff = buffer_bar.hbar(y='y', height=0.9, left=0, right='filling',
                           source=BufferBarCDS)
 
