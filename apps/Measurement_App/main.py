@@ -56,7 +56,7 @@ parser.add_argument(
   '--device',
   type=str,
   default="phantom",
-  choices=["uma16","tornado","typhoon","phantom"],
+  choices=["uma16","tornado","typhoon","phantom","apollo11283"],
   help='Connected device.')
 parser.add_argument(
   '--blocksize',
