@@ -56,7 +56,7 @@ parser.add_argument(
   '--device',
   type=str,
   default="phantom",
-  choices=["uma16","tornado","typhoon","phantom","apollo11283"],
+  choices=["uma16","tornado","typhoon","phantom","apollo"],
   help='Connected device.')
 parser.add_argument(
   '--blocksize',
@@ -101,7 +101,7 @@ elif DEVICE == 'phantom':
     inputSignalGen = get_interface(DEVICE)
     ch_names = [str(_) for _ in range(inputSignalGen.numchannels)]
     grid = RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
-elif DEVICE == 'tornado' or DEVICE == 'typhoon':
+else: # otherwise it must be sinus
     try:
         import sinus
         sinus_enabled=True
