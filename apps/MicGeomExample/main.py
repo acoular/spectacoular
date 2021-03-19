@@ -143,9 +143,9 @@ gridTab = Panel(child=column(
                         row(rgWidgets['nxsteps'],rgWidgets['nysteps'],width = twidth),),
                 title='Grid')
 stTab = Panel(child=column(*stWidgets.values()),title='Steering')
-ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab])
+ControlTabs = Tabs(tabs=[mgTab,gridTab,psfTab,stTab])
 
-ControlBox = widgetbox(hspace,
+ControlBox = column(hspace,
         row(calcButton,psfFreqSlider,width=600,height=80),
         #hspace,
         ControlTabs,width=400)

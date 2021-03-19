@@ -20,7 +20,7 @@
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
 TableColumn, NumberEditor, StringEditor, NumericInput, Toggle
 from bokeh.models import ColumnDataSource
-from traits.api import TraitEnum, TraitMap, CArray, Any, \
+from traits.api import Enum, Map, Trait, TraitEnum, TraitMap, CArray, Any, \
 List,Float, Int, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
 Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
@@ -35,7 +35,8 @@ NUMERIC_TYPES = (Int,Long,CLong,int,
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
     NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate), # (Trait,Property,Delegate)
-    Toggle : (Bool,) + (TraitCompound,Any,Delegate) 
+    Toggle : (Bool,) + (TraitCompound,Any,Delegate), 
+    Select : (Enum, TraitEnum, Map, TraitMap, BaseStr, BaseFile, ) + NUMERIC_TYPES, # Numeric types and Str types should also be allowed here, to further use the set_widgets method with predefined options
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
@@ -44,6 +45,10 @@ DEFAULT_TRAIT_WIDGET_MAPPINGS = {
     CLong : NumericInput,
     Float : NumericInput,
     Bool : Toggle,
+    Map : Select,
+    Enum : Select,
+    TraitEnum : Select,
+    TraitMap : Select,
     }
 
 def as_str_list(func):
@@ -366,7 +371,7 @@ class TraitWidgetMapper(object):
 
         """
         def callback(new):
-#            print("{} widget changed".format(self.traitname))
+        #    print("{} widget changed".format(self.traitname))
             self._set_widgetvalue(new, widgetproperty)
         return callback
 
@@ -402,8 +407,11 @@ class NumericInputMapper(TraitWidgetMapper):
         self.obj = obj
         self.traitname = traitname
         self.traittype = obj.trait(traitname).trait_type
-        self.traitvalue = getattr(obj,traitname)
-
+        try:
+            self.traitvalue = getattr(obj,traitname)
+        except AttributeError: # in case of Delegate
+            self.traitvalue = None
+            
     def create_widget(self,**kwargs):
         """
         creates a Bokeh NumericInput instance 
@@ -593,6 +601,15 @@ class SelectMapper(TraitWidgetMapper):
     """
     Factory that creates :class:`Select` widget from a class trait attribute.
     """
+    
+    traitvaluetype = object() 
+    
+    def __init__(self,obj,traitname):
+        self.obj = obj
+        self.traitname = traitname
+        self.traittype = obj.trait(traitname).trait_type
+        self.traitvalue = getattr(obj,traitname)
+        self.traitvaluetype = type(getattr(obj,traitname))
 
     def create_widget(self,**kwargs):
         """
@@ -629,9 +646,69 @@ class SelectMapper(TraitWidgetMapper):
 
         """
         self.widget = widget
-        cast_func = self.traitdispatcher.get_trait_cast_func()
-        self._set_traitvalue(cast_func(self.widget.value)) # set traitvalue to widgetvalue
+        traitvalue = self.widget.value
+        if not self.traitvaluetype == str: # checks if casting is necessary 
+            traitvalue = self.traitvaluetype(traitvalue) # cast to the correct traittype
+        self._set_traitvalue(traitvalue) # set traitvalue to widgetvalue
         self._set_callbacks()
+
+    def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
+        """
+        Sets the value of a widget to the class traits attribute value.
+        In case, the widget value and the trait value are of different type, 
+        a cast function is used.        
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
+        if not isinstance(traitvalue,str):
+            traitvalue = str(traitvalue)
+        setattr(self.widget,widgetproperty,traitvalue)
+
+    def create_trait_setter_func(self):
+        """
+        creates a function that casts the type of a widget value into the type
+        of the class trait attribute.
+        
+        the function is evoked every time the widget value changes. The value 
+        of a :class:`Select`, :class: `TextInput`, ..., widget is always type str. 
+        However, traitvalues can be of arbitrary type. Thus, widgetvalues need to 
+        be casted. 
+
+        Returns
+        -------
+        callable.
+
+        """
+        def callback(attr, old, new):
+            #print(self.obj,self.traitname,new)
+            if not self.traittype.is_valid(self.obj,self.traitname,new): 
+                new = self.traitvaluetype(new)
+            self._set_traitvalue(new)
+        return callback
+    
+    def create_widget_setter_func(self, widgetproperty="value"):
+        """
+        creates a function that casts a variable `new` into a valid type
+        to be set as the widget value.
+
+        Returns
+        -------
+        callable.
+
+        """
+        def callback(new):
+#            print("{} widget changed".format(self.traitname))
+            self._set_widgetvalue(new, widgetproperty)
+        return callback
+
 
     def _set_options(self):
         """
@@ -645,11 +722,35 @@ class SelectMapper(TraitWidgetMapper):
         if not self.widget.options:
             self.widget.options = self._get_options()
 
+    def _validate_traitvalue(self, traitvalue):
+        if not type(traitvalue) in [str,float,int]:
+            raise ValueError("Can only handle values of type str, float or int for Select widget."+\
+                             f"Type {type(traitvalue)} is not supported.")
+
+    def _validate_options(self, options):
+        """
+        Mapper can only handle options of the same type (e.g. str, int or float).
+        Otherwise an error is raised.
+
+        Parameters
+        ----------
+        options : tuple
+            settable values of the trait.
+
+        Returns
+        -------
+        None.
+
+        """
+        typeset = set([type(o) for o in options])
+        if len(typeset) > 1:
+            raise ValueError("Can only handle options of the same type for widgets of type Select.")
+
     @as_str_list
     def _get_options(self): 
         """
         gets settable trait values as string list to be used as options of 
-        Select widget
+        Select widget. 
 
         Returns
         -------
@@ -657,7 +758,16 @@ class SelectMapper(TraitWidgetMapper):
             settable trait attribute values.
 
         """
-        return self.traitdispatcher.get_settable_trait_values()
+        if isinstance(self.traittype,(Enum,TraitEnum)):
+            options = self.traittype.values
+        elif isinstance(self.traittype,(Map,TraitMap)):
+            options = self.traittype.map.keys()
+        elif isinstance(self.traittype,ALLOWED_WIDGET_TRAIT_MAPPINGS[Select]):
+            options = [self.traitvalue]
+        else:
+            raise ValueError(f"Unknown trait type {self.traittype}")
+        self._validate_options(options)
+        return options
 
 
 
@@ -689,7 +799,7 @@ class SliderMapper(TraitWidgetMapper):
             self.raise_unsupported_traittype()
         
         self.widget = Slider(title=self.traitname,**kwargs)
-        self._set_widgetvalue(self.traitvalue)
+        self._set_widgetvalue(self.traitvalue, widgetproperty="value")
         self._set_range()
         self._set_callbacks()
         return self.widget
@@ -723,12 +833,11 @@ class SliderMapper(TraitWidgetMapper):
         None.
 
         """
-        if not self.widget.start:
-            self.widget.start = self.traittype._low
-        if not self.widget.end:
-            self.widget.end = self.traittype._high
+        #if not self.widget.start: calling the unset start attribute now raises an Unset Error 
+        self.widget.start = self.traittype._low
+        self.widget.end = self.traittype._high
 
-    def _set_widgetvalue(self,traitvalue):
+    def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
         """
         Sets the value of the Slider widget to the class traits attribute value.
         
@@ -747,7 +856,8 @@ class SliderMapper(TraitWidgetMapper):
         """
         if not isinstance(traitvalue,float):
             traitvalue = cast_to_float(traitvalue)
-        self.widget.value = traitvalue
+        setattr(self.widget,widgetproperty,traitvalue)
+
 
     def raise_unsupported_traittype(self):
         raise NotImplementedError("currently unsupported trait-type {} for \
@@ -831,7 +941,7 @@ class DataTableMapper(TraitWidgetMapper):
             for col in self.widget.columns:
                 col.editor = editor
             
-    def _set_widgetvalue(self,traitvalue):
+    def _set_widgetvalue(self,traitvalue,widget_property="data"):
         """
         Sets the data of the DataTable's ColumnDataSource to the class traits 
         attribute value.
@@ -962,12 +1072,12 @@ class DataTableMapper(TraitWidgetMapper):
 # Trait Dispatch classes
 # =============================================================================
 
-
 def trait_dispatch_factory(traitwidgetmapper,traittype): 
     '''
     returns an instance of a TraitDispatch class that corresponds
     to the desired trait type.
     '''
+       
     if isinstance(traittype,(BaseInt,BaseLong)): 
         return IntDispatch(traitwidgetmapper)
     elif isinstance(traittype,BaseFloat): 
