@@ -5,12 +5,13 @@
 #------------------------------------------------------------------------------
 import os
 from numpy import zeros, array, arange
-from bokeh.models import ColumnDataSource
-from bokeh.models.widgets import Button, Select
+from bokeh.models import ColumnDataSource,Spacer
+from bokeh.models.widgets import Button, Select, Div
 from bokeh.plotting import figure
 from bokeh.models.ranges import Range1d
+from bokeh.layouts import column,row
 from sinus import SINUSDeviceManager, SINUSAnalogInputManager, \
-SINUSSamplesGenerator, ini_import
+SINUSSamplesGenerator, ini_import, get_dev_state, change_device_status
 
 APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
 CONFPATH = os.path.join(APPFOLDER,"config_files/")
@@ -26,11 +27,44 @@ DEV_SERIAL_NUMBERS = {'tornado': ['10142', '10112', '10125', '10126'],
 BufferBarCDS = ColumnDataSource({'y':['buffer'],'filling':zeros(1)}) 
 
 # Buttons
-settings_button = Button(label="load settings",disabled=False)
+settings_button = Button(label="Load Setting",disabled=False)
 
-# Select     
+# Open Close Status Section
+open_device_button = Button(label="Open Device",disabled=False,button_type="primary",width=175,height=50)
+close_device_button = Button(label="Close Device",disabled=False,button_type="danger",width=175,height=50)
+reload_device_status_button = Button(label="↻",disabled=False,width=40,height=40)
+status_text = Div(text="Device Status: ")
+sinus_open_close = column(
+    row(open_device_button, close_device_button),
+    row(reload_device_status_button,status_text))
+
+def get_device_mode_callback():
+    dev_mode = get_dev_state()
+    status_text.text = f"Device Status: {dev_mode}"
+reload_device_status_button.on_click(get_device_mode_callback)
+
+def open_device_callback():
+    change_device_status('Open')
+    dev_mode = get_dev_state()
+    status_text.text = f"Device Status: {dev_mode}"
+    
+open_device_button.on_click(open_device_callback)
+
+def close_device_callback():
+    change_device_status('Config')
+    dev_mode = get_dev_state()
+    status_text.text = f"Device Status: {dev_mode}"
+    
+close_device_button.on_click(close_device_callback)
+
+# Select Settings    
 select_setting = Select(title="Select Settings:", value="None")
+reload_settings_options = Button(label="↻",disabled=False,width=40)
 select_setting.options=["None"]+os.listdir(CONFPATH)
+def update_select_settings_options_callback():
+    select_setting.options=["None"]+os.listdir(CONFPATH)
+reload_settings_options.on_click(update_select_settings_options_callback)
+select_settings_row = row(column(Spacer(height=15),reload_settings_options),select_setting)
 
 # Buffer Bar
 buffer_bar = figure(title="Buffer",y_range=['buffer'],x_range=(0,400),**BUFFBAR_ARGS)
@@ -73,12 +107,14 @@ def get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
             return
         to_txt_buffer("set settings ok!")
         single_update_settings()
+        dev_mode = get_dev_state()
+        status_text.text = f"Device Status: {dev_mode}"
+        
     settings_button.on_click(settings_callback)  
     
     def select_setting_callback(attr, old, new):
         iniManager.from_file = os.path.join(CONFPATH,new)
-    select_setting.on_change('value',select_setting_callback)
-    
+    select_setting.on_change('value',select_setting_callback)    
     return update_buffer_bar_plot
 
 def get_interface(device,syncorder=[]):
@@ -94,9 +130,11 @@ def get_interface(device,syncorder=[]):
     return IniManager, DevManager,DevInputManager,InputSignalGen
 
 def append_left_column(left_column):
-    left_column.children.insert(1,select_setting)
-    left_column.children.insert(2, settings_button)
-    left_column.children.insert(10, buffer_bar)
+    left_column.children.insert(1,sinus_open_close)
+    left_column.children.insert(2,select_settings_row)
+    left_column.children.insert(3, settings_button)
+    left_column.children.insert(4,Spacer(height=20))
+    left_column.children.insert(12, buffer_bar)
     
 def append_disable_obj(disable_obj_disp):
     disable_obj_disp.append(select_setting)

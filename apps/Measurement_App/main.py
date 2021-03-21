@@ -549,7 +549,7 @@ beamformTab = Panel(child=column(
                         ),title='Beamforming')
 calibrationTab = Panel(child=calCol, title="Calibration")
 figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab,calibrationTab],width=850)
-logTab = Tabs(tabs=[Panel(child=text_user_info, title="Log")])
+logTab = Tabs(tabs=[Panel(child=text_user_info, title="Log")],width=250)
 
 left_column = column(emptyspace2, display_toggle,
                      ti_savename,checkbox_use_current_time,
