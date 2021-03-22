@@ -78,8 +78,8 @@ barbuff = buffer_bar.hbar(y='y', height=0.9, left=0, right='filling',
                           source=BufferBarCDS)
 
 def get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
-                  to_txt_buffer,ChLevelsCDS,checkbox_micgeom,amp_fig,
-                  MicGeomCDS,micGeo):
+                  ChLevelsCDS,checkbox_micgeom,amp_fig,
+                  MicGeomCDS,micGeo,logger):
     
     def single_update_settings():
         ticker = list(arange(1,inputSignalGen.numchannels+1))
@@ -98,17 +98,16 @@ def get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
         BufferBarCDS.data['filling'] = array([inputSignalGen._pdiff_in])
     #
     def settings_callback():
-        to_txt_buffer("load settings ...")
+        logger.info("load settings ...")
         try:
             iniManager.get_data(devManager,devInputManager,inputSignalGen)
             [obj.set_settings() for obj in [devManager,devInputManager]]
         except Exception as e_text: 
-            to_txt_buffer("{}".format(e_text))
+            logger.error("{}".format(e_text))
             return
-        to_txt_buffer("set settings ok!")
+        logger.info("set settings ok!")
         single_update_settings()
-        dev_mode = get_dev_state()
-        status_text.text = f"Device Status: {dev_mode}"
+        status_text.text = f"Device Status: {get_dev_state()}"
         
     settings_button.on_click(settings_callback)  
     
