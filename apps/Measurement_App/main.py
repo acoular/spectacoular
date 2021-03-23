@@ -36,7 +36,7 @@ from functools import partial
 from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
-from bokeh.models import ColumnDataSource, ColorBar, LinearColorMapper
+from bokeh.models import ColumnDataSource, ColorBar, LinearColorMapper, Spacer
 from bokeh.models.widgets import Div, Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider
 from bokeh.layouts import column,row
 from acoular import TimePower, TimeAverage, L_p, MicGeom, FiltOctave, \
@@ -48,7 +48,7 @@ from interfaces import get_interface, StreamToLogger
 from layout import log_text_toggles, plot_colors, toggle_labels,micgeom_fig, \
 amp_fig, selectPerCallPeriod, checkbox_use_current_time, bfColorMapper,ampColorMapper, \
 select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,calib_toggle,\
-text_user_info, dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider,\
+logText, dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider,\
   COLOR,CLIPVALUE
 
 doc = curdoc()
@@ -90,11 +90,13 @@ WTIME = 0.025
 XCAM = (-0.5,-0.375,1.,0.75)
 
 # logging
+LOGLENGTH = 50 # how many lines of log messages are displayed in Log Tab
 LOGLEVEL = logging.DEBUG 
+LOGNAME = "MeasurementApp.log"
 logging.basicConfig(level=LOGLEVEL) # root logger
 root_logger = logging.getLogger()
 logger = logging.getLogger(__name__)
-app_file_log = logging.FileHandler("MeasurementApp.log",mode="w") # log everything to file
+app_file_log = logging.FileHandler(LOGNAME,mode="w") # log everything to file
 app_file_log.setFormatter(logging.Formatter('%(asctime)s.%(msecs)02d %(message)s', datefmt='%H:%M:%S'))
 stdout_handler = logging.StreamHandler(sys.stdout)
 root_logger.addHandler(app_file_log) 
@@ -536,12 +538,13 @@ def update_app():  # only update figure when tab is active
          update_buffer_bar_plot()
 
 def periodic_update_log():
-    with open("MeasurementApp.log",'r') as file:
+    with open(LOGNAME,'r') as file:
         lines = file.readlines()
-        n = min(len(lines),5)
+        n = min(len(lines),LOGLENGTH)
         last_lines = lines[-n:]
         text = "".join(last_lines[::-1])
-        text_user_info.text = text
+        #logText.text = text
+        logText.value = text
 
 # =============================================================================
 #  Set Up Bokeh Document Layout
@@ -574,7 +577,7 @@ beamformTab = Panel(child=column(
                         ),title='Beamforming')
 calibrationTab = Panel(child=calCol, title="Calibration")
 figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab,calibrationTab],width=850)
-logTab = Tabs(tabs=[Panel(child=text_user_info, title="Log")],width=250)
+logTab = Tabs(tabs=[Panel(child=logText, title="Log")],width=1000,height=300)
 
 left_column = column(emptyspace2, display_toggle,
                      ti_savename,checkbox_use_current_time,
@@ -584,7 +587,7 @@ left_column = column(emptyspace2, display_toggle,
 if sinus_enabled: append_left_column(left_column)
 right_column = column(figureTabs)
 
-layout = column(row(emptyspace,left_column,emptyspace,right_column,),logTab)
+layout = column(row(emptyspace,left_column,emptyspace,right_column,),Spacer(height=50),logText)
 doc.add_root(layout)
 doc.add_periodic_callback(periodic_update_log,1000)
 doc.title = "Measurement App"
