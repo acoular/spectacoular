@@ -18,8 +18,10 @@ In case of SINUS Devices:
 if sync order of pci cards should be specified use
 bokeh serve --show Measurement_App --args --device=typhoon --syncorder SerialNb1 SerialNb2 ...
 """
+import sys
 import os
 import numpy as np 
+import logging
 try:
     import cv2
     cam_enabled=True
@@ -34,7 +36,7 @@ from functools import partial
 from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
-from bokeh.models import ColumnDataSource, ColorBar, LinearColorMapper
+from bokeh.models import ColumnDataSource, ColorBar, LinearColorMapper, Spacer
 from bokeh.models.widgets import Div, Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider
 from bokeh.layouts import column,row
 from acoular import TimePower, TimeAverage, L_p, MicGeom, FiltOctave, \
@@ -42,11 +44,11 @@ SteeringVector, BeamformerTime,  SampleSplitter, BeamformerBase, WriteH5
 from acoular_future import CSMInOut, BeamformerFreqTime
 from SamplesProcessor import SamplesThread,EventThread,LastInOut
 from spectacoular import RectGrid,CalibHelper,FiltOctaveLive,TimeInOutPresenter
-from interfaces import get_interface
+from interfaces import get_interface, StreamToLogger
 from layout import log_text_toggles, plot_colors, toggle_labels,micgeom_fig, \
 amp_fig, selectPerCallPeriod, checkbox_use_current_time, bfColorMapper,ampColorMapper, \
 select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,calib_toggle,\
-text_user_info, dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider,\
+logText, dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider,\
   COLOR,CLIPVALUE
 
 doc = curdoc()
@@ -56,7 +58,7 @@ parser.add_argument(
   '--device',
   type=str,
   default="phantom",
-  choices=["uma16","tornado","typhoon","phantom"],
+  choices=["uma16","tornado","typhoon","phantom","apollo"],
   help='Connected device.')
 parser.add_argument(
   '--blocksize',
@@ -87,6 +89,23 @@ NBLOCKS = 5 # number of blocks after which to do beamforming
 WTIME = 0.025
 XCAM = (-0.5,-0.375,1.,0.75)
 
+# logging
+LOGLENGTH = 50 # how many lines of log messages are displayed in Log Tab
+LOGLEVEL = logging.DEBUG 
+LOGNAME = "MeasurementApp.log"
+logging.basicConfig(level=LOGLEVEL) # root logger
+root_logger = logging.getLogger()
+logger = logging.getLogger(__name__)
+app_file_log = logging.FileHandler(LOGNAME,mode="w") # log everything to file
+app_file_log.setFormatter(logging.Formatter('%(asctime)s.%(msecs)02d %(message)s', datefmt='%H:%M:%S'))
+stdout_handler = logging.StreamHandler(sys.stdout)
+root_logger.addHandler(app_file_log) 
+root_logger.addHandler(stdout_handler) 
+logger.setLevel(LOGLEVEL)
+sys.stdout = StreamToLogger(logger,logging.INFO)
+sys.stderr = StreamToLogger(logger,logging.ERROR)
+logger.info("start Measurement App...")
+
 # =============================================================================
 # load device
 # =============================================================================
@@ -101,7 +120,7 @@ elif DEVICE == 'phantom':
     inputSignalGen = get_interface(DEVICE)
     ch_names = [str(_) for _ in range(inputSignalGen.numchannels)]
     grid = RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
-elif DEVICE == 'tornado' or DEVICE == 'typhoon':
+else: # otherwise it must be sinus
     try:
         import sinus
         sinus_enabled=True
@@ -282,12 +301,9 @@ widgets_enable =    {'msm': [],
 # =============================================================================
 # Callbacks
 # =============================================================================
-txt_buffer = deque([],maxlen=MAXMSG)
-
 # small functions
 current_time = lambda: datetime.now().isoformat('_').replace(':','-').replace('.','_') # for timestamp filename
 stamp = lambda x: datetime.fromtimestamp(x).strftime('%H:%M:%S')+": " # for timestamp log
-to_txt_buffer = lambda text: txt_buffer.appendleft(stamp(time())+text)
 
 # non bokeh functions
 def get_active_channels():
@@ -368,9 +384,8 @@ def widget_activation_callback(mode,isSet):
     for widget in widgets_enable[mode]: widget.disabled = bool(1-isSet)
     
 def change_mode(toggle,mode,isSet):    
-    print("change mode",mode, isSet)
+    #print("change mode",mode, isSet)
     toggle.active = isSet
-    to_txt_buffer(log_text_toggles[(mode,isSet)])
     toggle.label = toggle_labels[(mode,isSet)]
     widget_activation_callback(mode,isSet)   
     if plot_colors[(mode,isSet)]:
@@ -380,6 +395,7 @@ def change_mode(toggle,mode,isSet):
 def displaytoggle_handler(arg):
     global periodic_plot_callback, disp_threads # need to be global
     if arg:
+        logger.info("start display...")
         inputSignalGen.collectsamples = True
         dispEvent = Event()
         dispEventThread = EventThread(
@@ -400,6 +416,7 @@ def displaytoggle_handler(arg):
         inputSignalGen.collectsamples = False
         [thread.join() for thread in disp_threads] # wait maximum 2 seconds until finished 
         doc.remove_periodic_callback(periodic_plot_callback)
+        logger.info("stopped display")
     
 display_toggle.on_click(displaytoggle_handler)
     
@@ -420,10 +437,12 @@ def beamftoggle_handler(arg):
                     event=beamfEvent)        
         bf_thread.start()
         beamfEventThread.start()
+        logger.info("start beamforming...")
     if not arg:
         bf_thread.breakThread = True
         bf_thread.join()
         beamfEventThread.join()
+        logger.info("stopped beamforming")
 
 beamf_toggle.on_click(beamftoggle_handler)
 
@@ -445,9 +464,11 @@ def msmtoggle_handler(arg):
                 event = wh5_event)
         wh5_thread.start()
         wh5_consumer.start()
+        logger.info("recording...")
     if not arg:
         wh5.writeflag = False
         wh5_thread.join()
+        logger.info("finished recording")
     
 msm_toggle.on_click(msmtoggle_handler)
 
@@ -467,10 +488,12 @@ def calibtoggle_handler(arg):
                 event=calibEvent)
         calib_thread.start()
         calibEventThread.start()
+        logger.info("calibrating...")
     if not arg:
         calib_thread.breakThread = True
         calib_thread.join()
         calibEventThread.join()
+        logger.info("finished calibration...")
 
 calib_toggle.on_click(calibtoggle_handler)
 
@@ -501,8 +524,8 @@ def update_beamforming_plot():
 
 if sinus_enabled:
     update_buffer_bar_plot = get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
-                  to_txt_buffer,ChLevelsCDS,checkbox_micgeom,amp_fig,
-                  MicGeomCDS,micGeo)
+                  ChLevelsCDS,checkbox_micgeom,amp_fig,
+                  MicGeomCDS,micGeo,logger)
 
 def update_app():  # only update figure when tab is active
     if figureTabs.active == 0: 
@@ -515,8 +538,13 @@ def update_app():  # only update figure when tab is active
          update_buffer_bar_plot()
 
 def periodic_update_log():
-    text_user_info.text = "\n".join(msg for msg in txt_buffer)
-
+    with open(LOGNAME,'r') as file:
+        lines = file.readlines()
+        n = min(len(lines),LOGLENGTH)
+        last_lines = lines[-n:]
+        text = "".join(last_lines[::-1])
+        #logText.text = text
+        logText.value = text
 
 # =============================================================================
 #  Set Up Bokeh Document Layout
@@ -549,17 +577,17 @@ beamformTab = Panel(child=column(
                         ),title='Beamforming')
 calibrationTab = Panel(child=calCol, title="Calibration")
 figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab,calibrationTab],width=850)
-logTab = Tabs(tabs=[Panel(child=text_user_info, title="Log")])
+logTab = Tabs(tabs=[Panel(child=logText, title="Log")],width=1000,height=300)
 
 left_column = column(emptyspace2, display_toggle,
                      ti_savename,checkbox_use_current_time,
                      ti_msmtime,msm_toggle,calib_toggle,
                      beamf_toggle,selectPerCallPeriod,
-                     emptyspace3,logTab)
+                     emptyspace3)
 if sinus_enabled: append_left_column(left_column)
 right_column = column(figureTabs)
 
-layout = row(emptyspace,left_column,emptyspace,right_column,)
+layout = column(row(emptyspace,left_column,emptyspace,right_column,),Spacer(height=50),logText)
 doc.add_root(layout)
-doc.add_periodic_callback(periodic_update_log,500)
+doc.add_periodic_callback(periodic_update_log,1000)
 doc.title = "Measurement App"

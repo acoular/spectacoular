@@ -10,7 +10,7 @@ from bokeh.palettes import Spectral11, Viridis256
 from bokeh.plotting import figure
 from bokeh.models import LinearColorMapper, LogColorMapper
 from bokeh.models.widgets import Toggle, Button, PreText,Select,RangeSlider,\
-CheckboxGroup, Slider
+CheckboxGroup, Slider, TextInput, TextAreaInput
 
 CLIPVALUE = 120 # value in dB at which CLIP_COLOR is applied
 COLOR = Spectral11
@@ -65,7 +65,7 @@ beamf_toggle = Toggle(label="start beamforming", active=False,disabled=True,butt
 selectPerCallPeriod = Select(title="Select Update Period [ms]", value=str(50), options=["25","50","100", "200", "400","800"])
 
 # Text
-text_user_info = PreText(text="", width=300, height=500)
+logText = TextAreaInput(title="Log",value="", width=800, height=300,disabled=True,background=COLOR[1])
 
 # Range Slider 
 dynamicSlider = RangeSlider(start=30, end=110, 
