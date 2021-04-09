@@ -21,7 +21,7 @@ from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
 TableColumn, NumberEditor, StringEditor, NumericInput, Toggle
 from bokeh.models import ColumnDataSource
 from traits.api import Enum, Map, Trait, TraitEnum, TraitMap, CArray, Any, \
-List,Float, Int, Range, Long, Dict,\
+List, Float, CFloat, Int, CInt, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
 Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
 BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate, Bool
@@ -42,9 +42,11 @@ ALLOWED_WIDGET_TRAIT_MAPPINGS = {
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
     Int : NumericInput,
+    CInt : NumericInput,
     Long: NumericInput,
     CLong : NumericInput,
     Float : NumericInput,
+    CFloat : NumericInput,
     Bool : Toggle,
     Map : Select,
     Enum : Select,
@@ -825,16 +827,18 @@ class SliderMapper(TraitWidgetMapper):
     def _set_range(self):
         """
         sets the :attr:´start´ and :attr:´end´ of the Slider widget, depending
-        on trait attribute value
+        on Range trait attributes `_low` and `_high`. In case of numeric trait
+        types, the start and end values have to be provided via the 
+        attr:`trait_mapper_args` attribute.
 
         Returns
         -------
         None.
 
         """
-        #if not self.widget.start: calling the unset start attribute now raises an Unset Error 
-        self.widget.start = self.traittype._low
-        self.widget.end = self.traittype._high
+        if self.traittype == Range: 
+            self.widget.start = self.traittype._low
+            self.widget.end = self.traittype._high
 
     def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
         """
