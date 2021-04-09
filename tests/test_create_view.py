@@ -1,8 +1,9 @@
 from traits.api import HasTraits, Int, Long, CLong, Float, Complex,\
-    BaseBool,Bool,CBool, Enum, Trait, Map
-from bokeh.models.widgets import NumericInput, Toggle, Select
+    BaseBool,Bool,CBool, Enum, Trait, Map, Range, CTrait
+from bokeh.models.widgets import NumericInput, Toggle, Select, Slider, TextInput
 import unittest
 from spectacoular import BaseSpectacoular, get_widgets, set_widgets
+from spectacoular.factory import DEFAULT_TRAIT_WIDGET_MAPPINGS
 from hypothesis.strategies import integers, floats, tuples,booleans, lists
 from hypothesis import given
 
@@ -24,84 +25,109 @@ class BaseMapperTest(unittest.TestCase):
     """
     widget = object
 
-    test_types = []
+    test_traits = []
 
     mapper = {}
 
     mapper_args = {'test_trait': {'visible':False}}
 
-    def get_has_traits_derived_class_instance(self,trait_type,*trait_args):
+    def get_has_traits_derived_class_instance(self,trait):
         """ returns a class instance that is HasTraits derived, but no
         BaseSpectacoular derived"""
         cls_instance = HasTraitsTestClass()
-        cls_instance.add_trait('test_trait',trait_type(*trait_args))
+        cls_instance.add_trait('test_trait',trait)
         return cls_instance
 
-    def get_spectacoular_derived_class_instance(self,trait_type,*trait_args):
+    def get_spectacoular_derived_class_instance(self,trait):
         """ returns a class instance that is BaseSpectacoular derived"""
         cls_instance = BaseSpectacoularTestClass()
-        cls_instance.add_trait('test_trait',trait_type(*trait_args))
+        cls_instance.add_trait('test_trait',trait)
         return cls_instance
 
-    def get_widget_from_default_view_definition_spectacoular(self,trait_type,*trait_args):
-        cls_instance = self.get_spectacoular_derived_class_instance(trait_type,*trait_args)
+    def get_widget_from_default_view_definition_spectacoular(self,trait):
+        cls_instance = self.get_spectacoular_derived_class_instance(trait)
         cls_instance.trait_widget_mapper = self.mapper
+        cls_instance.trait_widget_args = self.mapper_args
         widget = cls_instance.get_widgets().get('test_trait')
         return widget
 
-    def get_widget_from_custom_view_definition_spectacoular(self,trait_type,*trait_args):
-        cls_instance = self.get_spectacoular_derived_class_instance(trait_type,*trait_args)
+    def get_widget_from_custom_view_definition_spectacoular(self,trait):
+        cls_instance = self.get_spectacoular_derived_class_instance(trait)
         widget = get_widgets(cls_instance,self.mapper,self.mapper_args).get('test_trait')
         return widget
 
-    def get_widget_without_view_definition_has_traits(self,trait_type,*trait_args):
-        cls_instance = self.get_has_traits_derived_class_instance(trait_type,*trait_args)
+    def get_widget_without_view_definition_has_traits(self,trait):
+        cls_instance = self.get_has_traits_derived_class_instance(trait)
         widget = get_widgets(cls_instance).get('test_trait')
         return widget
 
-    def get_widget_from_custom_view_definition_has_traits(self,trait_type,*trait_args):
-        cls_instance = self.get_has_traits_derived_class_instance(trait_type,*trait_args)
+    def get_widget_from_custom_view_definition_has_traits(self,trait):
+        cls_instance = self.get_has_traits_derived_class_instance(trait)
         widget = get_widgets(cls_instance,self.mapper,self.mapper_args).get('test_trait')
         return widget
 
-    def get_widgets_spectacoular(self,trait_types,*trait_args):
-        """tests that creating NumericInput widget from numeric trait types works
-        for BaseSpectacoular derived classes """
-        for trait_type in trait_types:
-            with self.subTest(trait_type):
-                # with default mapper 
-                widget = self.get_widget_from_default_view_definition_spectacoular(trait_type,*trait_args)
-                self.assertIsInstance(widget,self.widget)
-                # with custom mapper
-                widget = self.get_widget_from_custom_view_definition_spectacoular(trait_type,*trait_args)
+    def test_get_widgets_spectacoular_default_view(self):
+        """tests that creating widget from trait types works
+        for BaseSpectacoular derived classes with the default view 
+        (specified via trait_widget_mapper)"""
+        for test_trait in self.test_traits:
+            with self.subTest(type(test_trait)):
+                widget = self.get_widget_from_default_view_definition_spectacoular(test_trait)
                 self.assertIsInstance(widget,self.widget)
                 self.assertEqual(widget.visible,False)
 
-    def get_widgets_hastraits(self,trait_types,*trait_args):
-        """tests that creating NumericInput widget from numeric trait types works
-        for HasTraits derived classes """
-        for trait_type in trait_types:
-            with self.subTest(trait_type):
-            #print(trait_type)
-                # from editable traits 
-                widget = self.get_widget_without_view_definition_has_traits(trait_type,*trait_args)
-                self.assertIsInstance(widget,self.widget)
-                # with custom mapper
-                widget = self.get_widget_from_custom_view_definition_has_traits(trait_type,*trait_args)
+    def test_get_widgets_spectacoular_custom_view(self):
+        """tests that creating widget from trait types works
+        for BaseSpectacoular derived classes with custom view 
+        (specified via trait_widget_mapper in get_widgets function)"""
+        for test_trait in self.test_traits:
+            with self.subTest(type(test_trait)):
+                widget = self.get_widget_from_custom_view_definition_spectacoular(test_trait)
                 self.assertIsInstance(widget,self.widget)
                 self.assertEqual(widget.visible,False)
 
-    def set_widgets_spectacoular(self,widget,trait_type,widget_property,*trait_args):
+    def test_get_widgets_hastraits_without_view(self):
+        """tests that creating widget from trait types works
+        for HasTraits derived classes without any pre-defined view 
+        
+        This test is designed to assure the following behavior:
+        If no view is defined, the type of the created widget should
+        match the type of the widget specified in DEFAULT_TRAIT_WIDGET_MAPPINGS.
+        Since no widget arguments are given, the widget should also be visible (standard behavior).
+        """
+        for test_trait in self.test_traits:
+            with self.subTest(type(test_trait)):
+                widget = self.get_widget_without_view_definition_has_traits(test_trait)
+                traittype = type(test_trait)
+                if traittype == CTrait:
+                    traittype = test_trait.trait_type.__class__
+                default_widget_type = DEFAULT_TRAIT_WIDGET_MAPPINGS.get(traittype)
+                if default_widget_type:
+                    self.assertIsInstance(widget,default_widget_type)
+                else:
+                    self.assertIsInstance(widget,TextInput)
+                self.assertEqual(widget.visible,True)
+
+    def test_get_widgets_hastraits_custom_view(self):
+        """tests that creating widget from trait types works
+        for HasTraits derived classes with pre-defined view """
+        for test_trait in self.test_traits:
+            with self.subTest(type(test_trait)):
+                widget = self.get_widget_from_custom_view_definition_has_traits(test_trait)
+                self.assertIsInstance(widget,self.widget)
+                self.assertEqual(widget.visible,False)
+
+    def set_widgets_spectacoular(self,widget,test_trait,widget_property):
         """tests that set a widget via set_widget() method works correctly
         for spectacoular derived classes. """
-        cls_instance = self.get_spectacoular_derived_class_instance(trait_type,*trait_args)
+        cls_instance = self.get_spectacoular_derived_class_instance(test_trait)
         cls_instance.set_widgets(test_trait=widget)
         return cls_instance
 
-    def set_widgets_hastraits(self,widget,trait_type,widget_property,*trait_args):
+    def set_widgets_hastraits(self,widget,test_trait,widget_property):
         """tests that set a widget via set_widget() method works correctly
         for HasTraits derived classes. """
-        cls_instance = self.get_has_traits_derived_class_instance(trait_type,*trait_args)
+        cls_instance = self.get_has_traits_derived_class_instance(test_trait)
         set_widgets(cls_instance,test_trait=widget)
         return cls_instance
                 
@@ -110,15 +136,11 @@ class BaseMapperTest(unittest.TestCase):
         """
         expected_value = 10
         for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
-            for trait_type in self.test_types:
-                with self.subTest(set_widgets_method.__name__+"_"+trait_type.__name__):      
+            for test_trait in self.test_traits:
+                with self.subTest(set_widgets_method.__name__+"_"+str(test_trait.__class__)):      
                     widget = self.widget(value=expected_value)
-                    cls_instance = set_widgets_method(widget,trait_type,widget_property="value")
+                    cls_instance = set_widgets_method(widget,test_trait,widget_property="value")
                     self.assertEqual(cls_instance.test_trait,expected_value)
-
-    def test_get_widgets(self):
-        self.get_widgets_spectacoular(self.test_types)
-        self.get_widgets_hastraits(self.test_types)
 
 
 class NumericInputTest(BaseMapperTest):
@@ -129,11 +151,11 @@ class NumericInputTest(BaseMapperTest):
     widget = NumericInput
 
     # allowed numeric trait types that can be mapped to NumericInput widget
-    test_types = [Int,Float,CLong,Long,] # Complex] # complex types are not supported at the moment (only mode int or float)
+    test_traits = [Int(),Float(),CLong(),Long(),] # Complex] # complex types are not supported at the moment (only mode int or float)
 
-    int_types = [Int,CLong,Long]
+    int_types = [Int(),CLong(),Long()]
 
-    float_types = [Float]
+    float_types = [Float()]
 
     mapper = {'test_trait': NumericInput}
 
@@ -144,15 +166,15 @@ class NumericInputTest(BaseMapperTest):
         """
         #print(value_tuple)
         # test in types
-        for trait_type in self.int_types:
-            cls_instance = self.get_has_traits_derived_class_instance(trait_type)
+        for test_trait in self.int_types:
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
             widget = get_widgets(cls_instance).get('test_trait')
             # set trait to value
             cls_instance.test_trait = value_tuple[0]
             self.assertEqual(widget.value,value_tuple[0])
         #test float types
-        for trait_type in self.float_types:
-            cls_instance = self.get_has_traits_derived_class_instance(trait_type)
+        for test_trait in self.float_types:
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
             widget = get_widgets(cls_instance).get('test_trait')
             # set trait to value
             cls_instance.test_trait = value_tuple[1]
@@ -165,15 +187,15 @@ class NumericInputTest(BaseMapperTest):
         """
         #print(value)
         # test in types
-        for trait_type in self.int_types:
-            cls_instance = self.get_has_traits_derived_class_instance(trait_type)
+        for test_trait in self.int_types:
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
             widget = get_widgets(cls_instance).get('test_trait')
             # set widget to value
             widget.value = value_tuple[0]
             self.assertEqual(cls_instance.test_trait,value_tuple[0])
         # test float types
-        for trait_type in self.float_types:
-            cls_instance = self.get_has_traits_derived_class_instance(trait_type)
+        for test_trait in self.float_types:
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
             widget = get_widgets(cls_instance).get('test_trait')
             # set widget to value
             widget.value = value_tuple[1]
@@ -186,7 +208,7 @@ class ToggleTest(BaseMapperTest):
     widget = Toggle
 
     # allowed numeric trait types that can be mapped to NumericInput widget
-    test_types = [Bool] # Complex] # complex types are not supported at the moment (only mode int or float)
+    test_traits = [Bool()] # Complex] # complex types are not supported at the moment (only mode int or float)
 
     mapper = {'test_trait': Toggle}
 
@@ -195,10 +217,10 @@ class ToggleTest(BaseMapperTest):
         """
         expected_value = False
         for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
-            for trait_type in self.test_types:
-                with self.subTest(set_widgets_method.__name__+"_"+trait_type.__name__):      
+            for test_trait in self.test_traits:
+                with self.subTest(set_widgets_method.__name__+"_"+str(test_trait.__class__)):      
                     widget = self.widget(active=expected_value)
-                    cls_instance = set_widgets_method(widget,trait_type,widget_property="active")
+                    cls_instance = set_widgets_method(widget,test_trait,widget_property="active")
                     self.assertEqual(cls_instance.test_trait,expected_value)
 
     def test_trait_widget_callback(self,value=False):
@@ -207,8 +229,8 @@ class ToggleTest(BaseMapperTest):
         """
         #print(value_tuple)
         # test in types
-        for trait_type in self.test_types:
-            cls_instance = self.get_has_traits_derived_class_instance(trait_type)
+        for test_trait in self.test_traits:
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
             widget = get_widgets(cls_instance).get('test_trait')
             # set trait to value
             cls_instance.test_trait = value
@@ -219,8 +241,8 @@ class ToggleTest(BaseMapperTest):
         is assigned to the widget
         """
         # test in types
-        for trait_type in self.test_types:
-            cls_instance = self.get_has_traits_derived_class_instance(trait_type)
+        for test_trait in self.test_traits:
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
             widget = get_widgets(cls_instance).get('test_trait')
             # set widget to value
             widget.active = value
@@ -233,55 +255,28 @@ class SelectTest(BaseMapperTest):
     """
     widget = Select
 
-    test_types = [Enum,Trait] 
-
-    enum_types = [Enum,Trait] # Trait can be TraitEnum
+    test_traits = [Enum('1','2','3'),Trait('1','2','3'),Enum(1,2,3),Trait(1,2,3),Enum(1.,2.,3.),Trait(1.,2.,3.),
+                    Map({'1':'1','2':'2','3':'3'}), Trait('1',{'1':'1','2':'2','3':'3'})] 
 
     mapper = {'test_trait': Select}
 
     def test_set_widgets(self):
         # test Enum and Trait
-        trait_args = ('1','2','3')
+        _expected_trait_values_after_set_widgets = ['2','2',2 ,2 ,2.,2.,'2','2']
         for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
-            for trait_type in self.enum_types:
-                with self.subTest("enum types: "+set_widgets_method.__name__+"_"+trait_type.__name__):      
+            for expected_trait_value, test_trait in zip(_expected_trait_values_after_set_widgets, self.test_traits):
+                with self.subTest(set_widgets_method.__name__+"_"+str(test_trait.__class__)):      
                     widget = self.widget(value='2',options=['1','2','3'])
-                    cls_instance = set_widgets_method(widget,trait_type,"value",trait_args)
-                    self.assertEqual(cls_instance.test_trait,'2')
-        # test Map type
-        trait_args = {'1':'1','2':'2','3':'3'}
-        for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
-            with self.subTest("map types: "+set_widgets_method.__name__+"Map"):      
-                widget = self.widget(value='2',options=['1','2','3'])
-                cls_instance = set_widgets_method(widget,Map,"value",trait_args)
-                self.assertEqual(cls_instance.test_trait,'2')
-        #test trait map type
-        for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
-            with self.subTest("map types: "+set_widgets_method.__name__+"TraitMap"):      
-                widget = self.widget(value='2',options=['1','2','3'])
-                cls_instance = set_widgets_method(widget,Trait,"value",'1',trait_args)
-                self.assertEqual(cls_instance.test_trait,'2')
-
-    def test_get_widgets(self):
-        trait_args = [(1,2,3),(1.,2.,3.),('1','2','3')]
-        for args in trait_args:
-            with self.subTest(f"test trait options {args}"):
-                self.get_widgets_spectacoular(self.enum_types,args)
-                self.get_widgets_hastraits(self.enum_types,args)
-
-    def test_get_widgets_map(self):
-        args = {'1':'1','2':'2','3':'3'}
-        self.get_widgets_spectacoular([Map],args)
-        self.get_widgets_hastraits([Map],args)
+                    cls_instance = set_widgets_method(widget,test_trait,"value")
+                    self.assertEqual(cls_instance.test_trait,expected_trait_value)
 
     @given(lists(floats(allow_nan=False,allow_infinity=False),min_size=2,max_size=3))
     def test_trait_widget_callback(self,options):
         """test verifies that a widget value is changing when a new value
         is assigned to the referenced trait. 
         """
-        #print(options)
-        for trait_type in self.enum_types:
-            cls_instance = self.get_has_traits_derived_class_instance(trait_type,options)
+        for test_trait in [Enum(*options),Trait(*options), Map({i:i for i in options}),Trait(options[0],{i:i for i in options})]: 
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
             widget = get_widgets(cls_instance).get('test_trait')
             cls_instance.test_trait = options[-1]
             self.assertEqual(widget.value,str(options[-1]))
@@ -291,14 +286,42 @@ class SelectTest(BaseMapperTest):
         """test verifies that a traits value is changing when a new value
         is assigned to the widget
         """
-        #print(options)
-        for trait_type in self.enum_types:
-            cls_instance = self.get_has_traits_derived_class_instance(trait_type,options)
+        for test_trait in [Enum(*options),Trait(*options), Map({i:i for i in options}),Trait(options[0],{i:i for i in options})]: 
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
             widget = get_widgets(cls_instance).get('test_trait')
             widget.value=str(options[-1])
             self.assertEqual(cls_instance.test_trait,options[-1])
 
-   
+
+class SliderTest(NumericInputTest):
+    """Verifies that mappings of trait type Range to Slider widget are 
+    working correctly.
+    """
+    widget = Slider
+
+    test_traits = [Range(0.01, 20.0, .6), Float(1.)] 
+
+    mapper = {'test_trait': Slider}
+
+    mapper_args = {'test_trait': {'start':0.02, 'end':30., 'visible':False}}
+
+    def test_start_end_values_without_view(self):
+        test_trait = Range(0.01, 20.0, .6)
+        widget = self.get_widget_without_view_definition_has_traits(test_trait)
+        self.assertEqual(widget.start,0.01)
+        self.assertEqual(widget.end,20.)
+        
+    def test_start_end_values_custom_view(self):
+        """ should match the mapper_args as the custom view """
+        for test_trait in self.test_traits:
+            with self.subTest(type(test_trait)):
+                widget = self.get_widget_from_custom_view_definition_has_traits(test_trait)
+                self.assertEqual(widget.start, 0.02)
+                self.assertEqual(widget.end, 30.)
+            
+                    
+
+
 
 if __name__ == '__main__':
 

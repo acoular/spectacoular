@@ -14,7 +14,7 @@
     PointSpreadFunctionPresenter
     TimeSamplesPresenter
 """
-from bokeh.models.widgets import TextInput
+from bokeh.models.widgets import TextInput, NumericInput
 from bokeh.models import ColumnDataSource
 from traits.api import Trait, Int, Float, on_trait_change, Instance, ListInt
 import numpy as np
@@ -108,9 +108,6 @@ class BeamformerPresenter(BasePresenter):
     cdsource = ColumnDataSource(data={'bfdata':[],'x':[],'y':[],
                                       'pdata':[],'dw':[],'dh':[]})
 
-    #: :class:`~acoular.fbeamform.SteeringVector` or derived object. 
-    steer = Instance(SteeringVector)
-
     #: Trait to set the width of the frequency bands considered.
     #: defaults to 0 (single frequency line).
     num = Int(0, 
@@ -121,8 +118,8 @@ class BeamformerPresenter(BasePresenter):
     freq = Float(None,
                  desc="Band center frequency. ")
     
-    trait_widget_mapper = {'num': TextInput,
-                           'freq': TextInput,
+    trait_widget_mapper = {'num': NumericInput,
+                           'freq': NumericInput,
                        }
 
     trait_widget_args = {'num': {'disabled':False},
@@ -140,11 +137,11 @@ class BeamformerPresenter(BasePresenter):
         """
         res = self.source.synthetic(float(self.freq), int(self.num))
         if res.size > 0: 
-            dx = self.steer.grid.x_max-self.steer.grid.x_min
-            dy = self.steer.grid.y_max-self.steer.grid.y_min
+            dx = self.source.steer.grid.x_max-self.source.steer.grid.x_min
+            dy = self.source.steer.grid.y_max-self.source.steer.grid.y_min
             self.cdsource.data = {'bfdata' : [L_p(res).T], 'pdata' : [(res).T], 
-            'x':[self.steer.grid.x_min], 
-            'y':[self.steer.grid.y_min], 
+            'x':[self.source.steer.grid.x_min], 
+            'y':[self.source.steer.grid.y_min], 
             'dw':[dx], 
             'dh':[dy]
             }

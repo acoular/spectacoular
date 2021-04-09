@@ -81,8 +81,8 @@ beamformerSelector = Select(title="Beamforming Method:",
                         height=75)
 
 # use additional classes for data evaluation/view
-bv = BeamformerPresenter(source=bb,steer=st)
-
+bv = BeamformerPresenter(source=bb,num=3,freq=4000.)
+bv.trait_widget_args.update(num={'width':40},freq={'width':100})
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 mgWidgets = mg.get_widgets()
@@ -92,12 +92,7 @@ psWidgets = ps.get_widgets()
 rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 bbWidgets = bb.get_widgets()
-
 bvWidgets = bv.get_widgets()
-bvWidgets['num'].value = "3"
-bvWidgets['num'].width = 40
-bvWidgets['freq'].value = "4000.0"
-bvWidgets['freq'].width = 100
 
 settings_dict = {
     "Time Data": tsWidgets,
