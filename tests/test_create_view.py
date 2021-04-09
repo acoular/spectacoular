@@ -303,8 +303,23 @@ class SliderTest(NumericInputTest):
 
     mapper = {'test_trait': Slider}
 
-    mapper_args = {'test_trait': {'start':0.01, 'end':20., 'visible':False}}
+    mapper_args = {'test_trait': {'start':0.02, 'end':30., 'visible':False}}
 
+    def test_start_end_values_without_view(self):
+        test_trait = Range(0.01, 20.0, .6)
+        widget = self.get_widget_without_view_definition_has_traits(test_trait)
+        self.assertEqual(widget.start,0.01)
+        self.assertEqual(widget.end,20.)
+        
+    def test_start_end_values_custom_view(self):
+        """ should match the mapper_args as the custom view """
+        for test_trait in self.test_traits:
+            with self.subTest(type(test_trait)):
+                widget = self.get_widget_from_custom_view_definition_has_traits(test_trait)
+                self.assertEqual(widget.start, 0.02)
+                self.assertEqual(widget.end, 30.)
+            
+                    
 
 
 

@@ -20,6 +20,7 @@
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
 TableColumn, NumberEditor, StringEditor, NumericInput, Toggle
 from bokeh.models import ColumnDataSource
+from bokeh.core.property.descriptors import UnsetValueError
 from traits.api import Enum, Map, Trait, TraitEnum, TraitMap, CArray, Any, \
 List, Float, CFloat, Int, CInt, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
@@ -836,9 +837,15 @@ class SliderMapper(TraitWidgetMapper):
         None.
 
         """
-        if self.traittype == Range: 
-            self.widget.start = self.traittype._low
-            self.widget.end = self.traittype._high
+        if isinstance(self.traittype, Range):
+            try:
+                self.widget.start
+            except UnsetValueError:
+                self.widget.start = self.traittype._low
+            try:
+                self.widget.end
+            except UnsetValueError:
+                self.widget.end = self.traittype._high
 
     def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
         """
