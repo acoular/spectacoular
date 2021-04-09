@@ -76,7 +76,7 @@ beamformerSelector = Select(title="Select Beamforming Method:",
 
 
 # use additional classes for data evaluation/view
-bv = BeamformerPresenter(source=bb,steer=st)
+bv = BeamformerPresenter(source=bb,num=3,freq=4000.)
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -88,9 +88,6 @@ rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 bbWidgets = bb.get_widgets()
 bvWidgets = bv.get_widgets()
-bvWidgets['freq'].value = "4000.0"
-bvWidgets['num'].value = "3"
-
 
 colorMapper = LogColorMapper(palette=viridis(100), 
                               low=50, high=65 ,low_color=(1,1,1,0))
