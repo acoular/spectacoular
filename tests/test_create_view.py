@@ -1,11 +1,15 @@
 from traits.api import HasTraits, Int, Long, CLong, Float, Complex,\
-    BaseBool,Bool,CBool, Enum, Trait, Map, Range, CTrait
-from bokeh.models.widgets import NumericInput, Toggle, Select, Slider, TextInput
+    BaseBool,Bool,CBool, Enum, Trait, Map, Range, CTrait, Array, CArray
+from bokeh.models.widgets import NumericInput, Toggle, Select, Slider, TextInput,\
+    DataTable
 import unittest
 from spectacoular import BaseSpectacoular, get_widgets, set_widgets
 from spectacoular.factory import DEFAULT_TRAIT_WIDGET_MAPPINGS
-from hypothesis.strategies import integers, floats, tuples,booleans, lists
+from hypothesis.strategies import integers, floats, text, tuples,\
+    nothing,booleans, lists
 from hypothesis import given
+from hypothesis.extra import numpy
+import numpy as np
 
 class HasTraitsTestClass(HasTraits):
     """ class that is used for widget mapping tests that has
@@ -319,9 +323,45 @@ class SliderTest(NumericInputTest):
                 self.assertEqual(widget.start, 0.02)
                 self.assertEqual(widget.end, 30.)
             
-                    
+# int_search = numpy.arrays(dtype=np.int,
+#                 shape = numpy.array_shapes(min_dims=0,max_dims=3),
+#                 fill=nothing(),)
+#                 #elements=integers())
+# int_arrays = [int_search.example()for _ in range(5)]
 
+# float_search = numpy.arrays(dtype=np.float,
+#                 shape = numpy.array_shapes(min_dims=0,max_dims=10),
+#                 elements=floats())
 
+# str_search = numpy.arrays(dtype=np.str,
+#                 shape = numpy.array_shapes(min_dims=0,max_dims=10),
+#                 elements=text())
+
+#[CArray(int_search.example()) for _ in range(3)] + \
+#[CArray(float_search.example()) for _ in range(3)] + \
+#[CArray(str_search.example()) for _ in range(3)]
+
+float_array = numpy.arrays(dtype=np.float,shape=(5,5)).example()
+int_array = numpy.arrays(dtype=int,shape=(5,5)).example()
+str_array = numpy.arrays(dtype=str,shape=(5,5)).example()
+
+class DataTableTest(BaseMapperTest):
+    """Verifies that mappings of trait type Array or CArray to DataTable widget is 
+    working correctly.
+    """
+    widget = DataTable
+
+    test_traits = [Array(value=float_array),CArray(value=float_array),
+                    Array(value=int_array),CArray(value=int_array),
+                    Array(value=str_array),CArray(value=str_array),
+                    ] 
+
+    mapper = {'test_trait': DataTable}
+
+    mapper_args = {'test_trait': {'visible':False, 'editable':True}}
+
+    def test_set_widgets(self):
+        pass
 
 if __name__ == '__main__':
 
