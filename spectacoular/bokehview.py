@@ -439,9 +439,9 @@ add_bokeh_attr(RectGrid3D,trait_widget_mapper,trait_widget_args)
 
 from acoular import MicGeom
 
-columns = [TableColumn(field='x', title='X', editor=NumberEditor()),
-           TableColumn(field='y', title='Y', editor=NumberEditor()),
-           TableColumn(field='z', title='Z', editor=NumberEditor())]
+columns = [TableColumn(field='x', title='x', editor=NumberEditor()),
+           TableColumn(field='y', title='y', editor=NumberEditor()),
+           TableColumn(field='z', title='z', editor=NumberEditor())]
 
 trait_widget_mapper = {'from_file': TextInput,
                        'basename': TextInput,
@@ -456,7 +456,7 @@ trait_widget_args = {'from_file': {'disabled':False},
                      'invalid_channels':  {'disabled':False},
                      'num_mics':  {'disabled':True, 'mode':'int'},
                      'center':  {'disabled':True},
-                     'mpos_tot':  {'editable':True,'columns':columns},
+                     'mpos_tot':  {'editable':True, 'transposed':True, 'columns':columns,}
                      }
 
 add_bokeh_attr(MicGeom,trait_widget_mapper,trait_widget_args)

@@ -322,6 +322,7 @@ class SliderTest(NumericInputTest):
                 widget = self.get_widget_from_custom_view_definition_has_traits(test_trait)
                 self.assertEqual(widget.start, 0.02)
                 self.assertEqual(widget.end, 30.)
+
             
 # int_search = numpy.arrays(dtype=np.int,
 #                 shape = numpy.array_shapes(min_dims=0,max_dims=3),
@@ -351,9 +352,9 @@ class DataTableTest(BaseMapperTest):
     """
     widget = DataTable
 
-    test_traits = [Array(value=float_array),CArray(value=float_array),
-                    Array(value=int_array),CArray(value=int_array),
-                    Array(value=str_array),CArray(value=str_array),
+    test_traits = [Array(value=float_array,dtype=float),CArray(value=float_array,dtype=float),
+                    Array(value=int_array,dtype=int),CArray(value=int_array,dtype=int),
+                    Array(value=str_array,dtype=str),CArray(value=str_array,dtype=str),
                     ] 
 
     mapper = {'test_trait': DataTable}
@@ -361,7 +362,40 @@ class DataTableTest(BaseMapperTest):
     mapper_args = {'test_trait': {'visible':False, 'editable':True}}
 
     def test_set_widgets(self):
-        pass
+        """ test different ways to call set_widgets method for different trait types
+        """
+        expected_value = np.array([[1,1],[2,2]]).T
+        for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
+            for test_trait in self.test_traits:
+                with self.subTest(set_widgets_method.__name__+"_"+str(test_trait.__class__)):      
+                    widget = self.widget()
+                    widget.source.data = {'a':[1,1],'b':[2,2]} 
+                    cls_instance = set_widgets_method(widget,test_trait,widget_property="value")
+                    np.array_equal(cls_instance.test_trait,expected_value)
+    
+    @given(numpy.arrays(dtype=int,shape=(5,1)))
+    def test_trait_widget_callback(self,options):
+        """test verifies that a widget value is changing when a new value
+        is assigned to the referenced trait. 
+        """
+        for test_trait in [CArray(value=np.zeros((5,1)),dtype=int)]: 
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance).get('test_trait')
+            cls_instance.test_trait = options
+            self.assertEqual(widget.source.data['0'],list(options[:,0]))
+
+    @given(lists(integers(),min_size=3,max_size=3))
+    def test_widget_trait_callback(self,options):
+        """test verifies that a traits value is changing when a new value
+        is assigned to the widget
+        """
+        for test_trait in [CArray(value=np.zeros((5,1)),dtype=int)]: 
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance).get('test_trait')
+            widget.source.data['0']=options
+            np.array_equal(cls_instance.test_trait,np.array(options))
+
+
 
 if __name__ == '__main__':
 
