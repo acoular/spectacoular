@@ -323,25 +323,6 @@ class SliderTest(NumericInputTest):
                 self.assertEqual(widget.start, 0.02)
                 self.assertEqual(widget.end, 30.)
 
-            
-# int_search = numpy.arrays(dtype=np.int,
-#                 shape = numpy.array_shapes(min_dims=0,max_dims=3),
-#                 fill=nothing(),)
-#                 #elements=integers())
-# int_arrays = [int_search.example()for _ in range(5)]
-
-# float_search = numpy.arrays(dtype=np.float,
-#                 shape = numpy.array_shapes(min_dims=0,max_dims=10),
-#                 elements=floats())
-
-# str_search = numpy.arrays(dtype=np.str,
-#                 shape = numpy.array_shapes(min_dims=0,max_dims=10),
-#                 elements=text())
-
-#[CArray(int_search.example()) for _ in range(3)] + \
-#[CArray(float_search.example()) for _ in range(3)] + \
-#[CArray(str_search.example()) for _ in range(3)]
-
 float_array = numpy.arrays(dtype=np.float,shape=(5,5)).example()
 int_array = numpy.arrays(dtype=int,shape=(5,5)).example()
 str_array = numpy.arrays(dtype=str,shape=(5,5)).example()
