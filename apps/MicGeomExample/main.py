@@ -73,7 +73,9 @@ mgPlot = figure(title='Microphone Geometry',
 mgPlot.toolbar.logo=None
 micRenderer = mgPlot.circle_cross(x='x',y='y',size=20,fill_alpha=.8,
                                   source=mgWidgets['mpos_tot'].source)
-drawtool = PointDrawTool(renderers=[micRenderer])
+drawtool = PointDrawTool(renderers=[micRenderer],empty_value=0.) 
+# empty_value: a value of 0. is inserted for the third column (z-axis) when
+# new points/mics are added to the geometry
 mgPlot.add_tools(drawtool)
 mgPlot.toolbar.active_tap = drawtool
 

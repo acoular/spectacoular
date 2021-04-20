@@ -1003,7 +1003,11 @@ class DataTableMapper(TraitWidgetMapper):
         """
         if self.transposed:
             traitvalue = traitvalue.T
-        new_data = {self.widget.columns[i].title:list(traitvalue[:,i]) for i in range(traitvalue.shape[1])}
+        dim = len(traitvalue.shape)
+        if dim > 1:
+            new_data = {self.widget.columns[i].title:list(traitvalue[:,i]) for i in range(traitvalue.shape[1])}
+        else:
+            new_data = {self.widget.columns[0].title:list(traitvalue)}
         if new_data != self.widget.source.data:
             self.widget.source.data = new_data
 

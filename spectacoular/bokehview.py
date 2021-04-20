@@ -209,7 +209,7 @@ add_bokeh_attr(BeamformerDamas,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerDamasPlus
 
 trait_widget_mapper = {'method': Select,
-                       'alpha': TextInput,
+                       'alpha': Slider,
                        'max_iter' : NumericInput,
                        'unit_mult' : TextInput,
                         'damp': NumericInput,
@@ -219,7 +219,7 @@ trait_widget_mapper = {'method': Select,
                        'cached': Toggle,
                        }
 trait_widget_args = {'method' : {'disabled':False},
-                     'alpha' : {'disabled':False},
+                     'alpha': {'disabled':False,'step':0.01},
                      'max_iter' : {'disabled':False, 'mode':'int'},
                      'unit_mult' : {'disabled':False},
                      'damp' : {'disabled':False, 'mode':'float'},
