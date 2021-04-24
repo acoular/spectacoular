@@ -25,7 +25,7 @@ from traits.api import Enum, Map, Trait, TraitEnum, TraitMap, Array, CArray, Any
 List, Float, CFloat, Int, CInt, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
 Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
-BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate, Bool
+BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate, Bool, Tuple
 from numpy import array, ndarray, newaxis, isscalar, nan_to_num, array_equal
 from warnings import warn
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
@@ -40,7 +40,7 @@ ALLOWED_WIDGET_TRAIT_MAPPINGS = {
     Toggle : (Bool,) + (TraitCompound,Any,Delegate), 
     Select : (Enum, TraitEnum, Map, TraitMap, BaseStr, BaseFile, ) + NUMERIC_TYPES, # Numeric types and Str types should also be allowed here, to further use the set_widgets method with predefined options
     Slider : (Range, ) + NUMERIC_TYPES,
-    DataTable : (Array,CArray, ) 
+    DataTable : (Array,CArray,List,Tuple, ) 
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
@@ -58,6 +58,8 @@ DEFAULT_TRAIT_WIDGET_MAPPINGS = {
     Range : Slider,
     Array : DataTable,
     CArray : DataTable,
+    List : DataTable,
+    Tuple : DataTable,
     }
 
 def as_str_list(func):
@@ -909,6 +911,8 @@ class DataTableMapper(TraitWidgetMapper):
         Creates a bokeh DataTable instance. For transposed arrays that are 
         mapped to the DataTable, array data is reshaped and casted to fit the
         required dictionary format of the ColumnDataSource.
+        In case of list types, only one-dimensional lists are allowed. The
+        transposed attribute will have no effect.
 
         Parameters
         ----------
@@ -928,7 +932,7 @@ class DataTableMapper(TraitWidgetMapper):
         # create widget
         self.widget = DataTable(**kwargs) 
         self.create_columns()
-        self._set_widgetvalue(self.traitvalue.copy())
+        self._set_widgetvalue(self.traitvalue)
         self._set_callbacks()
         return self.widget
 
@@ -960,12 +964,15 @@ class DataTableMapper(TraitWidgetMapper):
     def create_columns( self ):
         ''' create single TableColumn and add to widget '''
         if not self.widget.columns:
-            if self.traitvalue.ndim == 1:
-                num_cols = 1
-            else:
-                num_cols = self.traitvalue.shape[1]
-                if self.transposed:
-                    num_cols = self.traitvalue.shape[0]
+            if isinstance(self.traittype,(List,Tuple)):
+                num_cols=1
+            else: # array
+                if self.traitvalue.ndim == 1:
+                    num_cols = 1
+                else:
+                    num_cols = self.traitvalue.shape[1]
+                    if self.transposed:
+                        num_cols = self.traitvalue.shape[0]
             self.widget.columns = [
                     TableColumn(field=f"{c}",title=f"{c}") for c in range(num_cols)]
             self._set_celleditor()
@@ -976,10 +983,17 @@ class DataTableMapper(TraitWidgetMapper):
         editable, a StringEditor is set.
         '''
         if self.widget.editable:
-            if self.traittype.dtype in NUMERIC_TYPES: 
+            if isinstance(self.traittype,(List,Tuple)):
+                if len(self.traitvalue) > 0:
+                    dtype = type(self.traitvalue[0]) 
+                else:
+                    dtype = None
+            else: # array types
+                dtype = self.traittype.dtype                
+            if dtype in NUMERIC_TYPES: 
                 editor = NumberEditor()
             else:
-                if self.traittype.dtype is None:
+                if dtype is None:
                     warn((f"Undefined dtype of trait {self.traitname} which is linked to an editable DataTable widget."+ 
                     " Setting an instance of StringEditor for each column."))
                 editor = StringEditor()
@@ -1001,13 +1015,16 @@ class DataTableMapper(TraitWidgetMapper):
         None.
         
         """
-        if self.transposed:
-            traitvalue = traitvalue.T
-        dim = len(traitvalue.shape)
-        if dim > 1:
-            new_data = {self.widget.columns[i].title:list(traitvalue[:,i]) for i in range(traitvalue.shape[1])}
-        else:
-            new_data = {self.widget.columns[0].title:list(traitvalue)}
+        if isinstance(self.traittype,(List,Tuple)):
+            new_data = {self.widget.columns[0].field:traitvalue}
+        else: # if array type
+            if self.transposed:
+                traitvalue = traitvalue.T
+            dim = len(traitvalue.shape)
+            if dim > 1:
+                new_data = {self.widget.columns[i].field:list(traitvalue[:,i]) for i in range(traitvalue.shape[1])}
+            else:
+                new_data = {self.widget.columns[0].field:list(traitvalue.copy())}
         if new_data != self.widget.source.data:
             self.widget.source.data = new_data
 
@@ -1048,11 +1065,24 @@ class DataTableMapper(TraitWidgetMapper):
         callable.
 
         """
-        def callback(attr, old, new):
-            new_traitvalue = array(list(new.values()))
-            if not self.transposed:
-                new_traitvalue = new_traitvalue.T
-            self._set_traitvalue(new_traitvalue)
+        if isinstance(self.traittype,List):
+            def callback(attr, old, new):
+                current_value = getattr(self.obj,self.traitname)
+                new_value = list(new.values())[0]
+                if current_value != new_value:
+                    setattr(self.obj,self.traitname,new_value)
+        elif isinstance(self.traittype,Tuple):
+            def callback(attr, old, new):
+                current_value = getattr(self.obj,self.traitname)
+                new_value = tuple(list(new.values())[0])
+                if current_value != new_value:
+                    setattr(self.obj,self.traitname,new_value)
+        else: # array type
+            def callback(attr, old, new):
+                new_traitvalue = array(list(new.values()))
+                if not self.transposed:
+                    new_traitvalue = new_traitvalue.T
+                self._set_traitvalue(new_traitvalue)
         return callback
 
     def _set_traitvalue(self,widgetvalue):
