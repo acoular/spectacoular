@@ -65,6 +65,8 @@ add_bokeh_attr(SampleSplitter,trait_widget_mapper,trait_widget_args)
 
 from acoular import Calib
 
+cal_columns = [TableColumn(field='data', title='calib factors', editor=NumberEditor()),]
+
 trait_widget_mapper = {'from_file': TextInput,
                        'basename': TextInput,
                        'num_mics': NumericInput,
@@ -73,7 +75,7 @@ trait_widget_mapper = {'from_file': TextInput,
 trait_widget_args = {'from_file': {'disabled':False},
                      'basename': {'disabled':True},
                      'num_mics':  {'disabled':True,'mode':'int'},
-                     'data':  {'disabled':True},
+                     'data':  {'disabled':True, 'editable':False, 'columns':cal_columns},
                      }
 
 add_bokeh_attr(Calib,trait_widget_mapper,trait_widget_args)
@@ -234,13 +236,15 @@ add_bokeh_attr(BeamformerDamasPlus,trait_widget_mapper,trait_widget_args)
 
 from acoular import BeamformerOrth
 
+eva_columns = [TableColumn(field='eva_list', title='eigenvalues', editor=NumberEditor()),]
+
 trait_widget_mapper = {'eva_list' : DataTable,
                         'n' : NumericInput,
                         'r_diag_norm': NumericInput,
                        'precision': Select,
                        'cached': Toggle,
                        }
-trait_widget_args = {'eva_list': {'disabled':False},
+trait_widget_args = {'eva_list': {'disabled':False, 'editable': True, 'columns':eva_columns},
                     'n': {'disabled':False, 'mode':'int'},
                     'r_diag_norm': {'disabled':False,'mode':'float'},
                      'precision': {'disabled':False},
@@ -516,6 +520,8 @@ add_bokeh_attr(TimeSamples,trait_widget_mapper,trait_widget_args)
 
 from acoular import MaskedTimeSamples
 
+invch_columns = [TableColumn(field='invalid_channels', title='invalid_channels', editor=NumberEditor()),]
+
 trait_widget_mapper = {'name': TextInput,
                        'basename': TextInput,
                        'start' : NumericInput,
@@ -531,7 +537,7 @@ trait_widget_args = {'name': {'disabled':False},
                      'stop':  {'disabled':False, 'mode':'int'},
                      'numsamples':  {'disabled':True, 'mode':'int'},
                      'sample_freq':  {'disabled':True, 'mode':'float'},
-                     'invalid_channels': {'disabled':False},
+                     'invalid_channels': {'disabled':False,'editable':True, 'columns':invch_columns},
                      'numchannels': {'disabled':True,'mode':'int'},
                      }
 
@@ -539,6 +545,9 @@ add_bokeh_attr(MaskedTimeSamples,trait_widget_mapper,trait_widget_args)
 
 
 from acoular import PointSource
+
+loc_columns = [TableColumn(field='loc', title='source location', editor=NumberEditor()),]
+
 
 trait_widget_mapper = {
                        'loc' : DataTable,
@@ -550,7 +559,7 @@ trait_widget_mapper = {
                       'numchannels' : NumericInput
                        }
 trait_widget_args = {
-                    'loc':  {'disabled':False},
+                    'loc':  {'disabled':False, 'editable': True, 'columns':loc_columns},
                     'start_t':  {'disabled':False,'mode':'float'},
                     'start':  {'disabled':False,'mode':'float'},
                     'up':  {'disabled':False,'mode':'int'},
