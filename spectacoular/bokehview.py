@@ -384,7 +384,7 @@ trait_widget_mapper = {'x_min': NumericInput,
                        'nxsteps':NumericInput,
                        'nysteps' : NumericInput,
                        'size' : NumericInput,
-                       'shape' : DataTable
+                       #'shape' : DataTable
                        }
 trait_widget_args = {'x_min': {'disabled':False,'mode':'float'},
                      'x_max': {'disabled':False,'mode':'float'},
@@ -395,7 +395,7 @@ trait_widget_args = {'x_min': {'disabled':False,'mode':'float'},
                      'nxsteps': {'disabled':True,'mode':'int'},
                      'nysteps': {'disabled':True,'mode':'int'},
                      'size': {'disabled':True,'mode':'int'},
-                     'shape': {'disabled':True},
+                     #'shape': {'disabled':True},
                      }
 
 add_bokeh_attr(RectGrid,trait_widget_mapper,trait_widget_args)
@@ -416,7 +416,7 @@ trait_widget_mapper = {'x_min': NumericInput,
                        'nysteps' : NumericInput,
                        'nzsteps' : NumericInput,
                        'size' : NumericInput,
-                       'shape' : DataTable
+                       #'shape' : DataTable
                        }
 trait_widget_args = {'x_min': {'disabled':False,'mode':'float'},
                      'x_max': {'disabled':False,'mode':'float'},
@@ -430,7 +430,7 @@ trait_widget_args = {'x_min': {'disabled':False,'mode':'float'},
                      'nysteps': {'disabled':True,'mode':'int'},
                      'nzsteps': {'disabled':True,'mode':'int'},
                      'size': {'disabled':True,'mode':'int'},
-                     'shape': {'disabled':True},
+                     #'shape': {'disabled':True},
                      }
 
 add_bokeh_attr(RectGrid3D,trait_widget_mapper,trait_widget_args)
@@ -448,7 +448,7 @@ trait_widget_mapper = {'from_file': TextInput,
                        'basename': TextInput,
                        'invalid_channels': DataTable,
                        'num_mics': NumericInput,
-                       'center': DataTable,
+                       #'center': DataTable,
                        'mpos_tot': DataTable
                        }
 
@@ -456,7 +456,7 @@ trait_widget_args = {'from_file': {'disabled':False},
                      'basename': {'disabled':True},
                      'invalid_channels':  {'disabled':False, 'editable':True,'columns':invch_columns,},
                      'num_mics':  {'disabled':True, 'mode':'int'},
-                     'center':  {'disabled':True},
+                     #'center':  {'disabled':True},
                      'mpos_tot':  {'editable':True, 'transposed':True, 'columns':mpos_columns,}
                      }
 
