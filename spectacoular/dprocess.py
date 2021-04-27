@@ -14,7 +14,7 @@
     PointSpreadFunctionPresenter
     TimeSamplesPresenter
 """
-from bokeh.models.widgets import TextInput, NumericInput
+from bokeh.models.widgets import TextInput, NumericInput, DataTable
 from bokeh.models import ColumnDataSource
 from traits.api import Trait, Int, Float, on_trait_change, Instance, ListInt
 import numpy as np
@@ -205,7 +205,7 @@ class TimeSamplesPresenter(BasePresenter):
     # Number of samples to appear in the plot, best practice is to use the width of the plot
     _numsubsamples = Int(-1)
     
-    trait_widget_mapper = {'channels': TextInput,
+    trait_widget_mapper = {'channels': DataTable,
                        }
 
     trait_widget_args = {'channels': {'disabled':False},

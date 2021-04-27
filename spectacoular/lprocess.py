@@ -346,7 +346,7 @@ if sd_enabled:
         # current frame played back
         # currentframe = Int()
         
-        trait_widget_mapper = {'channels': TextInput,
+        trait_widget_mapper = {'channels': DataTable,
                            }
     
         trait_widget_args = {'channels': {'disabled':False},
