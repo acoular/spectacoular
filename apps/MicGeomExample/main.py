@@ -132,7 +132,7 @@ for f in mgWidgets['mpos_tot'].columns:
 # Tabs
 mgWidgets['mpos_tot'].height = 280
 mgTab = Panel(child=column(mgWidgets['from_file'],
-                           row( mgWidgets['invalid_channels'],mgWidgets['num_mics'],width = twidth),
+                           row(mgWidgets['num_mics'],width = twidth),
                            hspace,
                           mgWidgets['mpos_tot']),
                           title='Microphone Geometry')

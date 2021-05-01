@@ -1100,6 +1100,28 @@ class DataTableMapper(TraitWidgetMapper):
         return callback
 
     def _cds_to_numpy_array_transform(self,column_values,transposed):
+        """Maps the column values of DataTable's ColumnDataSource to a numpy array
+        to be used as new value of the array trait mapped to this DataTable widget.
+
+        When using bokeh renderers, the columns of the ColumnDataSource will be converted
+        to a list type when elements are added to or removed from these columns. In this case,
+        type casting from list to array type is necessary.
+
+        Parameters
+        ----------
+        column_values : array or list
+            column values of the ColumnDataSource
+        transposed : bool
+            if true, maps the columns of the ColumnDataSource to rows. 
+
+        Returns
+        -------
+        array
+            the new trait value based on the column values
+        """
+
+        if type(column_values) == list: # cast to array if is list type
+            column_values = array(column_values)
         if column_values[0].ndim == 1 and len(column_values) == 1: # mapps to arrays with -> (n,) shapes
             new_traitvalue = column_values[0] 
         else: # mapps to arrays with -> (n,number_of_columns) shapes
