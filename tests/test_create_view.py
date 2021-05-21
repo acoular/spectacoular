@@ -1,11 +1,16 @@
 from traits.api import HasTraits, Int, Long, CLong, Float, Complex,\
-    BaseBool,Bool,CBool, Enum, Trait, Map, Range, CTrait
-from bokeh.models.widgets import NumericInput, Toggle, Select, Slider, TextInput
+    BaseBool,Bool,CBool, Enum, Trait, Map, Range, CTrait, Array, CArray,\
+        List, ListInt, ListFloat, ListStr, Tuple
+from bokeh.models.widgets import NumericInput, Toggle, Select, Slider, TextInput,\
+    DataTable, TableColumn 
 import unittest
 from spectacoular import BaseSpectacoular, get_widgets, set_widgets
 from spectacoular.factory import DEFAULT_TRAIT_WIDGET_MAPPINGS
-from hypothesis.strategies import integers, floats, tuples,booleans, lists
+from hypothesis.strategies import integers, floats, text, tuples,\
+    nothing,booleans, lists
 from hypothesis import given
+from hypothesis.extra import numpy
+import numpy as np
 
 class HasTraitsTestClass(HasTraits):
     """ class that is used for widget mapping tests that has
@@ -318,9 +323,157 @@ class SliderTest(NumericInputTest):
                 widget = self.get_widget_from_custom_view_definition_has_traits(test_trait)
                 self.assertEqual(widget.start, 0.02)
                 self.assertEqual(widget.end, 30.)
-            
-                    
 
+
+
+class DataTableTest(BaseMapperTest):
+    """Verifies that mappings of trait type Array or CArray to DataTable widget is 
+    working correctly.
+    """
+    widget = DataTable
+
+    test_traits = [Array(value=np.random.random((5,5)).astype('float'),dtype=str),CArray(value=np.random.random((5,5)).astype('float'),dtype=str),
+                    Array(value=np.random.random((5,5)).astype('int'),dtype=int),CArray(value=np.random.random((5,5)).astype('int'),dtype=int),
+                    Array(value=np.random.random((5,5)).astype('str'),dtype=str),CArray(value=np.random.random((5,5)).astype('str'),dtype=str),
+                    List([1,2]),ListInt([1,2]),ListFloat([1.,2.]),ListStr(['1','2']),
+                    Tuple((1,2,)),Tuple((1.,2.,)),Tuple(('1','2',)),
+                    ] 
+
+    mapper = {'test_trait': DataTable}
+
+    mapper_args = {'test_trait': {'visible':False, 'editable':True}}
+
+    def test_set_widgets(self):
+        """ test different ways to call set_widgets method for different trait types
+        """
+        #test array types
+        expected_value = np.array([[1,1],[2,2]]).T
+        for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
+            for test_trait in self.test_traits[:6]: # test only the array types
+                with self.subTest(set_widgets_method.__name__+"_"+str(test_trait.__class__)):      
+                    widget = self.widget()
+                    widget.source.data = {'a':[1,1],'b':[2,2]} 
+                    cls_instance = set_widgets_method(widget,test_trait,widget_property="value")
+                    np.array_equal(cls_instance.test_trait,expected_value)
+        #test list types
+        expected_value = [[1,1],[1,1],[1.,1.],['1','1']]
+        for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
+            for i,test_trait in enumerate(self.test_traits[6:10]): # test only list types
+                with self.subTest(set_widgets_method.__name__+"_"+str(test_trait.__class__)):      
+                    widget = self.widget()
+                    widget.source.data = {'0':expected_value[i]} 
+                    cls_instance = set_widgets_method(widget,test_trait,widget_property="value")
+                    self.assertListEqual(cls_instance.test_trait,expected_value[i])
+        # tuple types
+        expected_value = [(1,1),(1.,1.),('1','1')]
+        for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
+            for i,test_trait in enumerate(self.test_traits[10:13]): # test only tuple types
+                with self.subTest(set_widgets_method.__name__+"_"+str(test_trait.__class__)):      
+                    widget = self.widget()
+                    widget.source.data = {'0':expected_value[i]} 
+                    cls_instance = set_widgets_method(widget,test_trait,widget_property="value")
+                    self.assertTupleEqual(cls_instance.test_trait,expected_value[i])
+
+    
+    @given(numpy.arrays(dtype=int,shape=(3,2))) # should work properly for all shapes
+           #numpy.arrays(dtype=int,shape=(3,1)),
+           #numpy.arrays(dtype=int,shape=(3,2)))
+    def test_trait_widget_callback_array(self,options):
+        """test verifies that a widget value is changing when a new value
+        is assigned to the referenced trait. 
+                
+        Aims at mapping the columns of a numpy array are mapped to the columns
+        of the ColumnDataSource of the DataTable.
+        """
+        shape_options = [options[:,0],options[:,0][:,np.newaxis],options] # (3,) , (3,1), (3,2)
+        expected_first_column_value = [options[:,0],options[:,0][:,np.newaxis],options[:,0][:,np.newaxis]]
+        columns = [[TableColumn(field='test_col1')],[TableColumn(field='test_col1')],[TableColumn(field='test_col1'),TableColumn(field='test_col2')]]
+        for soption, expected_val, cols in zip(shape_options,expected_first_column_value,columns):
+            mapper_args = self.mapper_args.copy()
+            mapper_args['test_trait']['columns'] = cols
+            test_trait = CArray(value=np.ones(soption.shape,dtype=int),dtype=int) 
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance,self.mapper,mapper_args).get('test_trait')
+            cls_instance.test_trait = soption
+            np.array_equal(widget.source.data['test_col1'],expected_val)
+            self.assertTupleEqual(widget.source.data['test_col1'].shape,expected_val.shape)
+
+    @given(numpy.arrays(dtype=int,shape=(3,2))) # should work properly for all shapes
+           #numpy.arrays(dtype=int,shape=(3,1)),
+           #numpy.arrays(dtype=int,shape=(3,2)))
+    def test_widget_trait_callback_array(self,options):
+        """test verifies that a traits value is changing when a new value
+        is assigned to the widget
+        """
+        # test with single column:
+        shape_options = [options[:,0],options[:,0][:,np.newaxis],options] # (3,) , (3,1), (3,2)
+        widget_data = [{'test_col1':shape_options[0]},{'test_col1':shape_options[1]},{'test_col1':shape_options[2][:,0],'test_col2':shape_options[2][:,1],}]
+        columns = [[TableColumn(field='test_col1')],[TableColumn(field='test_col1')],[TableColumn(field='test_col1'),TableColumn(field='test_col2')]]
+        for option, cds_data, cols in zip(shape_options,widget_data,columns):
+            mapper_args = self.mapper_args.copy()
+            mapper_args['test_trait']['columns'] = cols
+            test_trait = CArray(value=np.ones(option.shape,dtype=int),dtype=int) 
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance,self.mapper,mapper_args).get('test_trait')
+            widget.source.data=cds_data
+            np.array_equal(cls_instance.test_trait,option)
+            self.assertTupleEqual(cls_instance.test_trait.shape,option.shape)
+
+    @given(lists(integers(),min_size=3,max_size=3))
+    def test_widget_trait_callback_list(self,options):
+        """test verifies that a traits value is changing when a new value
+        is assigned to the widget
+        """
+        columns = [TableColumn(field='test_col1')]
+        for test_trait in [List([1,1,1])]: 
+            mapper_args = self.mapper_args.copy()
+            mapper_args['test_trait']['columns'] = columns
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance,self.mapper,mapper_args).get('test_trait')
+            widget.source.data={'test_col1':options}
+            self.assertListEqual(cls_instance.test_trait,options)
+
+    @given(lists(integers(),min_size=3,max_size=3))
+    def test_trait_widget_callback_list(self,options):
+        """test verifies that a traits value is changing when a new value
+        is assigned to the widget
+        """
+        columns = [TableColumn(field='test_col1')]
+        for test_trait in [List([1,1,1])]: 
+            mapper_args = self.mapper_args.copy()
+            mapper_args['test_trait']['columns'] = columns
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance,self.mapper,mapper_args).get('test_trait')
+            cls_instance.test_trait = options
+            self.assertListEqual(widget.source.data['test_col1'],options)
+
+    @given(tuples(integers(),integers(),integers())) # tuple with three values (int)
+    def test_widget_trait_callback_tuple(self,options):
+        """test verifies that a traits value is changing when a new value
+        is assigned to the widget
+        """
+        columns = [TableColumn(field='test_col1')]
+        for test_trait in [Tuple((1,1,1))]: 
+            mapper_args = self.mapper_args.copy()
+            mapper_args['test_trait']['columns'] = columns
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance,self.mapper,mapper_args).get('test_trait')
+            widget.source.data={'test_col1':options}
+            self.assertTupleEqual(cls_instance.test_trait,options)
+
+    @given(tuples(integers(),integers(),integers()))
+    def test_trait_widget_callback_tuple(self,options):
+        """test verifies that a traits value is changing when a new value
+        is assigned to the widget
+        """
+        columns = [TableColumn(field='test_col1')]
+        for test_trait in [Tuple((1,1,1))]: 
+            mapper_args = self.mapper_args.copy()
+            mapper_args['test_trait']['columns'] = columns
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance,self.mapper,mapper_args).get('test_trait')
+            cls_instance.test_trait = options
+            self.assertTupleEqual(widget.source.data['test_col1'],options)
 
 
 if __name__ == '__main__':

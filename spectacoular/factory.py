@@ -21,12 +21,14 @@ from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
 TableColumn, NumberEditor, StringEditor, NumericInput, Toggle
 from bokeh.models import ColumnDataSource
 from bokeh.core.property.descriptors import UnsetValueError
-from traits.api import Enum, Map, Trait, TraitEnum, TraitMap, CArray, Any, \
+from traits.api import Enum, Map, Trait, TraitEnum, TraitMap, Array, CArray, Any, \
 List, Float, CFloat, Int, CInt, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
 Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
-BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate, Bool
-from numpy import ndarray,newaxis,isscalar,nan_to_num
+BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate, Bool, Tuple
+from numpy import array, ndarray, newaxis, isscalar, nan_to_num, array_equal,\
+    concatenate, stack
+from warnings import warn
 from .cast import cast_to_int, cast_to_str, cast_to_float, cast_to_bool,\
 cast_to_list, cast_to_array, singledispatchmethod
 
@@ -39,6 +41,7 @@ ALLOWED_WIDGET_TRAIT_MAPPINGS = {
     Toggle : (Bool,) + (TraitCompound,Any,Delegate), 
     Select : (Enum, TraitEnum, Map, TraitMap, BaseStr, BaseFile, ) + NUMERIC_TYPES, # Numeric types and Str types should also be allowed here, to further use the set_widgets method with predefined options
     Slider : (Range, ) + NUMERIC_TYPES,
+    DataTable : (Array,CArray,List,Tuple, ) 
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
@@ -54,6 +57,10 @@ DEFAULT_TRAIT_WIDGET_MAPPINGS = {
     TraitEnum : Select,
     TraitMap : Select,
     Range : Slider,
+    Array : DataTable,
+    CArray : DataTable,
+    List : DataTable,
+    Tuple : DataTable,
     }
 
 def as_str_list(func):
@@ -894,22 +901,8 @@ class DataTableMapper(TraitWidgetMapper):
     """
     Factory that creates :class:`DataTable` widget from a class trait attribute.
     """
-    
+
     transposed = False
-    
-    #: instance of a :class:`TraitDispatch` to dispatch between the widget 
-    #: value type and the trait attribute type
-    traitdispatcher = object()
-    
-    def __init__(self,obj,traitname):
-        self.obj = obj
-        self.traitname = traitname
-        self.traittype = obj.trait(traitname).trait_type
-        try:
-            self.traitvalue = getattr(obj,traitname)
-        except AttributeError: # in case of Delegate
-            self.traitvalue = None
-        self.traitdispatcher = trait_dispatch_factory(self,self.traittype)
 
     def create_widget(self,**kwargs):
         """
@@ -919,6 +912,8 @@ class DataTableMapper(TraitWidgetMapper):
         Creates a bokeh DataTable instance. For transposed arrays that are 
         mapped to the DataTable, array data is reshaped and casted to fit the
         required dictionary format of the ColumnDataSource.
+        In case of list types, only one-dimensional lists are allowed. The
+        transposed attribute will have no effect.
 
         Parameters
         ----------
@@ -930,23 +925,32 @@ class DataTableMapper(TraitWidgetMapper):
         instance(DataTable).
 
         """
-        #self.widget.source = ColumnDataSource() # TODO: this would not work! -> report bug to bokeh 
-        self.widget = DataTable(source=ColumnDataSource(),**kwargs) 
+
+        # first filter out transposed argument (not an attribute of Bokeh's 
+        # DataTable widget).
+        if 'transposed' in kwargs.keys():
+            self.transposed = kwargs.pop('transposed') #remove from kwargs
+        # create widget
+        self.widget = DataTable(**kwargs) 
         self.create_columns()
-        self.initialize_column_data_source()
-        self.is_transposed(self.traitvalue)
         self._set_widgetvalue(self.traitvalue)
         self._set_callbacks()
         return self.widget
 
     def set_widget(self, widget):
         """
-        connects a Bokeh DataTable widget instance to a class trait attribute 
+        connects a Bokeh DataTable widget instance to a class trait attribute.
+
+        The current implementation of set_widget can only handle non-transposed
+        mappings. Meaning that columns of the arraytrait have to be columns 
+        in the ColumnDataSource (not rows). 
 
         Parameters
         ----------
         widget : instance(DataTable)
             instance of a DataTable widget.
+        **kwargs : dict
+            additional arguments of DataTableMapper. 
 
         Returns
         -------
@@ -954,28 +958,52 @@ class DataTableMapper(TraitWidgetMapper):
 
         """
         self.widget = widget
-        cast_func = self.traitdispatcher.get_trait_cast_func()
-        self._set_traitvalue(cast_func(self.widget.source.data)) # set traitvalue to widgetvalue
+        if isinstance(self.traittype,List):
+            value = list(self.widget.source.data.values())[0]
+            setattr(self.obj,self.traitname,value)
+        elif isinstance(self.traittype,Tuple):
+            value = tuple(list(self.widget.source.data.values())[0])
+            setattr(self.obj,self.traitname,value)
+        else:
+            value = array(list(self.widget.source.data.values())).T
+            self._set_traitvalue(value) # set traitvalue to widgetvalue
         self._set_callbacks()
-
-    def initialize_column_data_source( self ):
-        ''' create keys of DataTables ColumnDataSource '''
-        for col in self.widget.columns:
-            self.widget.source.data[col.field] = []
 
     def create_columns( self ):
         ''' create single TableColumn and add to widget '''
-        if not self.widget.columns: 
+        if not self.widget.columns:
+            if isinstance(self.traittype,(List,Tuple)):
+                num_cols=1
+            else: # array
+                if self.traitvalue.ndim == 1:
+                    num_cols = 1
+                else:
+                    num_cols = self.traitvalue.shape[1]
+                    if self.transposed:
+                        num_cols = self.traitvalue.shape[0]
             self.widget.columns = [
-                    TableColumn(field=self.traitname, title=self.traitname)]
+                    TableColumn(field=f"{c}",title=f"{c}") for c in range(num_cols)]
             self._set_celleditor()
             
     def _set_celleditor( self ):
-        ''' adds a cell editor to the DataTable depending on table content '''
+        ''' adds a cell editor to the DataTable depending on table content.
+        If the dtype of the trait can not be determined and the DataTable is 
+        editable, a StringEditor is set.
+        '''
         if self.widget.editable:
-            if isinstance(self.traittype, NUMERIC_TYPES):
+            if isinstance(self.traittype,(List,Tuple)):
+                if len(self.traitvalue) > 0:
+                    dtype = type(self.traitvalue[0]) 
+                else:
+                    dtype = None
+            else: # array types
+                dtype = self.traittype.dtype                
+            if dtype in NUMERIC_TYPES: 
                 editor = NumberEditor()
             else:
+                if dtype is None:
+                    warn((f"Undefined dtype of trait {self.traitname} which is linked to an editable DataTable widget."+ 
+                    " Setting an instance of StringEditor for each column."))
                 editor = StringEditor()
             for col in self.widget.columns:
                 col.editor = editor
@@ -995,9 +1023,22 @@ class DataTableMapper(TraitWidgetMapper):
         None.
         
         """
-        newData = self.cast_to_dict(traitvalue)
-        if not self.widget.source.data == newData:
-            self.widget.source.data = newData
+        num_columns = len(self.widget.columns)
+        if isinstance(self.traittype,(List,Tuple)):
+            new_data = {self.widget.columns[0].field:traitvalue}
+        else: # if array type
+            if self.transposed:
+                traitvalue = traitvalue.T
+            dim = len(traitvalue.shape)
+            if dim > 1:
+                if num_columns < traitvalue.shape[1]:
+                    raise ValueError(
+                        f"DataTable linked to {self.traitname} trait of {self.obj} has only {num_columns} columns but the assigned array has {traitvalue.shape[1]} columns")
+                new_data = {self.widget.columns[i].field: traitvalue[:,i][:,newaxis] for i in range(traitvalue.shape[1])}
+            else:
+                new_data = {self.widget.columns[0].field: traitvalue}
+        #if new_data != self.widget.source.data:
+        self.widget.source.data = new_data
 
     def _set_callbacks( self ):
         """
@@ -1027,8 +1068,8 @@ class DataTableMapper(TraitWidgetMapper):
         of the class trait attribute.
         
         the function is evoked every time the widget value changes. The value 
-        of a Select, TextInput, ..., widget is always type str. However,
-        traitvalues can be of arbitrary type. Thus, widgetvalues need to 
+        of a :class:`Select`, :class: `TextInput`, ..., widget is always type str. 
+        However, traitvalues can be of arbitrary type. Thus, widgetvalues need to 
         be casted. 
 
         Returns
@@ -1036,75 +1077,79 @@ class DataTableMapper(TraitWidgetMapper):
         callable.
 
         """
-        cast_func = self.traitdispatcher.get_trait_cast_func()
-        def callback(attr, old, new): # any how old and new are always the same when the callback is triggered
-            old = getattr(self.obj,self.traitname) # 
-            new = cast_func(new)
-            if isinstance(new,ndarray) and self.transposed: # if trait expects array in a transposed representation to the ColumnDataSource
-                new = new.T
-#            print(new,type(new),self.traitname, self.traittype,new.shape)
-            if not self.is_equal(old,new):
-                self._set_traitvalue(new)
+        if isinstance(self.traittype,List):
+            def callback(attr, old, new):
+                current_value = getattr(self.obj,self.traitname)
+                new_value = list(new.values())[0]
+                if current_value != new_value:
+                    setattr(self.obj,self.traitname,new_value)
+        elif isinstance(self.traittype,Tuple):
+            def callback(attr, old, new):
+                current_value = getattr(self.obj,self.traitname)
+                new_value = tuple(list(new.values())[0])
+                if current_value != new_value:
+                    setattr(self.obj,self.traitname,new_value)
+        else: # array type
+            def callback(attr, old, new):
+                # new variable is of type dict! get dict values:
+                # get all values for given Table Column field names (keys)
+                fieldnames = [col.field for col in self.widget.columns]
+                column_values = [new.get(fn) for fn in fieldnames]
+                new_traitvalue = self._cds_to_numpy_array_transform(column_values,self.transposed)
+                self._set_traitvalue(new_traitvalue)
         return callback
 
-    def is_equal(self,old,new):
-        """ helper function to check if data of ColumnDataSource has changed """
-#        print("old values:",old, old.shape,"new values:",new, new.shape)
-#        print(old == new)
-        if isinstance(new,ndarray) and isinstance(old,ndarray):
-            boolArray = new==old
-            if isscalar(boolArray):
-                return boolArray
+    def _cds_to_numpy_array_transform(self,column_values,transposed):
+        """Maps the column values of DataTable's ColumnDataSource to a numpy array
+        to be used as new value of the array trait mapped to this DataTable widget.
+
+        When using bokeh renderers, the columns of the ColumnDataSource will be converted
+        to a list type when elements are added to or removed from these columns. In this case,
+        type casting from list to array type is necessary.
+
+        Parameters
+        ----------
+        column_values : array or list
+            column values of the ColumnDataSource
+        transposed : bool
+            if true, maps the columns of the ColumnDataSource to rows. 
+
+        Returns
+        -------
+        array
+            the new trait value based on the column values
+        """
+
+        if type(column_values) == list: # cast to array if is list type
+            column_values = array(column_values)
+        if column_values[0].ndim == 1 and len(column_values) == 1: # mapps to arrays with -> (n,) shapes
+            new_traitvalue = column_values[0] 
+        else: # mapps to arrays with -> (n,number_of_columns) shapes
+            if column_values[0].ndim == 1:
+                new_traitvalue = stack(column_values,axis=1).squeeze()      
             else:
-                return boolArray.all()
-        elif isscalar(new) and isscalar(old):
-            return new == old
-        elif isinstance(new,list) and isinstance(old,list):
-            return new == old
-        else:
-            raise NotImplementedError("can not compare {} and {}".format(type(old),type(new)))
+                new_traitvalue = concatenate(column_values,axis=1)      
+            if transposed:
+                new_traitvalue = new_traitvalue.T
+        return new_traitvalue
 
-    def is_transposed(self,traitvalue):
-        numCols = len(self.widget.columns)
-        if isinstance(traitvalue,ndarray):
-            arrayShape = traitvalue.shape
-            if arrayShape[0] == numCols and not arrayShape[1] == numCols:
-                self.transposed = True
+    def _set_traitvalue(self,widgetvalue):
+        """
+        Sets the value of a class trait attribute to the widgets value.       
 
-    @singledispatchmethod
-    def cast_to_dict( self, traitvalue ): # int, float, str, bool
-        keys = [col.field for col in self.widget.columns]
-        if len(keys) > 1:
-            raise ValueError('can not cast scalar value of "{}" to a dictionary with {} columns'.format(traitvalue,len(keys)))
-        return {self.widget.columns[0].field: [traitvalue]}
+        Parameters
+        ----------
+        widgetvalue : array
+            data from ColumnDataSource as numpy array.
 
-    @cast_to_dict.register( list )
-    def _(self,traitvalue):
-        data = {}
-        keys = [col.field for col in self.widget.columns]
-        if len(keys) > 1: # expects a list of lists
-            for i,key in enumerate(keys):
-                data[key] = traitvalue[i]   
-        elif len(keys) == 1: # expects a single list
-            data[keys[0]] = traitvalue
-        return data
-
-    @cast_to_dict.register( ndarray )
-    def _(self,traitvalue):
-        data = {}
-        if traitvalue.size > 0:
-            numCols = len(self.widget.columns)
-            if traitvalue.ndim < 2:
-                traitvalue = traitvalue[:,newaxis]
-            if traitvalue.shape[0] == numCols and traitvalue.shape[1] != numCols:
-                traitvalue = traitvalue.T # reshape if necessary
-                self.reshape = True
-            for i,column in enumerate(self.widget.columns):
-                    data[column.field] = list(traitvalue[:,i])
-        else:
-            for column in self.widget.columns:
-                data[column.field] = []
-        return data
+        Returns
+        -------
+        None.
+        
+        """
+        current_value = getattr(self.obj,self.traitname)
+        if not array_equal(widgetvalue,current_value):
+            setattr(self.obj,self.traitname,widgetvalue)
 
 
 # =============================================================================

@@ -32,7 +32,7 @@ options.append('')
 mg = MicGeom(from_file=options[0])
 rg = RectGrid(x_min=-0.5, x_max=0.5, y_min=-0.5, y_max=0.5, z=.5,increment=0.02)
 st = SteeringVector(mics = mg, grid = rg)
-psf = PointSpreadFunction(steer=st,freq=1000.0)
+psf = PointSpreadFunction(steer=st,freq=1000.0,grid_indices=array([1300]))
 psfPresenter = PointSpreadFunctionPresenter(source=psf)
 
 #%%           
@@ -52,7 +52,6 @@ psf.set_widgets(**{'freq':psfFreqSlider}) # set from file attribute with select 
 
 #%%
 
-src_pos = ColumnDataSource(data={'x':[0],'y':[0]})
 # create Button to trigger PSF calculation
 def calc():
     source_pos = (src_pos.data['x'][0],src_pos.data['y'][0],rg.z) #(x,y,z), will be snapped to grid
@@ -73,13 +72,17 @@ mgPlot = figure(title='Microphone Geometry',
 mgPlot.toolbar.logo=None
 micRenderer = mgPlot.circle_cross(x='x',y='y',size=20,fill_alpha=.8,
                                   source=mgWidgets['mpos_tot'].source)
-drawtool = PointDrawTool(renderers=[micRenderer])
+drawtool = PointDrawTool(renderers=[micRenderer],empty_value=0.) 
+# empty_value: a value of 0. is inserted for the third column (z-axis) when
+# new points/mics are added to the geometry
 mgPlot.add_tools(drawtool)
 mgPlot.toolbar.active_tap = drawtool
 
 
 #%% PSF Plot
 # Tooltips for additional information
+psfPresenter.update()
+
 PSF_TOOLTIPS = [
     ("Lp/dB", "@psf"),
     ("(x,y)", "($x, $y)"),]
@@ -95,20 +98,12 @@ psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Lp/dB",\
                             title_standoff=5,
                             background_fill_color = '#2F2F2F'),'right')
 
-    
+src_pos = ColumnDataSource(data={'x':[0],'y':[0]}) 
+src_pos.on_change('data',lambda attr,old,new:calc()) # automatically re-calc if set  
 srcRenderer = psfPlot.cross(x='x',y='y',size=10, fill_alpha=.8, source=src_pos)
 marktool = PointDrawTool(renderers=[srcRenderer], num_objects=1)
 psfPlot.add_tools(marktool)
 psfPlot.toolbar.active_tap = marktool
-
-# this is somwhat redundant to the calc function
-def calc_update(attr,old,new):
-    source_pos = (src_pos.data['x'][0],src_pos.data['y'][0],rg.z) #(x,y,z), will be snapped to grid
-    grid_index = array([ravel_multi_index(rg.index(*source_pos[:2]), rg.shape)])
-    psf.grid_indices = grid_index
-    psfPresenter.update()
-
-src_pos.on_change('data',calc_update)
 
 def resetpos(event):
     src_pos.data={'x':[0],'y':[0]}
@@ -130,7 +125,7 @@ for f in mgWidgets['mpos_tot'].columns:
 # Tabs
 mgWidgets['mpos_tot'].height = 280
 mgTab = Panel(child=column(mgWidgets['from_file'],
-                           row( mgWidgets['invalid_channels'],mgWidgets['num_mics'],width = twidth),
+                           row(mgWidgets['num_mics'],width = twidth),
                            hspace,
                           mgWidgets['mpos_tot']),
                           title='Microphone Geometry')
