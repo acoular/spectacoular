@@ -19,14 +19,12 @@
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
 TableColumn, NumberEditor, StringEditor, NumericInput, Toggle
-from bokeh.models import ColumnDataSource
 from bokeh.core.property.descriptors import UnsetValueError
-from traits.api import Enum, Map, Trait, TraitEnum, TraitMap, Array, CArray, Any, \
+from traits.api import Enum, Map, TraitEnum, TraitMap, Array, CArray, Any, \
 List, Float, CFloat, Int, CInt, Range, Long, Dict,\
-CLong, HasPrivateTraits, TraitCoerceType, TraitCompound,\
-Complex, BaseInt, BaseLong, BaseFloat, BaseBool, BaseRange,\
-BaseStr, BaseFile, BaseTuple, BaseEnum, Delegate, Bool, Tuple, Str
-from numpy import array, ndarray, newaxis, isscalar, nan_to_num, array_equal,\
+CLong, HasPrivateTraits, TraitCompound,\
+BaseStr, BaseFile, Delegate, Bool, Tuple, Str
+from numpy import array, newaxis, array_equal,\
     concatenate, stack
 from warnings import warn
 

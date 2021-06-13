@@ -485,7 +485,7 @@ class TextInputTest(BaseMapperTest):
     widget = TextInput
 
     # allowed numeric trait types that can be mapped to TextInput widget
-    test_traits = [Str(),File()] 
+    test_traits = [Str()] 
 
     mapper = {'test_trait': TextInput}
 
@@ -517,7 +517,7 @@ class TextInputTest(BaseMapperTest):
         """test verifies that a traits value is changing when a new value
         is assigned to the widget
         """
-        #print(value)
+        print(string)
         # test in types
         for test_trait in self.test_traits:
             cls_instance = self.get_has_traits_derived_class_instance(test_trait)
