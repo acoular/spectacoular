@@ -10,12 +10,13 @@ bokeh serve --show SLM
 import threading
 import sys
 from itertools import cycle
+from bokeh.models.widgets.inputs import NumericInput
 
 from numpy import array, searchsorted, polyfit, argsort, cumsum, log10
 
 from bokeh.layouts import column, row
-from bokeh.models.widgets import Panel, Tabs, Button, Toggle, Select, TextInput, RadioGroup,\
-    TableColumn, DataTable, Div
+from bokeh.models.widgets import Panel, Tabs, Button, Toggle, Select, RadioGroup,\
+    TableColumn, DataTable, Div, NumericInput
 from bokeh.models import CDSView, CustomJSFilter, CustomJSTransform, HoverTool,\
      CustomJSHover, CustomJS, Spacer, WheelPanTool, Range1d, DataRange1d, Slider,\
          LegendItem, Legend, Slope, ColumnDataSource, NumberFormatter
@@ -32,18 +33,18 @@ import sounddevice as sd
 palette = cycle(Category10_10)
 
 # spectacoular related definitions
-trait_widget_mapper = {'device': TextInput,
-                       'sample_freq': TextInput,
-                       'numchannels' : TextInput
+trait_widget_mapper = {'device': NumericInput,
+                       'sample_freq': NumericInput,
+                       'numchannels' : NumericInput
                        }
-trait_widget_args = {'device': {'disabled':False},
-                     'sample_freq':  {'disabled':True},
-                     'numchannels': {'disabled':True},
+trait_widget_args = {'device': {'disabled':False,'mode':'int'},
+                     'sample_freq':  {'disabled':True,'mode':'float'},
+                     'numchannels': {'disabled':True,'mode':'int'},
                      }
 add_bokeh_attr(SoundDeviceSamplesGenerator,trait_widget_mapper,trait_widget_args)
 
-trait_widget_mapper = {'band': TextInput}
-trait_widget_args = {'band': {'disabled':False},
+trait_widget_mapper = {'band': NumericInput}
+trait_widget_args = {'band': {'disabled':False,'mode':'float'},
                      }
 add_bokeh_attr(FiltOctave,trait_widget_mapper,trait_widget_args)
 
@@ -57,8 +58,8 @@ trait_widget_args = {'weight': {'disabled':False},
                      }
 add_bokeh_attr(FiltFreqWeight,trait_widget_mapper,trait_widget_args)
 
-trait_widget_mapper = {'elapsed': TextInput}
-trait_widget_args = {'elapsed': {'disabled':True},
+trait_widget_mapper = {'elapsed': NumericInput}
+trait_widget_args = {'elapsed': {'disabled':True,'mode':'float'},
                      }
 add_bokeh_attr(TimeBandsConsumer,trait_widget_mapper,trait_widget_args)
 
