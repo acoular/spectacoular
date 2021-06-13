@@ -15,6 +15,7 @@ from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider,Div, Par
     NumberFormatter
 from bokeh.plotting import figure
 from bokeh.palettes import viridis, Spectral11
+from bokeh.server.server import Server
 from numpy import array, nan, zeros
 import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
@@ -292,5 +293,19 @@ leftlayout=layout([
         ])
 
 layout = row(leftlayout,vspace,calcRow,Spacer(width=20),settingsCol,Spacer(width=40),instructionsCol)
+
 # make Document
-doc.add_root(layout)
+def server_doc(doc):
+    doc.add_root(layout)
+    doc.title = "FreqBeamformingExample"
+
+if __name__ == '__main__':
+    server = Server({'/': server_doc})
+    server.start()
+    print('Opening application on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, "/")
+    server.io_loop.start()
+else:
+    doc = curdoc()
+    server_doc(doc)
+

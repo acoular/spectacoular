@@ -10,13 +10,14 @@ from bokeh.io import curdoc
 from bokeh.layouts import row, column
 # from bokeh.events import MouseLeave
 from bokeh.models import ColumnDataSource
-from bokeh.models.widgets import Toggle, Select, TextInput, Button, PreText, \
+from bokeh.models.widgets import Toggle, TextInput, Button, PreText, \
 Tabs, Panel, MultiSelect
 from bokeh.plotting import figure
 from bokeh.palettes import Blues
+from bokeh.server.server import Server
 from numpy import mean, conj, real, array, log10, logspace,append,sort
 from acoular import L_p, MaskedTimeInOut
-from spectacoular import MaskedTimeSamples, TimeSamplesPresenter, SpectraInOut,\
+from spectacoular import MaskedTimeSamples, TimeSamplesPresenter,\
     set_calc_button_callback, PowerSpectra
 try:
     import sounddevice as sd
@@ -166,5 +167,17 @@ def plot():
         get_logticks([10, 30000], unit="Hz")
 set_calc_button_callback(plot,plotButton,label='Plot Data')
 
-# add to doc
-doc.add_root(plotTab)
+# make Document
+def server_doc(doc):
+    doc.add_root(plotTab)
+    doc.title = "TimeSamplesApp"
+
+if __name__ == '__main__':
+    server = Server({'/': server_doc})
+    server.start()
+    print('Opening application on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, "/")
+    server.io_loop.start()
+else:
+    doc = curdoc()
+    server_doc(doc)
