@@ -164,7 +164,7 @@ def plot():
     elif plotTab.active == 1:
         get_spectra()
         get_logticks([10, 30000], unit="Hz")
-set_calc_button_callback(plot,plotButton)
+set_calc_button_callback(plot,plotButton,label='Plot Data')
 
 # add to doc
 doc.add_root(plotTab)

@@ -7,7 +7,7 @@
 
 
 
-def set_calc_button_callback(calcFunc, calcButton):
+def set_calc_button_callback(calcFunc,calcButton,label='Calculate',active_label='Calculating ...'):
     """
     Sets a simple wrapper function to set a Bokeh button inactive and change 
     its label during calculation.
@@ -26,11 +26,10 @@ def set_calc_button_callback(calcFunc, calcButton):
 
     """
     def calc(arg):
-        calclabel = 'Calculating ...'
         if arg:
-            calcButton.label = calclabel
+            calcButton.label = active_label
             calcButton.disabled = True
-            while not calcButton.label == calclabel and not calcButton.disabled:
+            while not calcButton.label == active_label and not calcButton.disabled:
                 pass
             try:
                 calcFunc()
@@ -38,9 +37,9 @@ def set_calc_button_callback(calcFunc, calcButton):
                 print(ex)
             calcButton.active = False
             calcButton.disabled = False
-            calcButton.label = 'Calculate'
+            calcButton.label = label
         else:
-            calcButton.label = 'Calculate'
+            calcButton.label = label
     calcButton.on_click(calc)
 
 
