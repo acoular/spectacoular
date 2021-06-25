@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) 2007-2022, Acoular Development Team.
 #------------------------------------------------------------------------------
 import os
 from os import path
@@ -13,6 +13,7 @@ from bokeh.models import LinearColorMapper, ColorBar, PointDrawTool, ColumnDataS
 from bokeh.events import Reset
 from bokeh.plotting import figure
 from bokeh.palettes import Viridis256 
+from bokeh.server.server import Server
 from spectacoular import MicGeom, SteeringVector, RectGrid, PointSpreadFunction,\
 PointSpreadFunctionPresenter,set_calc_button_callback
 from pylab import ravel_multi_index, array
@@ -146,5 +147,17 @@ ControlBox = column(hspace,
         ControlTabs,width=400)
     
 # make Document
-doc.add_root(row(vspace,mgPlot,psfPlot,vspace,ControlBox))
+def server_doc(doc):
+    doc.add_root(row(vspace,mgPlot,psfPlot,vspace,ControlBox))
+    doc.title = "MicGeomExample"
+
+if __name__ == '__main__':
+    server = Server({'/': server_doc})
+    server.start()
+    print('Opening application on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, "/")
+    server.io_loop.start()
+else:
+    doc = curdoc()
+    server_doc(doc)
 

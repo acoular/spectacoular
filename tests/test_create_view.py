@@ -1,6 +1,6 @@
 from traits.api import HasTraits, Int, Long, CLong, Float, Complex,\
     BaseBool,Bool,CBool, Enum, Trait, Map, Range, CTrait, Array, CArray,\
-        List, ListInt, ListFloat, ListStr, Tuple
+        List, ListInt, ListFloat, ListStr, Tuple, Str, File
 from bokeh.models.widgets import NumericInput, Toggle, Select, Slider, TextInput,\
     DataTable, TableColumn 
 import unittest
@@ -474,6 +474,58 @@ class DataTableTest(BaseMapperTest):
             widget = get_widgets(cls_instance,self.mapper,mapper_args).get('test_trait')
             cls_instance.test_trait = options
             self.assertTupleEqual(widget.source.data['test_col1'],options)
+
+
+
+class TextInputTest(BaseMapperTest):
+    """Verifies that mappings of trait types to TextInput are 
+    working correctly.
+    """
+
+    widget = TextInput
+
+    # allowed numeric trait types that can be mapped to TextInput widget
+    test_traits = [Str()] 
+
+    mapper = {'test_trait': TextInput}
+
+    def test_set_widgets(self):
+        """ test different ways to call set_widgets method for different trait types"""
+        expected_value = "10"
+        for set_widgets_method in [self.set_widgets_hastraits,self.set_widgets_spectacoular]:
+            for test_trait in self.test_traits:
+                with self.subTest(set_widgets_method.__name__+"_"+str(test_trait.__class__)):      
+                    widget = self.widget(value=expected_value)
+                    cls_instance = set_widgets_method(widget,test_trait,widget_property="value")
+                    self.assertEqual(cls_instance.test_trait,expected_value)
+    
+    @given(text())
+    def test_trait_widget_callback(self,string):
+        """test verifies that a widget value is changing when a new value
+        is assigned to the referenced trait. 
+        """
+        #print(string)
+        for test_trait in self.test_traits:
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance).get('test_trait')
+            # set trait to value
+            cls_instance.test_trait = string
+            self.assertEqual(widget.value,string)
+
+    @given(text())
+    def test_widget_trait_callback(self,string):
+        """test verifies that a traits value is changing when a new value
+        is assigned to the widget
+        """
+        print(string)
+        # test in types
+        for test_trait in self.test_traits:
+            cls_instance = self.get_has_traits_derived_class_instance(test_trait)
+            widget = get_widgets(cls_instance).get('test_trait')
+            # set widget to value
+            widget.value = string
+            self.assertEqual(cls_instance.test_trait,widget.value)
+
 
 
 if __name__ == '__main__':

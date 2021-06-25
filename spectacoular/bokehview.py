@@ -578,12 +578,12 @@ from acoular import TimeAverage
 trait_widget_mapper = {'naverage' : NumericInput,
                         'numsamples': NumericInput,
                         'sample_freq': NumericInput,
-                       # 'numchannels' : TextInput
+                       # 'numchannels' : NumericInput,
                        }
 trait_widget_args = {'naverage':  {'disabled':False,'mode':'int'},
                       'numsamples':  {'disabled':True,'mode':'int'},
                       'sample_freq':  {'disabled':True,'mode':'float'},
-                     # 'numchannels': {'disabled':True},
+                     # 'numchannels': {'disabled':True,'mode':'int'},
                      }
 
 add_bokeh_attr(TimeAverage,trait_widget_mapper,trait_widget_args)
