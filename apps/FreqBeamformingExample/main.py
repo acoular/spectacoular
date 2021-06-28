@@ -11,9 +11,11 @@ from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
 from bokeh.models.tools import BoxEditTool
 from bokeh.models import LinearColorMapper,ColorBar,ColumnDataSource, Range1d, HoverTool, Spacer
-from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider,Div, Paragraph
+from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider,Div, Paragraph,\
+    NumberFormatter
 from bokeh.plotting import figure
 from bokeh.palettes import viridis, Spectral11
+from bokeh.server.server import Server
 from numpy import array, nan, zeros
 import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
@@ -85,7 +87,15 @@ bv = BeamformerPresenter(source=bb,num=3,freq=4000.)
 bv.trait_widget_args.update(num={'width':40},freq={'width':100})
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
+tsWidgets['invalid_channels'].height = 100 
+tsWidgets['invalid_channels'].width = 300 
+tsWidgets['invalid_channels'].editable = False 
 mgWidgets = mg.get_widgets()
+mgWidgets['invalid_channels'].height = 100 
+mgWidgets['invalid_channels'].width = 300 
+mgWidgets['invalid_channels'].editable = False 
+mgWidgets['mpos_tot'].width = 300 
+mgWidgets['mpos_tot'].editable = False 
 envWidgets = env.get_widgets()
 calWidgets = cal.get_widgets()
 psWidgets = ps.get_widgets()
@@ -93,6 +103,10 @@ rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 bbWidgets = bb.get_widgets()
 bvWidgets = bv.get_widgets()
+
+formatter = NumberFormatter(format="0.00")
+for f in mgWidgets['mpos_tot'].columns:
+    f.formatter = formatter
 
 settings_dict = {
     "Time Data": tsWidgets,
@@ -269,7 +283,7 @@ calcRow = column(
     freqplot,
     )
 
-settingsCol = column(settingSelector,vspace2,selectedSettingCol)
+settingsCol = column(settingSelector,vspace2,selectedSettingCol,sizing_mode='scale_width')
 
 instructionsCol = column(instruction_calculation, instruction_sector_integration)
 
@@ -279,5 +293,19 @@ leftlayout=layout([
         ])
 
 layout = row(leftlayout,vspace,calcRow,Spacer(width=20),settingsCol,Spacer(width=40),instructionsCol)
+
 # make Document
-doc.add_root(layout)
+def server_doc(doc):
+    doc.add_root(layout)
+    doc.title = "FreqBeamformingExample"
+
+if __name__ == '__main__':
+    server = Server({'/': server_doc})
+    server.start()
+    print('Opening application on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, "/")
+    server.io_loop.start()
+else:
+    doc = curdoc()
+    server_doc(doc)
+

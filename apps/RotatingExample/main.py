@@ -144,4 +144,18 @@ beamformerSelector.on_change('value',beamformer_handler)
 
 # make Document
 mainlayout = row(plotTabs,calcColumn,propertyTabs,propertyTabs2)
-doc.add_root(mainlayout)
+
+# make Document
+def server_doc(doc):
+    doc.add_root(mainlayout)
+    doc.title = "RotatingExample"
+
+if __name__ == '__main__':
+    server = Server({'/': server_doc})
+    server.start()
+    print('Opening application on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, "/")
+    server.io_loop.start()
+else:
+    doc = curdoc()
+    server_doc(doc)

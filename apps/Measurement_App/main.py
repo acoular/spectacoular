@@ -559,7 +559,7 @@ emptyspace3 = Div(text='',width=250, height=10) # just for vertical spacing
 calCol = row(calibTable, emptyspace, column(
                     savecal,calWidgets['name'], calWidgets['magnitude'],
                     calWidgets['delta'],width=300,height=400))
-mgWidgetCol = column(mgWidgets['from_file'],mgWidgets['invalid_channels'],
+mgWidgetCol = column(mgWidgets['from_file'],
                      mgWidgets['num_mics'])
 channelsCol = column(mgWidgetCol,select_all_channels_button,checkbox_micgeom,
                                  width=300,height=400)
