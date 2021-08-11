@@ -14,9 +14,8 @@ One can run the application by navigating to the `spectacoular/apps` folder and 
 
 
 Serving this application produces the following interactive interface in your browser:
-
-   
-.. figure:: micgeomexample.png
+  
+.. figure:: micgeomexample.mp4
     :align: center
     :width: 100%
     :figwidth: 100%
