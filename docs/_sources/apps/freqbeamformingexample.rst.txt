@@ -1,7 +1,7 @@
-Frequency Domain Beamforming Application
-========================================
+Frequency Domain Beamforming App
+================================
 
-This application can be used to explore the characteristics of a given microphone geometry response to a point-source. 
+This application can be used to calculate source maps from measured microphone array data with different frequency domain methods. The data was collected during a wind tunnel experiment on trailing edge noise.
 
 Serving the Application:
 ------------------------
@@ -16,7 +16,7 @@ One can run the application by navigating to the `spectacoular/apps` folder and 
 Serving this application produces the following interactive interface in your browser:
 
    
-.. figure:: freqbeamformingexample.png
+.. figure:: freqbeamformingexample.mp4
     :align: center
     :width: 100%
     :figwidth: 100%

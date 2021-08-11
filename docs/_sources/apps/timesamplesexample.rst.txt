@@ -1,7 +1,7 @@
-Microphone Array Geometry App
-==============================
+Time Signal Exploration App
+=====================
 
-This application can be used to explore the characteristics of a given microphone geometry response to a point-source. 
+This application can be used to analyse the waveform and to calculate the spectra of acoustic channel data stored in .h5 file format.
 
 Serving the Application:
 ------------------------
@@ -10,12 +10,13 @@ One can run the application by navigating to the `spectacoular/apps` folder and 
 
 .. code-block:: console
 
-    $ bokeh serve --show MicGeomExample
+    $ bokeh serve --show TimeSamplesExample
 
 
 Serving this application produces the following interactive interface in your browser:
-  
-.. figure:: micgeomexample.mp4
+
+   
+.. figure:: timesamplesexample.mp4
     :align: center
     :width: 100%
     :figwidth: 100%

@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Microphone Array Measurement App &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/haikuac.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>Microphone Array Measurement App</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>       
+        <a class="uplink" href="../index.html">Main Page</a>
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="microphone-array-measurement-app">
+<h1>Microphone Array Measurement App<a class="headerlink" href="#microphone-array-measurement-app" title="Permalink to this headline">¶</a></h1>
+<p>This application can be used to record audio signals from multiple input channels and to perform live beamforming. Channel levels are displayed in a bar graph. The App offers different operating modes.</p>
+<p>The ‘phantom’ mode serves as a demonstration of the application features. The ‘uma16’ mode runs the app as a measurement software interface with the <a class="reference external" href="https://www.minidsp.com/products/usb-audio-interface/uma-16-microphone-array">miniDSP UMA16 MEMS</a> microphone array as the measurement hardware.</p>
+<section id="serving-the-application-in-phantom-mode">
+<h2>Serving the Application in Phantom mode:<a class="headerlink" href="#serving-the-application-in-phantom-mode" title="Permalink to this headline">¶</a></h2>
+<p>Navigate to the <cite>spectacoular/apps</cite> folder and type the following command in a dedicated console (e.g. shell)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bokeh serve --show  Measurement_App --args --device<span class="o">=</span>phantom --blocksize<span class="o">=</span><span class="m">256</span>
+</pre></div>
+</div>
+<p>Alternatively one can start the shell script named <cite>start_phantom.sh</cite></p>
+</section>
+<section id="serving-the-application-with-an-uma16-microphone-array">
+<h2>Serving the Application with an UMA16 microphone array:<a class="headerlink" href="#serving-the-application-with-an-uma16-microphone-array" title="Permalink to this headline">¶</a></h2>
+<p>Navigate to the <cite>spectacoular/apps</cite> folder and type the following command in a dedicated console (e.g. shell)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bokeh serve --show Measurement_App --args --device<span class="o">=</span>uma16 --blocksize<span class="o">=</span><span class="m">256</span>
+</pre></div>
+</div>
+<p>Alternatively one can start the shell script named <cite>start_uma.sh</cite></p>
+<p>Serving this application in phantom mode produces the following interactive interface in your browser:</p>
+<figure class="align-center" style="width: 100%">
+<a class="reference internal image-reference" href="../_images/measurementapp.mp4"><video src="../_images/measurementapp.mp4" title="../_images/measurementapp.mp4" width="100%"><a href="../_images/measurementapp.mp4">../_images/measurementapp.mp4</a></video></a>
+</figure>
+</section>
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>       
+        <a class="uplink" href="../index.html">Main Page</a>
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
+  </body>
+</html>

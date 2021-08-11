@@ -1,5 +1,5 @@
-Microphone Array Geometry Application
-======================================
+Microphone Array Geometry App
+==============================
 
 This application can be used to explore the characteristics of a given microphone geometry response to a point-source. 
 
