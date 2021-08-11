@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 #pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2020, Acoular Development Team.
+# Copyright (c) 2020-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
 """
 creates html and yaml layout for spectAcoular Apps
 """
 # App folder
-paths = ['MicGeomExample', 'FreqBeamformingExample', 'LiveViewExample',
+paths = ['MicGeomExample', 'FreqBeamformingExample',
          'TimeSamplesExample','Measurement_App','RotatingExample','SLM']
 ############### THEME COLOR SELECTIONS ################
 # Set background color
