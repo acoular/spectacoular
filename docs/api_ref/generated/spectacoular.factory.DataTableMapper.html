@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>DataTableMapper &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="consumer" href="../spectacoular.consumer.html" />
+    <link rel="prev" title="SliderMapper" href="spectacoular.factory.SliderMapper.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>DataTableMapper</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.factory.SliderMapper.html">SliderMapper</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="../spectacoular.consumer.html">consumer</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="datatablemapper">
+<h1>DataTableMapper<a class="headerlink" href="#datatablemapper" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectacoular.factory.DataTableMapper">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">spectacoular.factory.</span></span><span class="sig-name descname"><span class="pre">DataTableMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">traitname</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.factory.DataTableMapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">spectacoular.factory.TraitWidgetMapper</span></code></p>
+<p>Factory that creates <code class="xref py py-class docutils literal notranslate"><span class="pre">DataTable</span></code> widget from a class trait attribute.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.factory.DataTableMapper.create_widget">
+<span class="sig-name descname"><span class="pre">create_widget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.factory.DataTableMapper.create_widget" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates a Bokeh <code class="xref py py-class docutils literal notranslate"><span class="pre">DataTable</span></code> widget instance from class trait
+attribute.</p>
+<p>Creates a bokeh DataTable instance. For transposed arrays that are 
+mapped to the DataTable, array data is reshaped and casted to fit the
+required dictionary format of the ColumnDataSource.
+In case of list types, only one-dimensional lists are allowed. The
+transposed attribute will have no effect.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>**kwargs</strong><span class="classifier">args of DataTable</span></dt><dd><p>additional arguments of DataTable widget.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>instance(DataTable).</dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.factory.DataTableMapper.set_widget">
+<span class="sig-name descname"><span class="pre">set_widget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">widget</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.factory.DataTableMapper.set_widget" title="Permalink to this definition">¶</a></dt>
+<dd><p>connects a Bokeh DataTable widget instance to a class trait attribute.</p>
+<p>The current implementation of set_widget can only handle non-transposed
+mappings. Meaning that columns of the arraytrait have to be columns 
+in the ColumnDataSource (not rows).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>widget</strong><span class="classifier">instance(DataTable)</span></dt><dd><p>instance of a DataTable widget.</p>
+</dd>
+<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>additional arguments of DataTableMapper.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>None.</dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.factory.DataTableMapper.create_columns">
+<span class="sig-name descname"><span class="pre">create_columns</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.factory.DataTableMapper.create_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>create single TableColumn and add to widget</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.factory.DataTableMapper.create_trait_setter_func">
+<span class="sig-name descname"><span class="pre">create_trait_setter_func</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.factory.DataTableMapper.create_trait_setter_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates a function that casts the type of a widget value into the type
+of the class trait attribute.</p>
+<p>the function is evoked every time the widget value changes. The value 
+of a <code class="xref py py-class docutils literal notranslate"><span class="pre">Select</span></code>, :class: <cite>TextInput</cite>, …, widget is always type str. 
+However, traitvalues can be of arbitrary type. Thus, widgetvalues need to 
+be casted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><dl class="simple">
+<dt>callable.</dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.factory.SliderMapper.html">SliderMapper</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="../spectacoular.consumer.html">consumer</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
+  </body>
+</html>

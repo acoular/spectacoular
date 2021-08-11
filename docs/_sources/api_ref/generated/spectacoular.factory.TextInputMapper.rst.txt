@@ -1,0 +1,8 @@
+TextInputMapper
+====================================
+
+.. currentmodule:: spectacoular.factory
+
+.. autoclass:: TextInputMapper
+    :members:
+    :show-inheritance:

@@ -1,0 +1,8 @@
+SelectMapper
+=================================
+
+.. currentmodule:: spectacoular.factory
+
+.. autoclass:: SelectMapper
+    :members:
+    :show-inheritance:

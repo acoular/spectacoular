@@ -33,6 +33,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary', 
     'sphinx.ext.doctest', 
+    'sphinx.ext.githubpages',
     'traits.util.trait_documenter',
     'numpydoc' #conda install -c anaconda numpydoc
 ]

@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>TimeConsumer &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="TimeBandsConsumer" href="spectacoular.consumer.TimeBandsConsumer.html" />
+    <link rel="prev" title="consumer" href="../spectacoular.consumer.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>TimeConsumer</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="../spectacoular.consumer.html">consumer</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.consumer.html">consumer</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.consumer.TimeBandsConsumer.html">TimeBandsConsumer</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="timeconsumer">
+<h1>TimeConsumer<a class="headerlink" href="#timeconsumer" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">spectacoular.consumer.</span></span><span class="sig-name descname"><span class="pre">TimeConsumer</span></span><a class="headerlink" href="#spectacoular.consumer.TimeConsumer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">acoular.tprocess.TimeInOut</span></code></p>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeInOut</span></code> derived class for building an interface from Acoular’s generator 
+pipelines to Bokeh’s ColumnDataSource model that serves as a source for
+plots and tables.</p>
+<p>How it works:
+<a class="reference internal" href="#spectacoular.consumer.TimeConsumer.consume" title="spectacoular.consumer.TimeConsumer.consume"><code class="xref py py-meth docutils literal notranslate"><span class="pre">consume()</span></code></a> runs in an extra non-GUI <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.thread" title="spectacoular.consumer.TimeConsumer.thread"><code class="xref py py-attr docutils literal notranslate"><span class="pre">thread</span></code></a> (must be set up by the user)
+and fetches blocks of data  with length <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.num" title="spectacoular.consumer.TimeConsumer.num"><code class="xref py py-attr docutils literal notranslate"><span class="pre">num</span></code></a> from <code class="xref py py-attr docutils literal notranslate"><span class="pre">source</span></code>. 
+These blocks are stored in <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.data" title="spectacoular.consumer.TimeConsumer.data"><code class="xref py py-attr docutils literal notranslate"><span class="pre">data</span></code></a> and <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.update" title="spectacoular.consumer.TimeConsumer.update"><code class="xref py py-meth docutils literal notranslate"><span class="pre">update()</span></code></a> is then registered 
+as a callback for GUI event loop. <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.update" title="spectacoular.consumer.TimeConsumer.update"><code class="xref py py-meth docutils literal notranslate"><span class="pre">update()</span></code></a> then sends the data, downsampled 
+by a factor <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.down" title="spectacoular.consumer.TimeConsumer.down"><code class="xref py py-attr docutils literal notranslate"><span class="pre">down</span></code></a> to ColumnDataSource <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.ds" title="spectacoular.consumer.TimeConsumer.ds"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ds()</span></code></a>, which holds an overall 
+length of <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.rollover" title="spectacoular.consumer.TimeConsumer.rollover"><code class="xref py py-attr docutils literal notranslate"><span class="pre">rollover</span></code></a> samples. The elapsed time in seconds is stored in <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.elapsed" title="spectacoular.consumer.TimeConsumer.elapsed"><code class="xref py py-attr docutils literal notranslate"><span class="pre">elapsed</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.ds">
+<span class="sig-name descname"><span class="pre">ds</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Trait(ColumnDataSource)</span></em><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.ds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bokeh’s ColumnDataSource, updated from result loop</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.channels">
+<span class="sig-name descname"><span class="pre">channels</span></span><em class="property"> <span class="pre">=</span> <span class="pre">List(Int)</span></em><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.channels" title="Permalink to this definition">¶</a></dt>
+<dd><p>channels to have in the output</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.num">
+<span class="sig-name descname"><span class="pre">num</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Int(128)</span></em><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.num" title="Permalink to this definition">¶</a></dt>
+<dd><p>input block size</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.down">
+<span class="sig-name descname"><span class="pre">down</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Int(8)</span></em><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.down" title="Permalink to this definition">¶</a></dt>
+<dd><p>downsampling factor for output</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.rollover">
+<span class="sig-name descname"><span class="pre">rollover</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Int(8192)</span></em><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.rollover" title="Permalink to this definition">¶</a></dt>
+<dd><p>total length of columns in ds</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.thread">
+<span class="sig-name descname"><span class="pre">thread</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Trait(threading.Thread)</span></em><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.thread" title="Permalink to this definition">¶</a></dt>
+<dd><p>thread in which <a class="reference internal" href="#spectacoular.consumer.TimeConsumer.consume" title="spectacoular.consumer.TimeConsumer.consume"><code class="xref py py-meth docutils literal notranslate"><span class="pre">consume()</span></code></a> runs</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.elapsed">
+<span class="sig-name descname"><span class="pre">elapsed</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Float(0)</span></em><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.elapsed" title="Permalink to this definition">¶</a></dt>
+<dd><p>elapsed time in data</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.updated">
+<span class="sig-name descname"><span class="pre">updated</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Trait(threading.Event)</span></em><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.updated" title="Permalink to this definition">¶</a></dt>
+<dd><p>flag for update / consume</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.data">
+<span class="sig-name descname"><span class="pre">data</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Array</span></em><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>transport between consume / update</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.ch_names">
+<span class="sig-name descname"><span class="pre">ch_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.ch_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>generator that returns channel names, helper for iterating over channels</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.consume">
+<span class="sig-name descname"><span class="pre">consume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.consume" title="Permalink to this definition">¶</a></dt>
+<dd><p>consumes samples from source, to be run in an extra non-GUI thread</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>doc: server document to register callbacks to</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>callback function for GUI event loop, updates data source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeConsumer.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.consumer.TimeConsumer.result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Python generator that yields the output block-wise. Does nothing in this class.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="../spectacoular.consumer.html">consumer</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.consumer.html">consumer</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.consumer.TimeBandsConsumer.html">TimeBandsConsumer</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>TimeSamplesPresenter &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="controller" href="../spectacoular.controller.html" />
+    <link rel="prev" title="PointSpreadFunctionPresenter" href="spectacoular.dprocess.PointSpreadFunctionPresenter.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>TimeSamplesPresenter</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.dprocess.PointSpreadFunctionPresenter.html">PointSpreadFunctionPresenter</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.dprocess.html">dprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="../spectacoular.controller.html">controller</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="timesamplespresenter">
+<h1>TimeSamplesPresenter<a class="headerlink" href="#timesamplespresenter" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectacoular.dprocess.TimeSamplesPresenter">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">spectacoular.dprocess.</span></span><span class="sig-name descname"><span class="pre">TimeSamplesPresenter</span></span><a class="headerlink" href="#spectacoular.dprocess.TimeSamplesPresenter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="spectacoular.dprocess.BasePresenter.html#spectacoular.dprocess.BasePresenter" title="spectacoular.dprocess.BasePresenter"><code class="xref py py-class docutils literal notranslate"><span class="pre">spectacoular.dprocess.BasePresenter</span></code></a></p>
+<p>This class implements methods to select channel data for visualization.</p>
+<p>The data of its ColumnDataSource fits bokehs MultiLine Glyph.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>   <span class="kn">import</span> <span class="nn">spectacoular</span>
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">ts</span> <span class="o">=</span> <span class="n">spectacoular</span><span class="o">.</span><span class="n">TimeSamples</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;/path/to/file.h5&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">tv</span> <span class="o">=</span> <span class="n">spectacoular</span><span class="o">.</span><span class="n">TimeSamplesPresenter</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">ts</span><span class="p">)</span>  
+<span class="gp">&gt;&gt;&gt; </span>   
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">tsPlot</span> <span class="o">=</span> <span class="n">figure</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Channel Data&quot;</span><span class="p">)</span> 
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">tsPlot</span><span class="o">.</span><span class="n">multi_line</span><span class="p">(</span><span class="n">xs</span><span class="o">=</span><span class="s1">&#39;xs&#39;</span><span class="p">,</span> <span class="n">ys</span><span class="o">=</span><span class="s1">&#39;ys&#39;</span><span class="p">,</span><span class="n">source</span><span class="o">=</span><span class="n">tv</span><span class="o">.</span><span class="n">cdsource</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.dprocess.TimeSamplesPresenter.source">
+<span class="sig-name descname"><span class="pre">source</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Trait(TimeSamples)</span></em><a class="headerlink" href="#spectacoular.dprocess.TimeSamplesPresenter.source" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data source; <code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSamples</span></code> or derived object.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.dprocess.TimeSamplesPresenter.cdsource">
+<span class="sig-name descname"><span class="pre">cdsource</span></span><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1029',</span> <span class="pre">...)</span></em><a class="headerlink" href="#spectacoular.dprocess.TimeSamplesPresenter.cdsource" title="Permalink to this definition">¶</a></dt>
+<dd><p>ColumnDataSource that holds data that can be consumed by plots and glyphs</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.dprocess.TimeSamplesPresenter.channels">
+<span class="sig-name descname"><span class="pre">channels</span></span><em class="property"> <span class="pre">=</span> <span class="pre">ListInt([])</span></em><a class="headerlink" href="#spectacoular.dprocess.TimeSamplesPresenter.channels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indices of channel to be considered for updating of ColumnDataSource</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.dprocess.TimeSamplesPresenter.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.dprocess.TimeSamplesPresenter.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function that updates the keys and values of <a class="reference internal" href="#spectacoular.dprocess.TimeSamplesPresenter.cdsource" title="spectacoular.dprocess.TimeSamplesPresenter.cdsource"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cdsource</span></code></a> attribute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><dl class="simple">
+<dt>None.</dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.dprocess.PointSpreadFunctionPresenter.html">PointSpreadFunctionPresenter</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.dprocess.html">dprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="../spectacoular.controller.html">controller</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
+  </body>
+</html>
