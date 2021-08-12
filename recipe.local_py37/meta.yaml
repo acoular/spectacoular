@@ -1,6 +1,6 @@
 package:
   name: spectacoular
-  version: "20.11"
+  version: "21.08"
 
 source:
   path: ../../spectacoular
@@ -27,14 +27,14 @@ source:
 requirements:
   build:
     - python
-    - Acoular>=20.10
-    - bokeh >=1.2.0
+    - Acoular>=21.05
+    - bokeh >=1.3.0
 
 
   run:
-    - python >=3.6
-    - Acoular>=20.10
-    - bokeh >=1.2.0
+    - python >=3.7
+    - Acoular>=21.05
+    - bokeh >=1.3.0
 
 test:
   # Python imports
@@ -59,9 +59,9 @@ test:
     # - nose
 
 about:
-  home: http://www.acoular.org
+  home: https://acoular.github.io/spectacoular/
   license: BSD License
-  summary: 'Library for acoustic beamforming'
+  summary: 'Library for SpectAcoular interactive applications with Acoular'
 
 # See
 # http://docs.continuum.io/conda/build.html for

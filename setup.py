@@ -44,7 +44,7 @@ setup(name="spectacoular",
       license="BSD",
       author=bf_author,
       author_email="info@acoular.org",
-      url="http://www.acoular.org",
+      url="https://acoular.github.io/spectacoular/",
       classifiers=[
       'Development Status :: 5 - Production/Stable',
       'Intended Audience :: Education',
