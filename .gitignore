@@ -12,5 +12,5 @@ _build/
 apps/Measurement_App/static/two_sources_one_moving_10s.h5
 apps/Measurement_App/data/
 *.log
-sphinx/source/api_ref/generated/
-sphinx/build
+sphinx/api_ref/generated/
+sphinx/_build
