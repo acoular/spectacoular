@@ -12,8 +12,6 @@ SpectAcoular
 :User forum: https://groups.google.com/g/acoular-users
 
 .. image:: sphinx/_static/poster.png
-    :width: 200 px
-    :scale: 50%
     :align: left
 
 
