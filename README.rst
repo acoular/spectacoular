@@ -12,7 +12,7 @@ SpectAcoular
 :User forum: https://groups.google.com/g/acoular-users
 
 .. image:: sphinx/_static/poster.png
-    :scale: 50 %
+    :scale: 50%
     :align: center
 
 
