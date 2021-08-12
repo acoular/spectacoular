@@ -11,7 +11,9 @@ SpectAcoular
 :Documentation: https://acoular.github.io/spectacoular/
 :User forum: https://groups.google.com/g/acoular-users
 
-.. figure:: sphinx/_static/poster.png
+.. image:: sphinx/_static/poster.png
+    :scale: 50 %
+    :align: center
 
 
 Quick Start
