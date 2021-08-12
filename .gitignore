@@ -10,7 +10,7 @@ build/
 _build/
 
 apps/Measurement_App/static/two_sources_one_moving_10s.h5
-
-*.log
-
 apps/Measurement_App/data/
+*.log
+sphinx/source/api_ref/generated/
+sphinx/build
