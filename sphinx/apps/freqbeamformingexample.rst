@@ -1,7 +1,9 @@
-Microphone Array Geometry Application
-======================================
+:orphan:
 
-This application can be used to explore the characteristics of a given microphone geometry response to a point-source. 
+Frequency Domain Beamforming App
+================================
+
+This application can be used to calculate source maps from measured microphone array data with different frequency domain methods. The data was collected during a wind tunnel experiment on trailing edge noise.
 
 Serving the Application:
 ------------------------
@@ -10,13 +12,13 @@ One can run the application by navigating to the `spectacoular/apps` folder and 
 
 .. code-block:: console
 
-    $ bokeh serve --show MicGeomExample
+    $ bokeh serve --show FreqBeamformingExample
 
 
 Serving this application produces the following interactive interface in your browser:
 
    
-.. figure:: micgeomexample.png
+.. figure:: freqbeamformingexample.mp4
     :align: center
     :width: 100%
     :figwidth: 100%

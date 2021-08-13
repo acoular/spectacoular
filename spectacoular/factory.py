@@ -8,6 +8,7 @@
 .. autosummary::
     :toctree: generated/
 
+    get_widgets
     BaseSpectacoular
     NumericInputMapper
     ToggleMapper
@@ -134,29 +135,27 @@ def get_widgets(self, trait_widget_mapper={}, trait_widget_args={}):
     This function implements multiple cases of View construction:
 
     * (Case 1 - Default View) get_widgets() is called by a BaseSpectacoular 
-    derived instance without specifying trait_widget_mapper and trait_widget_args 
-    as function arguments. 
-    In this case, the mapping defined by the object instance attributes
-    (`self.trait_widget_mapper`,self.`trait_widget_args`) will be used to 
-    construct the View. 
-    
-    * (Case 2 - Custom View (a)) get_widgets() is called by a BaseSpectacoular 
-    derived instance and the desired mapping is given by the 
-    :meth:`get_widgets` function arguments (trait_widget_mapper and trait_widget_args).
-    In this case, the mapping defined by the function arguments will be used to
-    create the View. The instance attributes (`self.trait_widget_mapper`,self.`trait_widget_args`) 
-    will be superseded. 
-    
-    * (Case 3 - No Predefined View) :meth:`get_widgets` is called and a HasTraits derived instance 
-    is given as the first argument to the function. The instance object has no 
-    trait_widget_mapper and trait_widget_args attributes. 
-    In this case, a default mapping is created from all editable traits to create the view. 
+      derived instance without specifying trait_widget_mapper and trait_widget_args 
+      as function arguments. In this case, the mapping defined by the object instance attributes
+      (`self.trait_widget_mapper`,self.`trait_widget_args`) will be used to 
+      construct the View.     
 
+    * (Case 2 - Custom View (a)) get_widgets() is called by a BaseSpectacoular 
+      derived instance and the desired mapping is given by the 
+      :meth:`get_widgets` function arguments (trait_widget_mapper and trait_widget_args).
+      In this case, the mapping defined by the function arguments will be used to
+      create the View. The instance attributes (`self.trait_widget_mapper`,self.`trait_widget_args`) 
+      will be superseded. 
+
+    * (Case 3 - No Predefined View) :meth:`get_widgets` is called and a HasTraits derived instance 
+      is given as the first argument to the function. The instance object has no 
+      trait_widget_mapper and trait_widget_args attributes. 
+      In this case, a default mapping is created from all editable traits to create the view. 
+    
     * (Case 4 - Custom View (b)) :meth:`get_widgets` is called and a HasTraits derived instance 
-    is given as the first argument to the function. The instance object has no 
-    trait_widget_mapper and trait_widget_args attributes, but a mapping is defined by the 
-    second (and third) function argument. 
-    In this case, the mapping defined by the function arguments will be used to create the View. 
+      is given as the first argument to the function. The instance object has no 
+      trait_widget_mapper and trait_widget_args attributes, but a mapping is defined by the 
+      second (and third) function argument. In this case, the mapping defined by the function arguments will be used to create the View. 
     
     Parameters
     ----------
