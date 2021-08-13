@@ -1,8 +1,0 @@
-TimeSamplesPlayback
-=========================================
-
-.. currentmodule:: spectacoular.lprocess
-
-.. autoclass:: TimeSamplesPlayback
-    :members:
-    :show-inheritance:

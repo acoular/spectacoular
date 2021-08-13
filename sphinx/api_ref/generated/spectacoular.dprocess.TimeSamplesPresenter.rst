@@ -1,8 +1,0 @@
-TimeSamplesPresenter
-==========================================
-
-.. currentmodule:: spectacoular.dprocess
-
-.. autoclass:: TimeSamplesPresenter
-    :members:
-    :show-inheritance:
