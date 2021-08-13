@@ -14,3 +14,5 @@ apps/Measurement_App/data/
 *.log
 sphinx/api_ref/generated/
 sphinx/_build
+docs/
+copy_html.sh
