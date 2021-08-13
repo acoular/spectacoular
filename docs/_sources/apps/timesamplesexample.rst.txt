@@ -1,5 +1,7 @@
+:orphan:
+
 Time Signal Exploration App
-=====================
+===========================
 
 This application can be used to analyse the waveform and to calculate the spectra of acoustic channel data stored in .h5 file format.
 
