@@ -1,6 +1,0 @@
-﻿spectacoular.factory.get\_widgets
-=================================
-
-.. currentmodule:: spectacoular.factory
-
-.. autofunction:: get_widgets

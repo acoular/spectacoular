@@ -1,8 +1,0 @@
-SpectraInOut
-==================================
-
-.. currentmodule:: spectacoular.lprocess
-
-.. autoclass:: SpectraInOut
-    :members:
-    :show-inheritance:

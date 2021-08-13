@@ -1,4 +1,0 @@
-﻿lprocess
-=====================
-
-.. automodule:: spectacoular.lprocess

@@ -1,8 +1,0 @@
-TimeSamplesPhantom
-========================================
-
-.. currentmodule:: spectacoular.lprocess
-
-.. autoclass:: TimeSamplesPhantom
-    :members:
-    :show-inheritance:

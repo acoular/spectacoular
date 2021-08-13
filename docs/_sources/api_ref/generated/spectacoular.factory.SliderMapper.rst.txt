@@ -1,8 +1,0 @@
-SliderMapper
-=================================
-
-.. currentmodule:: spectacoular.factory
-
-.. autoclass:: SliderMapper
-    :members:
-    :show-inheritance:
