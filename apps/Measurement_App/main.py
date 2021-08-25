@@ -34,10 +34,9 @@ from datetime import datetime
 from time import time
 from threading import Event
 from functools import partial
-from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
-from bokeh.models import ColumnDataSource, RadioGroup, Spacer
+from bokeh.models import ColumnDataSource, RadioGroup, Spacer, CustomJS
 from bokeh.models.widgets import Div, Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider
 from bokeh.layouts import column,row
 from acoular import TimePower, TimeAverage, L_p, MicGeom, FiltOctave, \
@@ -131,7 +130,7 @@ else: # otherwise it must be sinus
     except:
         raise NotImplementedError("sinus module can not be imported")
     from sinus_dev import get_interface, append_left_column,append_disable_obj,\
-        get_callbacks
+        get_callbacks, close_device_callback
     mg_file = 'tub_vogel64.xml'
     iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,SYNCORDER)
     ch_names = inputSignalGen.inchannels_
@@ -224,6 +223,21 @@ reload_micgeom_button = Button(label="↻",disabled=False,width=40,height=40)
 def update_micgeom_options_callback():
     select_micgeom.options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]+["None"]
 reload_micgeom_button.on_click(update_micgeom_options_callback)
+
+# button to stop the server
+exit_button = Button(label="Exit", button_type="danger",sizing_mode="stretch_width",width=100)
+def exit_callback(arg):
+    from time import sleep
+    sleep(1)
+    if sinus_enabled:
+        close_device_callback()
+    sys.exit()
+exit_button.on_click(exit_callback)
+exit_button.js_on_click(CustomJS( code='''
+    setTimeout(function(){
+        window.location.href = "about:blank";
+    }, 500);
+    '''))
 
 # DataTable
 from bokeh.models.widgets import TableColumn,NumberEditor,DataTable
@@ -612,7 +626,7 @@ calibrationTab = Panel(child=calCol, title="Calibration")
 figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab,calibrationTab],width=850)
 logTab = Tabs(tabs=[Panel(child=logText, title="Log")],width=1000,height=300)
 
-left_column = column(emptyspace2, display_toggle,
+left_column = column(display_toggle,
                      ti_savename,checkbox_use_current_time,
                      ti_msmtime,msm_toggle,calib_toggle,
                      beamf_toggle,selectPerCallPeriod,
@@ -620,7 +634,7 @@ left_column = column(emptyspace2, display_toggle,
 if sinus_enabled: append_left_column(left_column)
 right_column = column(figureTabs)
 
-layout = column(row(emptyspace,left_column,emptyspace,right_column,),Spacer(height=50),logText)
+layout = column(row(Spacer(width=1400),exit_button),row(emptyspace,left_column,emptyspace,right_column,),Spacer(height=50),logText)
 doc.add_root(layout)
 doc.add_periodic_callback(periodic_update_log,1000)
 doc.title = "Measurement App"
