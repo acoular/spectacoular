@@ -37,7 +37,7 @@ from functools import partial
 from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
-from bokeh.models import ColumnDataSource, ColorBar, Spacer
+from bokeh.models import ColumnDataSource, RadioGroup, Spacer
 from bokeh.models.widgets import Div, Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider
 from bokeh.layouts import column,row
 from acoular import TimePower, TimeAverage, L_p, MicGeom, FiltOctave, \
@@ -188,6 +188,17 @@ calWidgets = ch.get_widgets()
 # =============================================================================
 # bokeh
 # =============================================================================
+# Columndatasources
+ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,NUMCHANNELS+1)),
+                                       'level':np.zeros(NUMCHANNELS),
+                                       'colors':[COLOR[1]]*NUMCHANNELS} )
+MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
+                                    'sizes':np.array([MICSCALE]*micGeo.num_mics),
+                                    'channels':[str(_) for _ in range(micGeo.num_mics)],
+                                    'colors':[COLOR[1]]*micGeo.num_mics}) 
+BeamfCDS = ColumnDataSource({'beamformer_data':[]})
+
+
 # Numeric Inputs
 cliplevel = NumericInput(value=CLIPVALUE, title="Clip Level/dB",width=100)
 def update_cliplevel(attr,old,new):
@@ -198,6 +209,16 @@ cliplevel.on_change('value',update_cliplevel)
 # Text Inputs
 ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
 ti_savename = TextInput(value="", title="Filename:",disabled=True)
+
+# RadioGroup
+geomviewlabels= ["Back View", "Front View"]
+geomview = RadioGroup(labels=geomviewlabels, active=0)
+def update_micgeom_view(attr,old,new):
+    if new == 0: # BackView
+        MicGeomCDS.data['x'] = micGeo.mpos[0,:]
+    elif new == 1: # FrontView
+        MicGeomCDS.data['x'] = micGeo.mpos[0,:]*-1
+geomview.on_change('active',update_micgeom_view)
 
 # DataTable
 from bokeh.models.widgets import TableColumn,NumberEditor,DataTable
@@ -216,18 +237,6 @@ ch.on_trait_change(calibtable_callback,"calibdata")
 savecal = Button(label="save calibration",button_type="warning")
 savecal.on_click(lambda: ch.save())
 
-# Columndatasources
-ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,NUMCHANNELS+1)),
-                                       'level':np.zeros(NUMCHANNELS),
-                                       'colors':[COLOR[1]]*NUMCHANNELS} )
-MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
-                                    'sizes':np.array([MICSCALE]*micGeo.num_mics),
-                                    'channels':[str(_) for _ in range(micGeo.num_mics)],
-                                    'colors':[COLOR[1]]*micGeo.num_mics}) 
-BeamfCDS = ColumnDataSource({'beamformer_data':[]})
-
-
-#
 freqSlider = Slider(start=50, end=10000, value=CFREQ, 
                     step=1, title="Frequency",disabled=False)
 bfFilt.set_widgets(**{'band':freqSlider}) # 
@@ -585,7 +594,7 @@ gridCol = column(*rgWidgets.values())
 
 # Tabs
 amplitudesTab = Panel(child=column(row(Spacer(width=25),cliplevel),amp_fig),title='Channel Levels')
-micgeomTab = Panel(child=column(row(column(row(micsizeSlider,cliplevel),micgeom_fig),emptyspace1,channelsCol)),title='Microphone Geometry')
+micgeomTab = Panel(child=column(row(column(row(Spacer(width=25),cliplevel,Spacer(width=15),micsizeSlider,Spacer(width=15),geomview),micgeom_fig),emptyspace1,channelsCol)),title='Microphone Geometry')
 beamformTab = Panel(child=column(
                         row(beam_fig,emptyspace1,gridCol,emptyspace,
                         column(freqSlider,wtimeSlider,dynamicSlider,
