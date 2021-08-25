@@ -8,11 +8,10 @@ Created on Wed May 15 17:23:01 2019
 from numpy import pi
 from bokeh.palettes import Spectral11, Viridis256
 from bokeh.plotting import figure
-from bokeh.models import LinearColorMapper, LogColorMapper
-from bokeh.models.widgets import Toggle, Button, PreText,Select,RangeSlider,\
-CheckboxGroup, Slider, TextInput, TextAreaInput
+from bokeh.models import LogColorMapper
+from bokeh.models.widgets import Toggle, Button, Select,RangeSlider,\
+CheckboxGroup, Slider, TextAreaInput
 
-CLIPVALUE = 120 # value in dB at which CLIP_COLOR is applied
 COLOR = Spectral11
 MODE_COLORS = {'display':COLOR[1],'calib':COLOR[5],'msm':COLOR[8]}
 CLIP_COLORS = {'display':COLOR[8],'calib':COLOR[8],'msm':COLOR[8]}
@@ -21,15 +20,6 @@ MGEOMFIG_ARGS = {'plot_width':800,  'plot_height':800}
 
 
 # status Definitions
-log_text_toggles =  {('msm',True): "collecting samples...",
-                    ('msm',False): "stopped collecting samples.",
-                    ('display',True): "display samples...",
-                    ('display',False): "stopped to display samples.",
-                    ('calib',True): "calibrating...",
-                    ('calib',False): "stopped calibrating.",
-                    ('beamf',True): "beamforming...",
-                    ('beamf',False): "stopped beamforming."}
-
 toggle_labels =     {('msm',False): "START MEASUREMENT",
                     ('msm',True): "STOP MEASUREMENT",
                     ('display',False): "start display",
@@ -50,7 +40,6 @@ plot_colors =       {('msm',True): [MODE_COLORS['msm'],CLIP_COLORS['msm']],
 
 # Color Mapper
 bfColorMapper = LogColorMapper(palette=Viridis256, low=70, high=90,low_color=(1,1,1,0))
-ampColorMapper = LinearColorMapper(palette=[COLOR[0],COLOR[10]], low=0.,high=CLIPVALUE*2)
 
 # Buttons
 select_all_channels_button = Button(label="select all channels")

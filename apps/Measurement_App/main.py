@@ -20,6 +20,7 @@ bokeh serve --show Measurement_App --args --device=typhoon --syncorder SerialNb1
 """
 import sys
 import os
+from bokeh.models.widgets.inputs import NumericInput
 import numpy as np 
 import logging
 try:
@@ -36,7 +37,7 @@ from functools import partial
 from collections import deque
 import argparse
 from bokeh.plotting import curdoc, figure
-from bokeh.models import ColumnDataSource, ColorBar, LinearColorMapper, Spacer
+from bokeh.models import ColumnDataSource, ColorBar, Spacer
 from bokeh.models.widgets import Div, Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider
 from bokeh.layouts import column,row
 from acoular import TimePower, TimeAverage, L_p, MicGeom, FiltOctave, \
@@ -45,11 +46,11 @@ from acoular_future import CSMInOut, BeamformerFreqTime
 from SamplesProcessor import SamplesThread,EventThread,LastInOut
 from spectacoular import RectGrid,CalibHelper,FiltOctaveLive,TimeInOutPresenter
 from interfaces import get_interface, StreamToLogger
-from layout import log_text_toggles, plot_colors, toggle_labels,micgeom_fig, \
-amp_fig, selectPerCallPeriod, checkbox_use_current_time, bfColorMapper,ampColorMapper, \
+from layout import plot_colors, toggle_labels,micgeom_fig, \
+amp_fig, selectPerCallPeriod, checkbox_use_current_time, bfColorMapper,\
 select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,calib_toggle,\
 logText, dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider,\
-  COLOR,CLIPVALUE
+  COLOR
 
 doc = curdoc()
 if cam_enabled: set_camera_callback(doc)
@@ -80,9 +81,12 @@ MGEOMPATH = os.path.join(APPFOLDER,"micgeom/")
 TDPATH = os.path.join(APPFOLDER,"td/")
 if not os.path.exists(TDPATH): 
     os.mkdir(TDPATH)
+# globals
+global MICSCALE, CLIPVALUE, MODECOLOR, CLIPCOLOR
+MICSCALE = 7
+CLIPVALUE = 120 # value in dB at which CLIP_COLOR is applied
 BANDWIDTH = 3
 MAXMSG = 20 # maximum number of messages to display in GUI
-MICSCALE = 7
 CFREQ = 4000 
 BUFFERSIZE = 400
 NBLOCKS = 5 # number of blocks after which to do beamforming
@@ -184,6 +188,13 @@ calWidgets = ch.get_widgets()
 # =============================================================================
 # bokeh
 # =============================================================================
+# Numeric Inputs
+cliplevel = NumericInput(value=CLIPVALUE, title="Clip Level/dB",width=100)
+def update_cliplevel(attr,old,new):
+    global CLIPVALUE
+    CLIPVALUE = new
+cliplevel.on_change('value',update_cliplevel)
+
 # Text Inputs
 ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
 ti_savename = TextInput(value="", title="Filename:",disabled=True)
@@ -207,10 +218,12 @@ savecal.on_click(lambda: ch.save())
 
 # Columndatasources
 ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,NUMCHANNELS+1)),
-                                       'level':np.zeros(NUMCHANNELS)} )
+                                       'level':np.zeros(NUMCHANNELS),
+                                       'colors':[COLOR[1]]*NUMCHANNELS} )
 MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
                                     'sizes':np.array([MICSCALE]*micGeo.num_mics),
-                                    'channels':[str(_) for _ in range(micGeo.num_mics)]}) 
+                                    'channels':[str(_) for _ in range(micGeo.num_mics)],
+                                    'colors':[COLOR[1]]*micGeo.num_mics}) 
 BeamfCDS = ColumnDataSource({'beamformer_data':[]})
 
 
@@ -225,20 +238,22 @@ wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
                      disabled=False)
 f.set_widgets(**{'weight_time':wtimeSlider})
 
+micsizeSlider = Slider(start=1, end=50, value=MICSCALE, 
+                    step=0.5, title="Circle Size",disabled=False)
+def update_micsizes(attr,old,new):
+    global MICSCALE 
+    MICSCALE = new
+    MicGeomCDS.data['sizes'] = np.array([MICSCALE]*micGeo.num_mics)
+micsizeSlider.on_change('value', update_micsizes)
+
 # checkboxes # inline=True -> arange horizontally, False-> vertically
 checkbox_micgeom = CheckboxGroup(labels=ch_names,
                                  active=[_ for _ in range(NUMCHANNELS)],
                                  width=100,height=100,inline=False)
 
-# Figures 
-amp_bar = amp_fig.vbar(x='channels', width=0.5, bottom=0,top='level', 
-                   color={'field': 'level', 'transform': ampColorMapper},
-                   source=ChLevelsCDS)
-
-mgColorMapper = LinearColorMapper(palette=[COLOR[0],COLOR[10]], low=0.,high=CLIPVALUE*2/MICSCALE)
-micgeom_fig.circle(x='x',y='y', size='sizes',
-                   color={'field': 'sizes', 'transform': mgColorMapper},
-                   source=MicGeomCDS)
+# Figures and Glyphs
+amp_bar = amp_fig.vbar(x='channels', width=0.5, bottom=0,top='level', color='colors', source=ChLevelsCDS)
+micgeom_fig.circle(x='x',y='y', size='sizes', color='colors', source=MicGeomCDS)
 
 # make image
 dx = grid.x_max-grid.x_min
@@ -349,7 +364,8 @@ rgWidgets['y_max'].on_change('value',update_bfImage_axis)
 def select_micgeom_callback(attr, old, new):
     MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
                        'sizes':np.array([MICSCALE]*micGeo.num_mics),
-                       'channels':get_active_channels()}
+                       'channels':get_active_channels(),
+                       'colors': [COLOR[1]]*micGeo.num_mics}
 select_micgeom.on_change('value',select_micgeom_callback)
 
 def select_all_channels_callback():
@@ -384,13 +400,11 @@ def widget_activation_callback(mode,isSet):
     for widget in widgets_enable[mode]: widget.disabled = bool(1-isSet)
     
 def change_mode(toggle,mode,isSet):    
-    #print("change mode",mode, isSet)
+    global MODECOLOR, CLIPCOLOR
     toggle.active = isSet
     toggle.label = toggle_labels[(mode,isSet)]
-    widget_activation_callback(mode,isSet)   
-    if plot_colors[(mode,isSet)]:
-        ampColorMapper.palette = plot_colors[(mode,isSet)]
-        mgColorMapper.palette = plot_colors[(mode,isSet)]
+    widget_activation_callback(mode,isSet) 
+    MODECOLOR, CLIPCOLOR = plot_colors[(mode,isSet)]
 
 def displaytoggle_handler(arg):
     global periodic_plot_callback, disp_threads # need to be global
@@ -506,12 +520,16 @@ def get_bf_data(num):
 
 def update_amp_bar_plot():
     if tioAvg.data.data['data'].size > 0:
-        ChLevelsCDS.data['level'] =  L_p(tioAvg.data.data['data'].T)
+        levels = L_p(tioAvg.data.data['data'].T)
+        ChLevelsCDS.data['level'] =  levels
+        ChLevelsCDS.data['colors'] = [MODECOLOR if val<CLIPVALUE else CLIPCOLOR for val in levels]
 #                                            'channel': inputSignalGen.inchannels_}
 def update_mic_geom_plot():
+    global MICSCALE, CLIPVALUE
     if micGeo.num_mics > 0: 
-        mg_vals = [L_p(tioAvg.data.data['data'].T[i]) for i in checkbox_micgeom.active] # only take which are active
-        MicGeomCDS.data['sizes'] = np.array(mg_vals)/MICSCALE
+        levels = np.array([L_p(tioAvg.data.data['data'].T[i]) for i in checkbox_micgeom.active]) # only take which are active
+        MicGeomCDS.data['sizes'] = levels/levels.max()*MICSCALE
+        MicGeomCDS.data['colors'] = [MODECOLOR if val<CLIPVALUE else CLIPCOLOR for val in levels]
 
 def update_beamforming_plot():
     if bfdata['data'].size > 0:
@@ -549,10 +567,10 @@ def periodic_update_log():
 # =============================================================================
 #  Set Up Bokeh Document Layout
 # =============================================================================
-emptyspace = Div(text='',width=20, height=1000) # just for horizontal spacing
-emptyspace1 = Div(text='',width=30, height=1000) # just for horizontal spacing
-emptyspace2 = Div(text='',width=250, height=30) # just for vertical spacing
-emptyspace3 = Div(text='',width=250, height=10) # just for vertical spacing
+emptyspace = Spacer(width=20, height=1000) # just for horizontal spacing
+emptyspace1 = Spacer(width=30, height=1000) # just for horizontal spacing
+emptyspace2 = Spacer(width=250, height=30) # just for vertical spacing
+emptyspace3 = Spacer(width=250, height=10) # just for vertical spacing
 
 # Columns
 # calWidgets['calibdata'].height = 750
@@ -566,8 +584,8 @@ channelsCol = column(mgWidgetCol,select_all_channels_button,checkbox_micgeom,
 gridCol = column(*rgWidgets.values())
 
 # Tabs
-amplitudesTab = Panel(child=amp_fig,title='Channel Levels')
-micgeomTab = Panel(child=column(row(micgeom_fig,emptyspace1,channelsCol)),title='Microphone Geometry')
+amplitudesTab = Panel(child=column(row(Spacer(width=25),cliplevel),amp_fig),title='Channel Levels')
+micgeomTab = Panel(child=column(row(column(row(micsizeSlider,cliplevel),micgeom_fig),emptyspace1,channelsCol)),title='Microphone Geometry')
 beamformTab = Panel(child=column(
                         row(beam_fig,emptyspace1,gridCol,emptyspace,
                         column(freqSlider,wtimeSlider,dynamicSlider,
