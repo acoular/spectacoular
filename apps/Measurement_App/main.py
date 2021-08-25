@@ -82,8 +82,8 @@ TDPATH = os.path.join(APPFOLDER,"td/")
 if not os.path.exists(TDPATH): 
     os.mkdir(TDPATH)
 # globals
-global MICSCALE, CLIPVALUE, MODECOLOR, CLIPCOLOR
-MICSCALE = 7
+global MICSIZE, CLIPVALUE, MODECOLOR, CLIPCOLOR
+MICSIZE = 25
 CLIPVALUE = 120 # value in dB at which CLIP_COLOR is applied
 BANDWIDTH = 3
 MAXMSG = 20 # maximum number of messages to display in GUI
@@ -177,9 +177,8 @@ zSlider = Slider(start=0.01, end=10.0, value=grid.z, step=.02, title="z",disable
 grid.set_widgets(**{'z':zSlider})
 rgWidgets['z'] = zSlider # replace textfield with slider
 
-micgeomfiles = [os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]
 select_micgeom = Select(title="Select MicGeom:", value=os.path.join(MGEOMPATH,mg_file),
-                                options=micgeomfiles+["None"])
+                                options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)])
 micGeo.set_widgets(**{'from_file':select_micgeom})
 mgWidgets = micGeo.get_widgets()
 mgWidgets['from_file'] = select_micgeom
@@ -193,7 +192,7 @@ ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,NUMCHANNELS+1
                                        'level':np.zeros(NUMCHANNELS),
                                        'colors':[COLOR[1]]*NUMCHANNELS} )
 MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
-                                    'sizes':np.array([MICSCALE]*micGeo.num_mics),
+                                    'sizes':np.array([MICSIZE]*micGeo.num_mics),
                                     'channels':[str(_) for _ in range(micGeo.num_mics)],
                                     'colors':[COLOR[1]]*micGeo.num_mics}) 
 BeamfCDS = ColumnDataSource({'beamformer_data':[]})
@@ -219,6 +218,12 @@ def update_micgeom_view(attr,old,new):
     elif new == 1: # FrontView
         MicGeomCDS.data['x'] = micGeo.mpos[0,:]*-1
 geomview.on_change('active',update_micgeom_view)
+
+# Buttons
+reload_micgeom_button = Button(label="↻",disabled=False,width=40,height=40)
+def update_micgeom_options_callback():
+    select_micgeom.options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]+["None"]
+reload_micgeom_button.on_click(update_micgeom_options_callback)
 
 # DataTable
 from bokeh.models.widgets import TableColumn,NumberEditor,DataTable
@@ -247,12 +252,12 @@ wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
                      disabled=False)
 f.set_widgets(**{'weight_time':wtimeSlider})
 
-micsizeSlider = Slider(start=1, end=50, value=MICSCALE, 
+micsizeSlider = Slider(start=1, end=50, value=MICSIZE, 
                     step=0.5, title="Circle Size",disabled=False)
 def update_micsizes(attr,old,new):
-    global MICSCALE 
-    MICSCALE = new
-    MicGeomCDS.data['sizes'] = np.array([MICSCALE]*micGeo.num_mics)
+    global MICSIZE 
+    MICSIZE = new
+    MicGeomCDS.data['sizes'] = np.array([MICSIZE]*micGeo.num_mics)
 micsizeSlider.on_change('value', update_micsizes)
 
 # checkboxes # inline=True -> arange horizontally, False-> vertically
@@ -372,7 +377,7 @@ rgWidgets['y_max'].on_change('value',update_bfImage_axis)
   
 def select_micgeom_callback(attr, old, new):
     MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
-                       'sizes':np.array([MICSCALE]*micGeo.num_mics),
+                       'sizes':np.array([MICSIZE]*micGeo.num_mics),
                        'channels':get_active_channels(),
                        'colors': [COLOR[1]]*micGeo.num_mics}
 select_micgeom.on_change('value',select_micgeom_callback)
@@ -413,7 +418,8 @@ def change_mode(toggle,mode,isSet):
     toggle.active = isSet
     toggle.label = toggle_labels[(mode,isSet)]
     widget_activation_callback(mode,isSet) 
-    MODECOLOR, CLIPCOLOR = plot_colors[(mode,isSet)]
+    if not mode == "beamf":
+        MODECOLOR, CLIPCOLOR = plot_colors[(mode,isSet)]
 
 def displaytoggle_handler(arg):
     global periodic_plot_callback, disp_threads # need to be global
@@ -534,10 +540,10 @@ def update_amp_bar_plot():
         ChLevelsCDS.data['colors'] = [MODECOLOR if val<CLIPVALUE else CLIPCOLOR for val in levels]
 #                                            'channel': inputSignalGen.inchannels_}
 def update_mic_geom_plot():
-    global MICSCALE, CLIPVALUE
+    global MICSIZE, CLIPVALUE
     if micGeo.num_mics > 0: 
         levels = np.array([L_p(tioAvg.data.data['data'].T[i]) for i in checkbox_micgeom.active]) # only take which are active
-        MicGeomCDS.data['sizes'] = levels/levels.max()*MICSCALE
+        MicGeomCDS.data['sizes'] = levels/levels.max()*MICSIZE
         MicGeomCDS.data['colors'] = [MODECOLOR if val<CLIPVALUE else CLIPCOLOR for val in levels]
 
 def update_beamforming_plot():
@@ -586,7 +592,7 @@ emptyspace3 = Spacer(width=250, height=10) # just for vertical spacing
 calCol = row(calibTable, emptyspace, column(
                     savecal,calWidgets['name'], calWidgets['magnitude'],
                     calWidgets['delta'],width=300,height=400))
-mgWidgetCol = column(mgWidgets['from_file'],
+mgWidgetCol = column(row(mgWidgets['from_file'],reload_micgeom_button),
                      mgWidgets['num_mics'])
 channelsCol = column(mgWidgetCol,select_all_channels_button,checkbox_micgeom,
                                  width=300,height=400)
