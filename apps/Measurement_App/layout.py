@@ -69,12 +69,19 @@ checkbox_paint_mode = CheckboxGroup(labels=["paint mode"], active=[])
 checkbox_autolevel_mode = CheckboxGroup(labels=["auto level mode"], active=[])
 
 # Amplitude Figure
-amp_fig = figure(title='SPL/dB',tools="",**AMPFIG_ARGS)
+# Tooltips
+level_tooltips = [
+    ("Lp/dB", "@level"),
+    ("Channel", "@channels"),]
+amp_fig = figure(title='SPL/dB',tooltips=level_tooltips,tools="",**AMPFIG_ARGS)
 amp_fig.xgrid.visible = False
 amp_fig.xaxis.major_label_orientation = pi/2
 amp_fig.toolbar.logo=None
 
 # MicGeomFigure
-micgeom_fig = figure(title='Array Geometry', tools = 'pan,wheel_zoom,reset',**MGEOMFIG_ARGS)
+mic_tooltips = [
+("Channel Index", "@channels"),
+    ("(x,y)", "(@x, @y)"),]
+micgeom_fig = figure(title='Array Geometry', tooltips=mic_tooltips,tools = 'pan,wheel_zoom,reset',**MGEOMFIG_ARGS)
 micgeom_fig.toolbar.logo=None
 
