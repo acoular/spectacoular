@@ -36,14 +36,15 @@ from threading import Event
 from functools import partial
 import argparse
 from bokeh.plotting import curdoc, figure
-from bokeh.models import ColumnDataSource, RadioGroup, Spacer, CustomJS
-from bokeh.models.widgets import Div, Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider
+from bokeh.models import ColumnDataSource, RadioGroup, Spacer, CustomJS,Div
+from bokeh.models.widgets import Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider,\
+TableColumn,NumberEditor,DataTable
 from bokeh.layouts import column,row
-from acoular import TimePower, TimeAverage, L_p, MicGeom, FiltOctave, \
+from acoular import TimePower, TimeAverage, L_p, MicGeom, \
 SteeringVector, BeamformerTime,  SampleSplitter, BeamformerBase, WriteH5
 from acoular_future import CSMInOut, BeamformerFreqTime
 from SamplesProcessor import SamplesThread,EventThread,LastInOut
-from spectacoular import RectGrid,CalibHelper,FiltOctaveLive,TimeInOutPresenter
+from spectacoular import RectGrid,CalibHelper,FiltOctaveLive,TimeInOutPresenter,FiltOctave
 from interfaces import get_interface, StreamToLogger
 from layout import plot_colors, toggle_labels,micgeom_fig, \
 amp_fig, selectPerCallPeriod, checkbox_use_current_time, bfColorMapper,\
@@ -128,9 +129,9 @@ else: # otherwise it must be sinus
         import sinus
         sinus_enabled=True
     except:
-        raise NotImplementedError("sinus module can not be imported")
+        raise NotImplementedError("sinus module cannot be imported!")
     from sinus_dev import get_interface, append_left_column,append_disable_obj,\
-        get_callbacks, close_device_callback
+        get_callbacks, close_device_callback, get_teds_component
     mg_file = 'tub_vogel64.xml'
     iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,SYNCORDER)
     ch_names = inputSignalGen.inchannels_
@@ -177,11 +178,13 @@ grid.set_widgets(**{'z':zSlider})
 rgWidgets['z'] = zSlider # replace textfield with slider
 
 select_micgeom = Select(title="Select MicGeom:", value=os.path.join(MGEOMPATH,mg_file),
-                                options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)])
+                                options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)],
+                                width=250)
 micGeo.set_widgets(**{'from_file':select_micgeom})
 mgWidgets = micGeo.get_widgets()
 mgWidgets['from_file'] = select_micgeom
 calWidgets = ch.get_widgets()
+calfiltWidgets = fo_cal.get_widgets()
 
 # =============================================================================
 # bokeh
@@ -219,7 +222,7 @@ def update_micgeom_view(attr,old,new):
 geomview.on_change('active',update_micgeom_view)
 
 # Buttons
-reload_micgeom_button = Button(label="↻",disabled=False,width=40,height=40)
+reload_micgeom_button = Button(label="↻",disabled=False,width=60,height=60)
 def update_micgeom_options_callback():
     select_micgeom.options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]+["None"]
 reload_micgeom_button.on_click(update_micgeom_options_callback)
@@ -240,11 +243,10 @@ exit_button.js_on_click(CustomJS( code='''
     '''))
 
 # DataTable
-from bokeh.models.widgets import TableColumn,NumberEditor,DataTable
 columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
 calibCDS = ColumnDataSource(data={"calibvalue":[],"caliblevel":[]})
-calibTable = DataTable(source=calibCDS,columns=columns)
+calibTable = DataTable(source=calibCDS,columns=columns,width=800)
 
 def _calibtable_callback():
     calibCDS.data = {"calibvalue":ch.calibdata[:,0],
@@ -253,8 +255,15 @@ calibtable_callback = lambda: doc.add_next_tick_callback(_calibtable_callback)
 ch.on_trait_change(calibtable_callback,"calibdata")
 
 # save calib button
-savecal = Button(label="save calibration",button_type="warning")
-savecal.on_click(lambda: ch.save())
+savecal = Button(label="save to .txt",button_type="warning",width=200, height=60)
+def save_calib_callback():
+    if not calWidgets['name'].value:
+        fname = "Measurement_App/metadata/calib_data.txt"
+        calWidgets['name'].value = fname
+    else:
+        fname = calWidgets['name'].value
+    ch.save()
+savecal.on_click(save_calib_callback)
 
 freqSlider = Slider(start=50, end=10000, value=CFREQ, 
                     step=1, title="Frequency",disabled=False)
@@ -315,7 +324,7 @@ if cam_enabled: set_alpha_callback(bfImage)
 # =============================================================================
 disable_obj_disp = [
         selectPerCallPeriod,select_micgeom,select_all_channels_button,
-        checkbox_micgeom
+        checkbox_micgeom, *calfiltWidgets.values(), *calWidgets.values(),
         ]
 disable_obj_rec = [
         ti_msmtime,checkbox_use_current_time,display_toggle, calib_toggle, 
@@ -590,51 +599,72 @@ def periodic_update_log():
         n = min(len(lines),LOGLENGTH)
         last_lines = lines[-n:]
         text = "".join(last_lines[::-1])
-        #logText.text = text
         logText.value = text
 
 # =============================================================================
 #  Set Up Bokeh Document Layout
 # =============================================================================
-emptyspace = Spacer(width=20, height=1000) # just for horizontal spacing
-emptyspace1 = Spacer(width=30, height=1000) # just for horizontal spacing
-emptyspace2 = Spacer(width=250, height=30) # just for vertical spacing
-emptyspace3 = Spacer(width=250, height=10) # just for vertical spacing
 
-# Columns
-# calWidgets['calibdata'].height = 750
-calCol = row(calibTable, emptyspace, column(
-                    savecal,calWidgets['name'], calWidgets['magnitude'],
-                    calWidgets['delta'],width=300,height=400))
-mgWidgetCol = column(row(mgWidgets['from_file'],reload_micgeom_button),
-                     mgWidgets['num_mics'])
-channelsCol = column(mgWidgetCol,select_all_channels_button,checkbox_micgeom,
-                                 width=300,height=400)
-gridCol = column(*rgWidgets.values())
+# Calibration Panel
+calWidgets['name'].width=500
+caldiv1 = Div(text="""<b>Calibration Filter Settings<b\>""")
+caldiv2 = Div(text="""<b>Basic Calibration Settings<b\>""")
+calCol = column(Spacer(height=15),
+                row(savecal,calWidgets['name']),
+                Spacer(height=15),
+                row(calibTable,
+                column(
+                caldiv1,
+                *calfiltWidgets.values(),
+                caldiv2,
+                calWidgets['magnitude'],
+                calWidgets['delta'],
+                width=150)))
+
+mgWidgetCol = column(
+                row(reload_micgeom_button,mgWidgets['from_file']),
+                mgWidgets['num_mics'],
+                select_all_channels_button,
+                checkbox_micgeom,
+                width=250,
+                )
+
+gridCol = column(*rgWidgets.values(),width=200)
 
 # Tabs
 amplitudesTab = Panel(child=column(row(Spacer(width=25),cliplevel),amp_fig),title='Channel Levels')
-micgeomTab = Panel(child=column(row(column(row(Spacer(width=25),cliplevel,Spacer(width=15),micsizeSlider,Spacer(width=15),geomview),micgeom_fig),emptyspace1,channelsCol)),title='Microphone Geometry')
+micgeomTab = Panel(child=column(
+    row(column(row(Spacer(width=25),cliplevel,Spacer(width=15),micsizeSlider,Spacer(width=15),geomview),micgeom_fig),Spacer(width=30, height=1000),mgWidgetCol)),title='Microphone Geometry')
 beamformTab = Panel(child=column(
-                        row(beam_fig,emptyspace1,gridCol,emptyspace,
+                        row(beam_fig,Spacer(width=30, height=1000),gridCol,Spacer(width=20, height=1000),
                         column(freqSlider,wtimeSlider,dynamicSlider,
-                         ClipSlider,checkbox_autolevel_mode,*camWidgets)
+                         ClipSlider,checkbox_autolevel_mode,*camWidgets,
+                         width=200)
                          #checkbox_paint_mode
-                         )
+                         ),
                         ),title='Beamforming')
 calibrationTab = Panel(child=calCol, title="Calibration")
 figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab,calibrationTab],width=850)
-logTab = Tabs(tabs=[Panel(child=logText, title="Log")],width=1000,height=300)
+logTab = Tabs(tabs=[Panel(child=logText, title="Log")],width=1500,height=300)
 
 left_column = column(display_toggle,
                      ti_savename,checkbox_use_current_time,
                      ti_msmtime,msm_toggle,calib_toggle,
                      beamf_toggle,selectPerCallPeriod,
-                     emptyspace3)
-if sinus_enabled: append_left_column(left_column)
+                     Spacer(width=250, height=10))
+
+if sinus_enabled:
+
+    # Additional Panel when SINUS Messtechnik API is used
+    teds_component = get_teds_component(devInputManager,logger)
+    sinusTab = Panel(child=teds_component,title='SINUS Messtechnik')
+    figureTabs.tabs.append(sinusTab)
+    # add buttons
+    append_left_column(left_column)
+
 right_column = column(figureTabs)
 
-layout = column(row(Spacer(width=1400),exit_button),row(emptyspace,left_column,emptyspace,right_column,),Spacer(height=50),logText)
+layout = column(row(Spacer(width=1400),exit_button),row(Spacer(width=20, height=1000),left_column,Spacer(width=20, height=1000),right_column,),Spacer(height=50),logText)
 doc.add_root(layout)
 doc.add_periodic_callback(periodic_update_log,1000)
 doc.title = "Measurement App"

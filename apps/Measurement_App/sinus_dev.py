@@ -4,14 +4,15 @@
 # Copyright (c) 2007-2020, Acoular Development Team.
 #------------------------------------------------------------------------------
 import os
+from bokeh.models.widgets.buttons import Toggle
 from numpy import zeros, array, arange
 from bokeh.models import ColumnDataSource,Spacer
-from bokeh.models.widgets import Button, Select, Div
+from bokeh.models.widgets import Button, Select, Div, TableColumn, DataTable,TextInput
 from bokeh.plotting import figure
 from bokeh.models.ranges import Range1d
 from bokeh.layouts import column,row
 from sinus import SINUSDeviceManager, SINUSAnalogInputManager, \
-SINUSSamplesGenerator, ini_import, get_dev_state, change_device_status
+SINUSSamplesGenerator, ini_import, get_dev_state, change_device_status, SINUS
 
 APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
 CONFPATH = os.path.join(APPFOLDER,"config_files/")
@@ -26,6 +27,33 @@ DEV_SERIAL_NUMBERS = {'tornado': ['10142', '10112', '10125', '10126'],
 
 BufferBarCDS = ColumnDataSource({'y':['buffer'],'filling':zeros(1)}) 
 
+tedscolumns = [
+            TableColumn(field='channel', title='Channel',width=800),
+            TableColumn(field='serial', title='SensorSerNo',width=800),
+            TableColumn(field='sensitivity', title='SensorSensitivity',width=800),
+            #TableColumn(field='wiredata', title='1_Wire_Data',width=800),
+            TableColumn(field='calibdate', title='CalibDate',width=800),
+            #TableColumn(field='calibperiod', title='CalibPeriod',width=800),
+            #TableColumn(field='chipserial', title='ChipSerNo',width=800),
+            TableColumn(field='manufacturer', title='Manufacturer',width=1800),
+            TableColumn(field='sensorversion', title='SensorVersion',width=800),
+            #TableColumn(field='tedstemp', title='TEDS_Template',width=800),
+            ]
+tedsCDS = ColumnDataSource(data={
+            "channel":[],
+            "serial":[],
+            "sensitivity":[],
+            #"wiredata":[],
+            "calibdate":[],
+            "calibperiod":[],
+            "chipserial":[],
+            "manufacturer":[],
+            "sensorversion":[],
+            #"tedstemp":[], 
+            })
+tedsTable = DataTable(source=tedsCDS,columns=tedscolumns,width=1200)
+tedsSavename = TextInput(value="", title="Filename:",disabled=False, width=500)
+
 # Buttons
 settings_button = Button(label="Load Setting",disabled=False)
 
@@ -33,6 +61,9 @@ settings_button = Button(label="Load Setting",disabled=False)
 open_device_button = Button(label="Open Device",disabled=False,button_type="primary",width=175,height=50)
 close_device_button = Button(label="Close Device",disabled=False,button_type="danger",width=175,height=50)
 reload_device_status_button = Button(label="↻",disabled=False,width=40,height=40)
+load_teds_button = Button(label="get TEDS",width=200,button_type="primary")
+save_teds_button = Button(label="save to .csv",width=200,height=60,button_type="warning")
+
 status_text = Div(text="Device Status: ")
 sinus_open_close = column(
     row(open_device_button, close_device_button),
@@ -118,15 +149,67 @@ def get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
 
 def get_interface(device,syncorder=[]):
     if syncorder: 
-        DevManager = SINUSDeviceManager(orderdevices = syncorder)
+        devManager = SINUSDeviceManager(orderdevices = syncorder)
     elif not syncorder:
-        DevManager = SINUSDeviceManager(orderdevices = DEV_SERIAL_NUMBERS[device])
+        devManager = SINUSDeviceManager(orderdevices = DEV_SERIAL_NUMBERS[device])
         
-    DevInputManager = SINUSAnalogInputManager()
-    InputSignalGen = SINUSSamplesGenerator(manager=DevInputManager,
-                                           inchannels=DevInputManager.namechannels)
-    IniManager = ini_import()
-    return IniManager, DevManager,DevInputManager,InputSignalGen
+    devInputManager = SINUSAnalogInputManager()
+    inputSignalGen = SINUSSamplesGenerator(manager=devInputManager,
+                                           inchannels=devInputManager.namechannels)
+    iniManager = ini_import()
+    return iniManager, devManager,devInputManager,inputSignalGen
+
+def get_teds_component(devInputManager, logger):
+    """Returns the button and table widget that provides the TEDS data.
+    Necessary callbacks will be set up and implemented by this function.
+
+    Parameters
+    ----------
+    inputSignalGen : [type]
+        [description]
+    """
+    # activate the detectTEDS functionality
+    def load_teds_callback():
+        logger.info("detect TEDS ...")
+        if not 'None' in devInputManager.DetectTEDS: # force reload of TEDS data if it was already loaded
+            devInputManager.DetectTEDS = ['None']  
+            devInputManager.set_settings()     
+        devInputManager.DetectTEDS = ['DetectTEDS']
+        devInputManager.set_settings()    
+        tedsCDS.data = { # update DataTable ColumnDataSource
+            'channel' : [c for c in devInputManager.namechannels],  
+            'serial' : [SINUS.Get(str(c),'TEDSData','SensorSerNo') for c in devInputManager.namechannels],
+            'sensitivity' : [SINUS.Get(str(c),'TEDSData','SensorSensitivity') for c in devInputManager.namechannels],
+            #'wiredata' : [SINUS.Get(str(c),'TEDSData','1_Wire_Data') for c in devInputManager.namechannels],
+            'calibdate' : [SINUS.Get(str(c),'TEDSData','CalibDate') for c in devInputManager.namechannels],
+            'calibperiod' : [SINUS.Get(str(c),'TEDSData','CalibPeriod') for c in devInputManager.namechannels],
+            'chipserial' : [SINUS.Get(str(c),'TEDSData','ChipSerNo') for c in devInputManager.namechannels],
+            'manufacturer' : [SINUS.Get(str(c),'TEDSData','Manufacturer') for c in devInputManager.namechannels],
+            'sensorversion' : [SINUS.Get(str(c),'TEDSData','SensorVersion') for c in devInputManager.namechannels],
+            #'tedstemp' : [SINUS.Get(str(c),'TEDSData','TEDS_Template') for c in devInputManager.namechannels],
+        }
+        print(tedsCDS.data)
+        logger.info("detect TEDS finished")
+
+    def save_csv_callback():
+        import csv
+        if not tedsSavename.value:
+            fname = "Measurement_App/metadata/TEDSdata.csv"
+            tedsSavename.value = fname
+        else:
+            fname = tedsSavename.value
+        with open(fname, 'w', newline='') as csvfile:
+            csvwriter = csv.writer(csvfile,  dialect='excel')
+            csvwriter.writerow(tedsCDS.data.keys())
+            rows = [[list(v)[i] for v in tedsCDS.data.values()] for i in range(len(list(tedsCDS.data.values())[0]))]
+            for values in rows:
+               csvwriter.writerow(values)
+    # set up callback
+    load_teds_button.on_click(load_teds_callback)
+    save_teds_button.on_click(save_csv_callback)
+    ur = row(load_teds_button,save_teds_button,tedsSavename)
+    return column(Spacer(height=15),ur,Spacer(height=15),tedsTable)
+
 
 def append_left_column(left_column):
     left_column.children.insert(1,sinus_open_close)
