@@ -131,7 +131,7 @@ else: # otherwise it must be sinus
     except:
         raise NotImplementedError("sinus module cannot be imported!")
     from sinus_dev import get_interface, append_left_column,append_disable_obj,\
-        get_callbacks, close_device_callback, get_teds_component
+        get_callbacks, close_device_callback, get_teds_component, gather_metadata
     mg_file = 'tub_vogel64.xml'
     iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,SYNCORDER)
     ch_names = inputSignalGen.inchannels_
@@ -500,9 +500,11 @@ beamf_toggle.on_click(beamftoggle_handler)
 
 def msmtoggle_handler(arg):
     global wh5_thread
-    if arg: # button is presampSplited
+    if arg: # toggle button is pressed
         wh5.numsamples_write = get_numsamples()
         if checkbox_use_current_time.active == [0]: ti_savename.value = current_time()
+        if sinus_enabled: # gather important informations from SINUS Messtechnik devices
+            wh5.metadata = gather_metadata(devManager,devInputManager,inputSignalGen,iniManager,ch)
         wh5_event = Event()
         wh5_consumer = EventThread(
                 post_callback=partial(change_mode,msm_toggle,'msm',False),

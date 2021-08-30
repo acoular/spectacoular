@@ -61,7 +61,7 @@ settings_button = Button(label="Load Setting",disabled=False)
 open_device_button = Button(label="Open Device",disabled=False,button_type="primary",width=175,height=50)
 close_device_button = Button(label="Close Device",disabled=False,button_type="danger",width=175,height=50)
 reload_device_status_button = Button(label="↻",disabled=False,width=40,height=40)
-load_teds_button = Button(label="get TEDS",width=200,button_type="primary")
+load_teds_button = Button(label="get TEDS",width=200,height=60,button_type="primary")
 save_teds_button = Button(label="save to .csv",width=200,height=60,button_type="warning")
 
 status_text = Div(text="Device Status: ")
@@ -165,8 +165,8 @@ def get_teds_component(devInputManager, logger):
 
     Parameters
     ----------
-    inputSignalGen : [type]
-        [description]
+    inputSignalGen : instance
+        class instance from sinus python module
     """
     # activate the detectTEDS functionality
     def load_teds_callback():
@@ -222,3 +222,19 @@ def append_disable_obj(disable_obj_disp):
     disable_obj_disp.append(select_setting)
     disable_obj_disp.append(settings_button)
     return disable_obj_disp
+
+def gather_metadata(devManager,devInputManager,inputSignalGen,iniManager,calibHelper):
+    meta = {
+        'config_file' : [iniManager.from_file],
+        'pci_synchronization' : devManager.orderdevices,
+        'generic_sensitivity' : inputSignalGen.sensval_,
+        'input_channel_names' : inputSignalGen.inchannels_,
+    }
+    for key,value in tedsCDS.data.items(): # add TEDS information
+        meta['TEDS_'+key] = value
+    for property in devInputManager.properties['settable']:
+        meta['AnalogInput_'+property] = eval(f"devInputManager.{property}")
+    if calibHelper.calibdata.size > 0:
+        meta['calib_value'] = calibHelper.calibdata[1,:]
+        meta['calib_level'] = calibHelper.calibdata[1,:]
+    return meta
