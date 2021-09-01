@@ -198,6 +198,7 @@ MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
                                     'channels':[str(_) for _ in range(micGeo.num_mics)],
                                     'colors':[COLOR[1]]*micGeo.num_mics}) 
 BeamfCDS = ColumnDataSource({'beamformer_data':[]})
+calibCDS = ColumnDataSource(data={"calibvalue":[],"caliblevel":[], "channel":[]})
 
 
 # Numeric Inputs
@@ -221,6 +222,34 @@ def update_micgeom_view(attr,old,new):
         MicGeomCDS.data['x'] = micGeo.mpos[0,:]*-1
 geomview.on_change('active',update_micgeom_view)
 
+
+# Select
+if sinus_enabled:
+    label_options = ["Index","Roman","Physical"]
+else:
+    label_options = ["Index","Roman"]
+
+labelSelect = Select(title="Select Channel Labeling:", value="Index",
+                                options=label_options,
+                                width=200)
+
+def _get_channel_labels(ltype):
+    if ltype == 'Index':
+        labels = [str(i) for i in range(inputSignalGen.numchannels)]
+    elif ltype == 'Roman':
+        labels = [str(i+1) for i in range(inputSignalGen.numchannels)]
+    elif ltype == 'Physical':
+        labels = [inputSignalGen.inchannels_[i] for i in range(inputSignalGen.numchannels)]
+    return labels
+
+def update_channel_labels(attr,old,new):
+    ticker = list(range(1,inputSignalGen.numchannels+1))
+    labels = _get_channel_labels(new)
+    amp_fig.xaxis.ticker = ticker
+    amp_fig.xaxis.major_label_overrides = {str(ticker[i]): label for i,label in enumerate(labels)}
+    calibCDS.data['channel'] = labels
+labelSelect.on_change('value',update_channel_labels)
+        
 # Buttons
 reload_micgeom_button = Button(label="↻",disabled=False,width=60,height=60)
 def update_micgeom_options_callback():
@@ -243,14 +272,15 @@ exit_button.js_on_click(CustomJS( code='''
     '''))
 
 # DataTable
-columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
-           TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
-calibCDS = ColumnDataSource(data={"calibvalue":[],"caliblevel":[]})
-calibTable = DataTable(source=calibCDS,columns=columns,width=800)
+columns = [TableColumn(field='channel', title='channel'),
+            TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
+           TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor()),]
+calibTable = DataTable(source=calibCDS,columns=columns,width=600)
 
 def _calibtable_callback():
     calibCDS.data = {"calibvalue":ch.calibdata[:,0],
-                     "caliblevel":ch.calibdata[:,1]}
+                     "caliblevel":ch.calibdata[:,1],
+                     "channel":_get_channel_labels(labelSelect.value)}
 calibtable_callback = lambda: doc.add_next_tick_callback(_calibtable_callback)
 ch.on_trait_change(calibtable_callback,"calibdata")
 
@@ -612,7 +642,7 @@ calWidgets['name'].width=500
 caldiv1 = Div(text="""<b>Calibration Filter Settings<b\>""")
 caldiv2 = Div(text="""<b>Basic Calibration Settings<b\>""")
 calCol = column(Spacer(height=15),
-                row(savecal,calWidgets['name']),
+                row(labelSelect,savecal,calWidgets['name']),
                 Spacer(height=15),
                 row(calibTable,
                 column(
@@ -634,7 +664,7 @@ mgWidgetCol = column(
 gridCol = column(*rgWidgets.values(),width=200)
 
 # Tabs
-amplitudesTab = Panel(child=column(row(Spacer(width=25),cliplevel),amp_fig),title='Channel Levels')
+amplitudesTab = Panel(child=column(row(Spacer(width=25),cliplevel,Spacer(width=25),labelSelect),amp_fig),title='Channel Levels')
 micgeomTab = Panel(child=column(
     row(column(row(Spacer(width=25),cliplevel,Spacer(width=15),micsizeSlider,Spacer(width=15),geomview),micgeom_fig),Spacer(width=30, height=1000),mgWidgetCol)),title='Microphone Geometry')
 beamformTab = Panel(child=column(
