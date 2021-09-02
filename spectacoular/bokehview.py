@@ -588,6 +588,21 @@ trait_widget_args = {'naverage':  {'disabled':False,'mode':'int'},
 
 add_bokeh_attr(TimeAverage,trait_widget_mapper,trait_widget_args)
 
+from acoular import FiltOctave
+
+trait_widget_mapper = {'band' : NumericInput,
+                        'fraction': Select,
+                        'order': NumericInput,
+                       # 'numchannels' : NumericInput,
+                       }
+trait_widget_args = {'band':  {'disabled':False,'mode':'float'},
+                      'fraction':  {'disabled':False},
+                      'order':  {'disabled':False,'mode':'int'},
+                     # 'numchannels': {'disabled':True,'mode':'int'},
+                     }
+
+add_bokeh_attr(FiltOctave,trait_widget_mapper,trait_widget_args)
+
 
 
 from acoular import Trigger

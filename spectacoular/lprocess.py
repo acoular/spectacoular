@@ -182,7 +182,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
         desc="calibration level of calibration device")
     
     #: calibration values determined during evaluation of :meth:`result`.
-    #: array of floats with dimension (numchannels, numchannels)
+    #: array of floats with dimension (numchannels, 2)
     calibdata = CArray(dtype=float,
        desc="determined calibration values")
 
