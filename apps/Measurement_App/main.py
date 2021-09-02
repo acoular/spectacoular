@@ -286,7 +286,7 @@ ch.on_trait_change(calibtable_callback,"calibdata")
 savecal = Button(label="save to .txt",button_type="warning",width=200, height=60)
 def save_calib_callback():
     if not calWidgets['name'].value:
-        fname = os.path.join("Measurement_App","metadata","calib_data.txt")
+        fname = os.path.join("Measurement_App","metadata",f"calibdata_{current_time()}.txt")
         calWidgets['name'].value = fname
     else:
         fname = calWidgets['name'].value
@@ -383,7 +383,6 @@ widgets_enable =    {'msm': [],
 # =============================================================================
 # small functions
 current_time = lambda: datetime.now().isoformat('_').replace(':','-').replace('.','_') # for timestamp filename
-stamp = lambda x: datetime.fromtimestamp(x).strftime('%H:%M:%S')+": " # for timestamp log
 
 # non bokeh functions
 def get_active_channels():

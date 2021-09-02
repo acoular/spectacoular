@@ -4,7 +4,6 @@
 # Copyright (c) 2007-2020, Acoular Development Team.
 #------------------------------------------------------------------------------
 import os
-from bokeh.models.widgets.buttons import Toggle
 from numpy import zeros, array, arange
 from bokeh.models import ColumnDataSource,Spacer
 from bokeh.models.widgets import Button, Select, Div, TableColumn, DataTable,TextInput
@@ -13,6 +12,9 @@ from bokeh.models.ranges import Range1d
 from bokeh.layouts import column,row
 from sinus import SINUSDeviceManager, SINUSAnalogInputManager, \
 SINUSSamplesGenerator, ini_import, get_dev_state, change_device_status, SINUS
+from datetime import datetime
+
+current_time = lambda: datetime.now().isoformat('_').replace(':','-').replace('.','_') # for timestamp filename
 
 APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
 CONFPATH = os.path.join(APPFOLDER,"config_files/")
@@ -194,7 +196,7 @@ def get_teds_component(devInputManager, logger):
     def save_csv_callback():
         import csv
         if not tedsSavename.value:
-            fname = "Measurement_App/metadata/TEDSdata.csv"
+            fname = os.path.join("Measurement_App","metadata",f"TEDSdata_{current_time()}.csv")
             tedsSavename.value = fname
         else:
             fname = tedsSavename.value
