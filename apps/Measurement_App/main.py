@@ -81,8 +81,6 @@ MGEOMPATH = os.path.join(APPFOLDER,"micgeom/")
 TDPATH = os.path.join(APPFOLDER,"td/")
 if not os.path.exists(TDPATH): 
     os.mkdir(TDPATH)
-# globals
-global MICSIZE, CLIPVALUE, MODECOLOR, CLIPCOLOR
 MICSIZE = 25
 CLIPVALUE = 120 # value in dB at which CLIP_COLOR is applied
 BANDWIDTH = 3
@@ -288,7 +286,7 @@ ch.on_trait_change(calibtable_callback,"calibdata")
 savecal = Button(label="save to .txt",button_type="warning",width=200, height=60)
 def save_calib_callback():
     if not calWidgets['name'].value:
-        fname = "Measurement_App/metadata/calib_data.txt"
+        fname = os.path.join("Measurement_App","metadata","calib_data.txt")
         calWidgets['name'].value = fname
     else:
         fname = calWidgets['name'].value
