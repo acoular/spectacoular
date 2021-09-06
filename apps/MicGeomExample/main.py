@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) 2007-2022, Acoular Development Team.
 #------------------------------------------------------------------------------
 import os
 from os import path
@@ -13,6 +13,7 @@ from bokeh.models import LinearColorMapper, ColorBar, PointDrawTool, ColumnDataS
 from bokeh.events import Reset
 from bokeh.plotting import figure
 from bokeh.palettes import Viridis256 
+from bokeh.server.server import Server
 from spectacoular import MicGeom, SteeringVector, RectGrid, PointSpreadFunction,\
 PointSpreadFunctionPresenter,set_calc_button_callback
 from pylab import ravel_multi_index, array
@@ -32,7 +33,7 @@ options.append('')
 mg = MicGeom(from_file=options[0])
 rg = RectGrid(x_min=-0.5, x_max=0.5, y_min=-0.5, y_max=0.5, z=.5,increment=0.02)
 st = SteeringVector(mics = mg, grid = rg)
-psf = PointSpreadFunction(steer=st,freq=1000.0)
+psf = PointSpreadFunction(steer=st,freq=1000.0,grid_indices=array([1300]))
 psfPresenter = PointSpreadFunctionPresenter(source=psf)
 
 #%%           
@@ -52,7 +53,6 @@ psf.set_widgets(**{'freq':psfFreqSlider}) # set from file attribute with select 
 
 #%%
 
-src_pos = ColumnDataSource(data={'x':[0],'y':[0]})
 # create Button to trigger PSF calculation
 def calc():
     source_pos = (src_pos.data['x'][0],src_pos.data['y'][0],rg.z) #(x,y,z), will be snapped to grid
@@ -73,13 +73,17 @@ mgPlot = figure(title='Microphone Geometry',
 mgPlot.toolbar.logo=None
 micRenderer = mgPlot.circle_cross(x='x',y='y',size=20,fill_alpha=.8,
                                   source=mgWidgets['mpos_tot'].source)
-drawtool = PointDrawTool(renderers=[micRenderer])
+drawtool = PointDrawTool(renderers=[micRenderer],empty_value=0.) 
+# empty_value: a value of 0. is inserted for the third column (z-axis) when
+# new points/mics are added to the geometry
 mgPlot.add_tools(drawtool)
 mgPlot.toolbar.active_tap = drawtool
 
 
 #%% PSF Plot
 # Tooltips for additional information
+psfPresenter.update()
+
 PSF_TOOLTIPS = [
     ("Lp/dB", "@psf"),
     ("(x,y)", "($x, $y)"),]
@@ -95,20 +99,12 @@ psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Lp/dB",\
                             title_standoff=5,
                             background_fill_color = '#2F2F2F'),'right')
 
-    
+src_pos = ColumnDataSource(data={'x':[0],'y':[0]}) 
+src_pos.on_change('data',lambda attr,old,new:calc()) # automatically re-calc if set  
 srcRenderer = psfPlot.cross(x='x',y='y',size=10, fill_alpha=.8, source=src_pos)
 marktool = PointDrawTool(renderers=[srcRenderer], num_objects=1)
 psfPlot.add_tools(marktool)
 psfPlot.toolbar.active_tap = marktool
-
-# this is somwhat redundant to the calc function
-def calc_update(attr,old,new):
-    source_pos = (src_pos.data['x'][0],src_pos.data['y'][0],rg.z) #(x,y,z), will be snapped to grid
-    grid_index = array([ravel_multi_index(rg.index(*source_pos[:2]), rg.shape)])
-    psf.grid_indices = grid_index
-    psfPresenter.update()
-
-src_pos.on_change('data',calc_update)
 
 def resetpos(event):
     src_pos.data={'x':[0],'y':[0]}
@@ -130,7 +126,7 @@ for f in mgWidgets['mpos_tot'].columns:
 # Tabs
 mgWidgets['mpos_tot'].height = 280
 mgTab = Panel(child=column(mgWidgets['from_file'],
-                           row( mgWidgets['invalid_channels'],mgWidgets['num_mics'],width = twidth),
+                           row(mgWidgets['num_mics'],width = twidth),
                            hspace,
                           mgWidgets['mpos_tot']),
                           title='Microphone Geometry')
@@ -143,13 +139,25 @@ gridTab = Panel(child=column(
                         row(rgWidgets['nxsteps'],rgWidgets['nysteps'],width = twidth),),
                 title='Grid')
 stTab = Panel(child=column(*stWidgets.values()),title='Steering')
-ControlTabs = Tabs(tabs=[mgTab,psfTab,gridTab,stTab])
+ControlTabs = Tabs(tabs=[mgTab,gridTab,psfTab,stTab])
 
-ControlBox = widgetbox(hspace,
+ControlBox = column(hspace,
         row(calcButton,psfFreqSlider,width=600,height=80),
         #hspace,
         ControlTabs,width=400)
     
 # make Document
-doc.add_root(row(vspace,mgPlot,psfPlot,vspace,ControlBox))
+def server_doc(doc):
+    doc.add_root(row(vspace,mgPlot,psfPlot,vspace,ControlBox))
+    doc.title = "MicGeomExample"
+
+if __name__ == '__main__':
+    server = Server({'/': server_doc})
+    server.start()
+    print('Opening application on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, "/")
+    server.io_loop.start()
+else:
+    doc = curdoc()
+    server_doc(doc)
 

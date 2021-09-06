@@ -1,26 +1,22 @@
 # -*- coding: utf-8 -*-
 #pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) 2007-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
 
-from traits.api import Int, Instance, on_trait_change, Bool, Float, \
-Dict, File, CArray,cached_property,Property
+from traits.api import Instance
 from threading import Thread
 from numpy import shape
 
 # acoular imports
-from acoular import TimeInOut, TimeSamples,\
-L_p,TimeAverage,FiltFiltOctave, SampleSplitter
-   
+from acoular import TimeInOut, SampleSplitter
+
 class LastInOut(TimeInOut):
     
     source = Instance(SampleSplitter)
     
     def result(self,num):
         for temp in self.source.result(num):
-#            if len(self.source.buffer[self]) >= 1: pass
-#            else:
             anz = min(num,shape(temp)[0])
             yield temp[:anz]
             self.source._clear_block_buffer(self)

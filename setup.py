@@ -1,14 +1,14 @@
 # coding=UTF-8
 #------------------------------------------------------------------------------
-# Copyright (c) 2020-2020, SpectAcoular Development Team.
+# Copyright (c) 2020-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
 from setuptools import setup
 from os.path import join, abspath, dirname
 import os
 
 
-bf_version = "20.11"
-bf_author = "spectAcoular Development Team"
+bf_version = "21.08"
+bf_author = "Acoular Development Team"
 
 # Get the long description from the relevant file
 here = abspath(dirname(__file__))
@@ -17,9 +17,9 @@ with open(join(here, 'README.rst')) as f:
 
 
 install_requires = list([
-      'acoular>=20.02',
+      'acoular>=21.05',
       'setuptools',	
-      'bokeh >=1.2.0',
+      'bokeh >=1.3.0',
 
 	])
 
@@ -29,7 +29,7 @@ install_requires = list([
 setup_requires = list([
       'acoular>=20.02',
       'setuptools',	
-      'bokeh >=1.2.0',
+      'bokeh >=1.3.0',
 	])
 
 #if "CONDA_PREFIX" not in os.environ:
@@ -39,19 +39,18 @@ setup_requires = list([
     
 setup(name="spectacoular", 
       version=bf_version, 
-      description="Library for SpectAcoular beamforming plots",
+      description="Library for SpectAcoular interactive applications with Acoular",
       long_description=long_description,
       license="BSD",
       author=bf_author,
       author_email="info@acoular.org",
-      url="http://www.acoular.org",
+      url="https://acoular.github.io/spectacoular/",
       classifiers=[
       'Development Status :: 5 - Production/Stable',
       'Intended Audience :: Education',
       'Intended Audience :: Science/Research',
       'Topic :: Scientific/Engineering :: Physics',
       'License :: OSI Approved :: BSD License',
-      'Programming Language :: Python :: 3.6',
       'Programming Language :: Python :: 3.7',
       'Programming Language :: Python :: 3.8',
       ],

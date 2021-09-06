@@ -1,8 +1,0 @@
-TimeInOutPresenter
-========================================
-
-.. currentmodule:: spectacoular.lprocess
-
-.. autoclass:: TimeInOutPresenter
-    :members:
-    :show-inheritance:

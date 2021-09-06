@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) 2020-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
 """Implements consumer classes that provide Acoular data to Bokeh data sources
 
@@ -16,7 +16,7 @@ from numpy import arange
 from acoular import TimeInOut
 from bokeh.models import ColumnDataSource
 from traits.api import List, Int, Trait, Float, Bool, Array, Property, on_trait_change,\
-    cached_property, Function 
+    cached_property, Callable 
 
 
 
@@ -131,7 +131,7 @@ class TimeBandsConsumer(TimeConsumer):
     and :attr:`lfunc` can be used to convert to human-readable label strings.
     """
     #: Function to convert bands into list of labels
-    lfunc = Function( lambda bands: ["{:.0f}".format(f) for f in bands])
+    lfunc = Callable( lambda bands: ["{:.0f}".format(f) for f in bands])
 
     #: List of labels for bands
     bands = Property( depends_on = ['source.digest'])

@@ -76,7 +76,7 @@ beamformerSelector = Select(title="Select Beamforming Method:",
 
 
 # use additional classes for data evaluation/view
-bv = BeamformerPresenter(source=bb,steer=st)
+bv = BeamformerPresenter(source=bb,num=3,freq=4000.)
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -88,9 +88,6 @@ rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 bbWidgets = bb.get_widgets()
 bvWidgets = bv.get_widgets()
-bvWidgets['freq'].value = "4000.0"
-bvWidgets['num'].value = "3"
-
 
 colorMapper = LogColorMapper(palette=viridis(100), 
                               low=50, high=65 ,low_color=(1,1,1,0))
@@ -147,4 +144,18 @@ beamformerSelector.on_change('value',beamformer_handler)
 
 # make Document
 mainlayout = row(plotTabs,calcColumn,propertyTabs,propertyTabs2)
-doc.add_root(mainlayout)
+
+# make Document
+def server_doc(doc):
+    doc.add_root(mainlayout)
+    doc.title = "RotatingExample"
+
+if __name__ == '__main__':
+    server = Server({'/': server_doc})
+    server.start()
+    print('Opening application on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, "/")
+    server.io_loop.start()
+else:
+    doc = curdoc()
+    server_doc(doc)

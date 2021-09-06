@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2021, Acoular Development Team.
+# Copyright (c) 2020-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
 """Implements classes for the use in live processing applications. Some of the 
 classes might move to Acoular module in the future.
@@ -24,7 +24,7 @@ from scipy.signal import lfilter
 from datetime import datetime
 from time import time,sleep
 from bokeh.models.widgets import TextInput,DataTable,TableColumn,\
-    NumberEditor, Select
+    NumberEditor, Select, NumericInput
 from bokeh.models import ColumnDataSource
 from traits.api import Property, File, CArray,Int, Delegate, Trait,\
 cached_property, on_trait_change, Float,Bool, Instance, ListInt
@@ -43,7 +43,7 @@ from .dprocess import BasePresenter
 from .bokehview import get_widgets, set_widgets
 from .factory import BaseSpectacoular
 
-
+invch_columns = [TableColumn(field='invalid_channels', title='invalid_channels', editor=NumberEditor()),]
 
 class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
     """
@@ -65,27 +65,26 @@ class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
         desc="Indicates if result function is running")
 
     trait_widget_mapper = {'name': TextInput,
-                           'basename': TextInput,
-                           'start' : TextInput,
-                           'stop' : TextInput,
-                           'numsamples': TextInput,
-                           'sample_freq': TextInput,
-                           'invalid_channels':TextInput,
-                           'numchannels' : TextInput,
-                           'time_delay': TextInput,
-                       }
-
+                        'basename': TextInput,
+                        'start' : NumericInput,
+                        'stop' : NumericInput,
+                        'numsamples': NumericInput,
+                        'sample_freq': NumericInput,
+                        'invalid_channels':DataTable,
+                        'numchannels' : NumericInput,
+                        'time_delay': NumericInput,
+                        }
     trait_widget_args = {'name': {'disabled':False},
-                         'basename': {'disabled':True},
-                         'start':  {'disabled':False},
-                         'stop':  {'disabled':False},
-                         'numsamples':  {'disabled':True},
-                         'sample_freq':  {'disabled':True},
-                         'invalid_channels': {'disabled':False},
-                         'numchannels': {'disabled':True},
-                         'time_delay': {'disabled':False},
-                         }
-    
+                        'basename': {'disabled':True},
+                        'start':  {'disabled':False, 'mode':'int'},
+                        'stop':  {'disabled':False, 'mode':'int'},
+                        'numsamples':  {'disabled':True, 'mode':'int'},
+                        'sample_freq':  {'disabled':True, 'mode':'float'},
+                        'invalid_channels': {'disabled':False,'editable':True, 'columns':invch_columns},
+                        'numchannels': {'disabled':True,'mode':'int'},
+                        'time_delay': {'disabled':False, 'mode':'float'},
+                        }
+
     def result(self, num=128):
         """
         Python generator that yields the output block-wise.
@@ -183,7 +182,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
         desc="calibration level of calibration device")
     
     #: calibration values determined during evaluation of :meth:`result`.
-    #: array of floats with dimension (numchannels, numchannels)
+    #: array of floats with dimension (numchannels, 2)
     calibdata = CArray(dtype=float,
        desc="determined calibration values")
 
@@ -204,19 +203,19 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
     digest = Property( depends_on = ['source.digest', '__class__'])
 
     trait_widget_mapper = {'name': TextInput,
-                           'magnitude': TextInput,
+                           'magnitude': NumericInput,
                             'calibdata' : DataTable,
-                           'buffer_size' : TextInput,
-                           'calibstd': TextInput,
-                           'delta': TextInput,
+                           'buffer_size' : NumericInput,
+                           'calibstd': NumericInput,
+                           'delta': NumericInput,
                        }
 
     trait_widget_args = {'name': {'disabled':False},
-                         'magnitude': {'disabled':False},
+                         'magnitude': {'disabled':False, 'mode': 'float'},
                            'calibdata':  {'editable':True,'columns':columns},
-                         'buffer_size':  {'disabled':False},
-                         'calibstd':  {'disabled':False},
-                         'delta': {'disabled':False},
+                         'buffer_size':  {'disabled':False,'mode': 'int'},
+                         'calibstd':  {'disabled':False, 'mode': 'float'},
+                         'delta': {'disabled':False, 'mode': 'float'},
                          }
 
     @cached_property
@@ -276,7 +275,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
                     print(self.calibdata[idx,:])
             yield temp
             
-            
+
 class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
     """
     Octave or third-octave filter (not zero-phase).
@@ -286,10 +285,10 @@ class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
     the result function is executed. 
     """
 
-    trait_widget_mapper = {'band': TextInput,
+    trait_widget_mapper = {'band': NumericInput,
                        }
 
-    trait_widget_args = {'band': {'disabled':False},
+    trait_widget_args = {'band': {'disabled':False, 'mode': 'float'},
                          }
 
     def result(self, num):
@@ -317,6 +316,7 @@ class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
             yield block
 
 if sd_enabled:                
+    columns = [TableColumn(field='channels', title='channels', editor=NumberEditor()),]
 
     class TimeSamplesPlayback(TimeInOut,BaseSpectacoular):
         """
@@ -346,10 +346,10 @@ if sd_enabled:
         # current frame played back
         # currentframe = Int()
         
-        trait_widget_mapper = {'channels': TextInput,
+        trait_widget_mapper = {'channels': DataTable,
                            }
     
-        trait_widget_args = {'channels': {'disabled':False},
+        trait_widget_args = {'channels': {'disabled':False, 'columns':columns},
                          }
     
         @cached_property
