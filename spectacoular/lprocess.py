@@ -18,7 +18,7 @@ classes might move to Acoular module in the future.
 """
  
 from numpy import logical_and,savetxt,mean,array,newaxis, zeros,\
- pad, ones, hanning, hamming, bartlett, blackman,fft 
+ pad, ones, hanning, hamming, bartlett, blackman,fft ,arange
 
 from scipy.signal import lfilter
 from datetime import datetime
@@ -174,7 +174,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
     
     #: Name of the file to be saved. If none is given, the name will be
     #: automatically generated from a time stamp.
-    name = File(filter=['*.txt'], 
+    name = File(filter=['*.xml'], 
         desc="name of data file")    
 
     #: calibration level (e. g. dB or Pa) of calibration device 
@@ -185,6 +185,12 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
     #: array of floats with dimension (numchannels, 2)
     calibdata = CArray(dtype=float,
        desc="determined calibration values")
+
+    #: calibration factor determined during evaluation of :meth:`save`.
+    #: array of floats with dimension (numchannels)
+    calibfactor = CArray(dtype=float,
+       desc="determined calibration factor")
+
 
     #: max elements/averaged blocks to calculate calibration value. 
     buffer_size = Int(100,
@@ -217,6 +223,9 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
                          'calibstd':  {'disabled':False, 'mode': 'float'},
                          'delta': {'disabled':False, 'mode': 'float'},
                          }
+    
+    def to_pa(self,level):
+        return (10**(level/10))*(4e-10)
 
     @cached_property
     def _get_digest( self ):
@@ -231,11 +240,23 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
     def create_filename(self):
         if self.name == '':
             stamp = datetime.fromtimestamp(time()).strftime('%H:%M:%S')
-            self.name = 'calib_file_'+stamp.replace(':','')+'.out'
+            self.name = 'calib_file_'+stamp.replace(':','')+'.xml'
 
     def save(self):
         self.create_filename()
-        savetxt(self.name,self.calibdata,'%f')
+        self.calibfactor = zeros(self.numchannels)
+        for i in arange(self.numchannels):
+            #print(self.magnitude,self.calibdata[i,0])
+            self.calibfactor[i] = self.to_pa(self.magnitude)/self.to_pa(float(self.calibdata[i,0]))
+
+        with open(self.name,'w') as f:
+            f.write(f'<?xml version="1.0" encoding="utf-8"?>\n<Calib name="{self.name}">\n')
+            for i in range(self.numchannels):
+                channel_string = str(i+1)
+                fac = self.calibfactor[i]
+                f.write(f'	<pos Name="Point {channel_string}" factor="{fac}"/>\n')
+            f.write('</Calib>')
+        #savetxt(self.name,self.calibdata,'%f')
 
     def result(self, num):
         """
