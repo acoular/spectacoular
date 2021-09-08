@@ -288,7 +288,7 @@ ch.on_trait_change(calibtable_callback,"calibdata")
 savecal = Button(label="save to .xml",button_type="warning",width=200, height=60)
 def save_calib_callback():
     if not calWidgets['name'].value:
-        fname = os.path.join("Measurement_App","metadata",f"calibdata_{current_time()}.txt")
+        fname = os.path.join("Measurement_App","metadata",f"calibdata_{current_time()}.xml")
         calWidgets['name'].value = fname
     else:
         fname = calWidgets['name'].value

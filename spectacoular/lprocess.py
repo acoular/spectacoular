@@ -244,10 +244,6 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 
     def save(self):
         self.create_filename()
-        self.calibfactor = zeros(self.numchannels)
-        for i in arange(self.numchannels):
-            #print(self.magnitude,self.calibdata[i,0])
-            self.calibfactor[i] = self.to_pa(self.magnitude)/self.to_pa(float(self.calibdata[i,0]))
 
         with open(self.name,'w') as f:
             f.write(f'<?xml version="1.0" encoding="utf-8"?>\n<Calib name="{self.name}">\n')
@@ -275,6 +271,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
         """
         self.adjust_calib_values()
         nc = self.numchannels
+        self.calibfactor = zeros(self.numchannels)
         buffer = zeros((self.buffer_size,nc))
         for temp in self.source.result(num):
             ns = temp.shape[0]
@@ -294,6 +291,9 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
                     # self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
                     self.calibdata = calibdata
                     print(self.calibdata[idx,:])
+                        
+            for i in arange(self.numchannels):
+                self.calibfactor[i] = self.to_pa(self.magnitude)/self.to_pa(float(self.calibdata[i,0]))
             yield temp
             
 
