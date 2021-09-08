@@ -248,6 +248,6 @@ class TimeSamplesPresenter(BasePresenter):
         if self.source.numsamples > 0 and numSelected > 0:
             self.cdsource.data = {'xs' : xs, 
                                   'ys' : ys,
-                                  'ch' : self.channels}
+                                  'ch' : [[c] for c in self.channels]}
         else:
             self.cdsource.data = {'xs' :[],'ys' :[], 'ch':[]}

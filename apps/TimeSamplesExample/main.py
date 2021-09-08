@@ -13,9 +13,10 @@ from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import Toggle, TextInput, Button, PreText, \
 Tabs, Panel, MultiSelect, RangeSlider, Slider
 from bokeh.plotting import figure
-from bokeh.palettes import Blues
+from bokeh.palettes import Blues, Turbo256
 from bokeh.server.server import Server
 from numpy import mean, conj, real, array, log10, logspace,append,sort
+from numpy.random import shuffle
 from acoular import L_p, MaskedTimeInOut
 from spectacoular import MaskedTimeSamples, TimeSamplesPresenter,\
     set_calc_button_callback, PowerSpectra
@@ -26,7 +27,8 @@ try:
 except:
     sd_enabled = False
 
-COLORS = Blues[256][::-3] # for plotting different colors
+COLORS=array(Turbo256) # for plotting different colors
+shuffle(COLORS)
 doc = curdoc()
 
 # build processing chain
@@ -48,17 +50,17 @@ mselect = MultiSelect(title="Select Channel:", value=["0"],
 # create Button to trigger plot
 plotButton = Toggle(label="Plot Data",button_type="primary")
 timeRange = RangeSlider(start=ts.start,end=ts.numsamples,value=(0,ts.numsamples), step=1000, title="Time Range")
-linesizeSlider = Slider(start=1, end=50, value=10, 
-                    step=0.5, title="Line Size",disabled=False)
+linesizeSlider = Slider(start=0.0, end=5, value=2., 
+                    step=0.05, title="Line Size",disabled=False)
 def update_linesize(attr,old,new):
     tv.cdsource.data['sizes'] = array([linesizeSlider.value]*len(tv.channels))
+    #freqdata.data['sizes'] = array([linesizeSlider.value]*len(tv.channels))
 linesizeSlider.on_change('value', update_linesize)
 
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tsWidgets.pop('invalid_channels')
-tvWidgets = tv.get_widgets()
 psWidgets = ps.get_widgets()
 
 def file_change_callback(attr,old,new):
@@ -69,12 +71,7 @@ def file_change_callback(attr,old,new):
         timeRange.end = ts.numsamples  
     timeRange.value=(timeRange.start,timeRange.end)
 
-def time_range_callback(attr,old,new):
-    ts.start = timeRange.value[0]
-    ts.stop = timeRange.value[1]
-
 tsWidgets['name'].on_change('value',file_change_callback)
-timeRange.on_change('value',time_range_callback)
 
 # THIS FUNCTION GENERATES THE TICKS (TO MOVE)
 def get_logticks(frange=[100, 10000], minor_ticks=[5,2,7], unit='kHz'):
@@ -105,7 +102,7 @@ def get_spectra():
         r_sel.append(result) # multiselect ColumnDataSource expects a list of lists
         freq.append(ps.fftfreq())
         chn.append([sel])
-        color.append([COLORS[sel]])
+        color.append(COLORS[sel])
     freqdata.data.update(amp=r_sel, freqs=freq, chn=chn,color=color)
     freqplot.x_range.start = freq[0][1]-20
     freqplot.x_range.end   = freq[0][-1]+20
@@ -140,7 +137,6 @@ if sd_enabled: # in case of audio support
         if arg:
             playback.channels = [int(v) for v in mselect.value]
             playback.play()
-            playButton.active = False
         elif not arg: 
             playback.stop()
     playButton.on_click(playButton_handler)
@@ -151,25 +147,25 @@ if sd_enabled: # in case of audio support
 def change_selectable_channels():
     channels = [str(idx) for idx in range(ts.numchannels)]
     mselect.options = [(i,i) for i in channels]
-    freqdata.data = dict(amp=[[0]], freqs=[[0]], chn=[[0]],color=[[0]])
+    freqdata.data = dict(amp=[[0]], freqs=[[0]], chn=[[0]],color=[0])
 ts.on_trait_change( change_selectable_channels, "numchannels")
 
 # TimeSignalPlot
 timeplottips = [("Channel Index", "@ch"),("Sample", "$x"),("p", "$y")]
-tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800,
+tsPlot = figure(title="Time Signals",plot_width=1500, plot_height=800,
                 x_axis_label="sample index", y_axis_label="p [Pa]",
                 tooltips=timeplottips,)
 tsPlot.toolbar.logo = None
-tsPlot.multi_line(xs='xs', ys='ys',line_width='sizes',source=tv.cdsource)
+tsPlot.multi_line(xs='xs', ys='ys',line_width='sizes',color='color',source=tv.cdsource)
 
 # FrequencySignalPlot
 freqplottips = [("Channel", "@chn"),("Frequency in Hz", "$x"),("|P(f)|^2 in dB", "$y")]
-freqplot = figure(title="Auto Power Spectra", plot_width=1000, plot_height=800,
+freqplot = figure(title="Auto Power Spectra", plot_width=1500, plot_height=800,
                   x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB",
                   tooltips=freqplottips, x_range=(40,26000))
 freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
-freqplot.multi_line(xs='freqs', ys='amp',color='color', source=freqdata)
+freqplot.multi_line(xs='freqs', ys='amp',color='color', line_width=3, source=freqdata)
 #create layout
 tsWidgetsCol = column(plotButton,mselect,*tsWidgets.values(),width=200)
 psWidgetsCol = column(plotButton,mselect,*list(psWidgets.values()),
@@ -190,11 +186,18 @@ plotTab = Tabs(tabs=[tsTab,fdTab])
 def plot():
     if plotTab.active == 0: 
         tv.channels = [int(v) for v in mselect.value]
-        tv.update()
+        tv.update() #TODO: add argument to update function that handles aditional data that should be added to the ColumnDataSource
+        tv.cdsource.data['color'] = [COLORS[int(v)] for v in mselect.value] 
     elif plotTab.active == 1:
         get_spectra()
         get_logticks([10, 30000], unit="Hz")
 set_calc_button_callback(plot,plotButton,label='Plot Data')
+
+def time_range_callback(attr,old,new):
+    ts.start = timeRange.value[0]
+    ts.stop = timeRange.value[1]
+    plot()
+timeRange.on_change('value_throttled',time_range_callback)
 
 # make Document
 def server_doc(doc):
