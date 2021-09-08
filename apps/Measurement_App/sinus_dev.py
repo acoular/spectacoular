@@ -237,6 +237,7 @@ def gather_metadata(devManager,devInputManager,inputSignalGen,iniManager,calibHe
     for property in devInputManager.properties['settable']:
         meta['AnalogInput_'+property] = eval(f"devInputManager.{property}")
     if calibHelper.calibdata.size > 0:
-        meta['calib_value'] = calibHelper.calibdata[1,:]
+        meta['calib_value'] = calibHelper.calibdata[0,:]
         meta['calib_level'] = calibHelper.calibdata[1,:]
+        meta['calib_factor'] = calibHelper.calibfactor[:]
     return meta

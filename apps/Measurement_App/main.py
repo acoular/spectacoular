@@ -196,7 +196,7 @@ MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
                                     'channels':[str(_) for _ in range(micGeo.num_mics)],
                                     'colors':[COLOR[1]]*micGeo.num_mics}) 
 BeamfCDS = ColumnDataSource({'beamformer_data':[]})
-calibCDS = ColumnDataSource(data={"calibvalue":[],"caliblevel":[], "channel":[]})
+calibCDS = ColumnDataSource(data={"calibvalue":[],"caliblevel":[],"calibfactor":[], "channel":[]})
 
 
 # Numeric Inputs
@@ -272,21 +272,23 @@ exit_button.js_on_click(CustomJS( code='''
 # DataTable
 columns = [TableColumn(field='channel', title='channel'),
             TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
-           TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor()),]
+           TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor()),
+           TableColumn(field='calibfactor', title='calibfactor', editor=NumberEditor()),]
 calibTable = DataTable(source=calibCDS,columns=columns,width=600)
 
 def _calibtable_callback():
     calibCDS.data = {"calibvalue":ch.calibdata[:,0],
                      "caliblevel":ch.calibdata[:,1],
+                     "calibfactor":ch.calibfactor[:],
                      "channel":_get_channel_labels(labelSelect.value)}
 calibtable_callback = lambda: doc.add_next_tick_callback(_calibtable_callback)
 ch.on_trait_change(calibtable_callback,"calibdata")
 
 # save calib button
-savecal = Button(label="save to .txt",button_type="warning",width=200, height=60)
+savecal = Button(label="save to .xml",button_type="warning",width=200, height=60)
 def save_calib_callback():
     if not calWidgets['name'].value:
-        fname = os.path.join("Measurement_App","metadata",f"calibdata_{current_time()}.txt")
+        fname = os.path.join("Measurement_App","metadata",f"calibdata_{current_time()}.xml")
         calWidgets['name'].value = fname
     else:
         fname = calWidgets['name'].value
