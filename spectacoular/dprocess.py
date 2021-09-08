@@ -197,7 +197,7 @@ class TimeSamplesPresenter(BasePresenter):
     source = Trait(TimeSamples)
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = ColumnDataSource(data={'xs':[],'ys':[]})
+    cdsource = ColumnDataSource(data={'xs':[],'ys':[],'ch':[]})
     
     #: Indices of channel to be considered for updating of ColumnDataSource 
     channels = ListInt([])
@@ -247,6 +247,7 @@ class TimeSamplesPresenter(BasePresenter):
         xs = [samples for _ in range(numSelected)]
         if self.source.numsamples > 0 and numSelected > 0:
             self.cdsource.data = {'xs' : xs, 
-                                  'ys' : ys}
+                                  'ys' : ys,
+                                  'ch' : [[c] for c in self.channels]}
         else:
-            self.cdsource.data = {'xs' :[],'ys' :[]}
+            self.cdsource.data = {'xs' :[],'ys' :[], 'ch':[]}
