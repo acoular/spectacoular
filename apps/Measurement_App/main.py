@@ -344,8 +344,6 @@ if cam_enabled: set_alpha_callback(bfImage)
 #beam_fig.add_layout(color_bar, 'right')
 
 
-
-
 # =============================================================================
 # # define bokeh widgets which should be disabled when display, recording or 
 # # calibration runs
