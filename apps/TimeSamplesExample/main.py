@@ -11,7 +11,7 @@ from bokeh.layouts import row, column
 # from bokeh.events import MouseLeave
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import Toggle, TextInput, Button, PreText, \
-Tabs, Panel, MultiSelect
+Tabs, Panel, MultiSelect, RangeSlider, Slider
 from bokeh.plotting import figure
 from bokeh.palettes import Blues
 from bokeh.server.server import Server
@@ -36,6 +36,9 @@ tio      = MaskedTimeInOut(source=ts,invalid_channels=[])
 ps       = PowerSpectra(time_data=tio, cached=False) #SpectraInOut(source=ts)
 freqdata = ColumnDataSource(data=dict(amp=[[0]], freqs=[[0]], chn=[[0]],color=[[0]]))
 
+# set up callbacks
+ts.on_trait_change(tv.update,'digest')
+
 chidx = [str(i) for i in range(ts.numchannels)]
 
 # create widget to select the channel that should be plotted
@@ -44,12 +47,34 @@ mselect = MultiSelect(title="Select Channel:", value=["0"],
 
 # create Button to trigger plot
 plotButton = Toggle(label="Plot Data",button_type="primary")
+timeRange = RangeSlider(start=ts.start,end=ts.numsamples,value=(0,ts.numsamples), step=1000, title="Time Range")
+linesizeSlider = Slider(start=1, end=50, value=10, 
+                    step=0.5, title="Line Size",disabled=False)
+def update_linesize(attr,old,new):
+    tv.cdsource.data['sizes'] = array([linesizeSlider.value]*len(tv.channels))
+linesizeSlider.on_change('value', update_linesize)
+
 
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tsWidgets.pop('invalid_channels')
 tvWidgets = tv.get_widgets()
 psWidgets = ps.get_widgets()
+
+def file_change_callback(attr,old,new):
+    timeRange.start = ts.start 
+    if ts.stop:
+        timeRange.end = ts.stop 
+    else:
+        timeRange.end = ts.numsamples  
+    timeRange.value=(timeRange.start,timeRange.end)
+
+def time_range_callback(attr,old,new):
+    ts.start = timeRange.value[0]
+    ts.stop = timeRange.value[1]
+
+tsWidgets['name'].on_change('value',file_change_callback)
+timeRange.on_change('value',time_range_callback)
 
 # THIS FUNCTION GENERATES THE TICKS (TO MOVE)
 def get_logticks(frange=[100, 10000], minor_ticks=[5,2,7], unit='kHz'):
@@ -90,9 +115,9 @@ if sd_enabled: # in case of audio support
     # button widget to playback the selected time data
     playButton = Toggle(label="Playback Time Data", button_type="primary")
     # Input Device Textfield
-    inputDevice = TextInput(title="Input Device Index", value=str(playback.device[0]))
+    inputDevice = TextInput(title="Input Index", value=str(playback.device[0]))
     # Output Device Textfield
-    outputDevice = TextInput(title="Output Device Index", value=str(playback.device[1]))
+    outputDevice = TextInput(title="Output Index", value=str(playback.device[1]))
     # QueryDevices
     queryButton = Button(label="QueryDevices")
     queryOutput = PreText(width=500, height=400)
@@ -115,11 +140,13 @@ if sd_enabled: # in case of audio support
         if arg:
             playback.channels = [int(v) for v in mselect.value]
             playback.play()
-        if not arg: playback.stop()
+            playButton.active = False
+        elif not arg: 
+            playback.stop()
     playButton.on_click(playButton_handler)
 
-    pbWidgetCol = column(playButton,row(inputDevice,outputDevice,width=400),
-                            queryButton,queryOutput,width=400)
+    pbWidgetCol = column(playButton,row(inputDevice,outputDevice,width=200),
+                            queryButton,queryOutput,width=200)
 
 def change_selectable_channels():
     channels = [str(idx) for idx in range(ts.numchannels)]
@@ -128,10 +155,12 @@ def change_selectable_channels():
 ts.on_trait_change( change_selectable_channels, "numchannels")
 
 # TimeSignalPlot
+timeplottips = [("Channel Index", "@ch"),("Sample", "$x"),("p", "$y")]
 tsPlot = figure(title="Time Signals",plot_width=1000, plot_height=800,
-                x_axis_label="sample index", y_axis_label="p [Pa]")
+                x_axis_label="sample index", y_axis_label="p [Pa]",
+                tooltips=timeplottips,)
 tsPlot.toolbar.logo = None
-tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
+tsPlot.multi_line(xs='xs', ys='ys',line_width='sizes',source=tv.cdsource)
 
 # FrequencySignalPlot
 freqplottips = [("Channel", "@chn"),("Frequency in Hz", "$x"),("|P(f)|^2 in dB", "$y")]
@@ -142,19 +171,19 @@ freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
 freqplot.multi_line(xs='freqs', ys='amp',color='color', source=freqdata)
 #create layout
-tsWidgetsCol = column(plotButton,mselect,*tsWidgets.values(),width=400)
+tsWidgetsCol = column(plotButton,mselect,*tsWidgets.values(),width=200)
 psWidgetsCol = column(plotButton,mselect,*list(psWidgets.values()),
-                         width=400)
+                         width=200)
 if sd_enabled: 
-    timeDataLayout = row(tsWidgetsCol,pbWidgetCol)
-    freqDataLayout = row(psWidgetsCol,pbWidgetCol)
+    timeDataLayout = row(tsWidgetsCol,pbWidgetCol,width=200)
+    freqDataLayout = row(psWidgetsCol,pbWidgetCol,width=200)
 else:
-    allWidgetsLayout = row(tsWidgetsCol)
-    freqDataLayout = row(psWidgetsCol)
+    timeDataLayout = row(tsWidgetsCol,width=100)
+    freqDataLayout = row(psWidgetsCol,width=100)
 
 
 # Put in Tabs
-tsTab = Panel(child=row(tsPlot,timeDataLayout), title='Time Data')
+tsTab = Panel(child=row(column(linesizeSlider,timeRange,tsPlot),timeDataLayout), title='Time Data')
 fdTab = Panel(child=row(freqplot,freqDataLayout), title='Frequency Data')
 plotTab = Tabs(tabs=[tsTab,fdTab])
 
