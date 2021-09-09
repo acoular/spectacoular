@@ -223,9 +223,9 @@ geomview.on_change('active',update_micgeom_view)
 
 # Select
 if sinus_enabled:
-    label_options = ["Index","Roman","Physical"]
+    label_options = ["Index","Number","Physical"]
 else:
-    label_options = ["Index","Roman"]
+    label_options = ["Index","Number"]
 
 labelSelect = Select(title="Select Channel Labeling:", value="Index",
                                 options=label_options,
@@ -234,7 +234,7 @@ labelSelect = Select(title="Select Channel Labeling:", value="Index",
 def _get_channel_labels(ltype):
     if ltype == 'Index':
         labels = [str(i) for i in range(inputSignalGen.numchannels)]
-    elif ltype == 'Roman':
+    elif ltype == 'Number':
         labels = [str(i+1) for i in range(inputSignalGen.numchannels)]
     elif ltype == 'Physical':
         labels = [inputSignalGen.inchannels_[i] for i in range(inputSignalGen.numchannels)]
@@ -389,7 +389,8 @@ def get_active_channels():
     if DEVICE == 'typhoon' or DEVICE == 'tornado':
         ch = [inputSignalGen.inchannels_[i] for i in checkbox_micgeom.active]
     else:
-        ch = checkbox_micgeom.active    
+        ch = checkbox_micgeom.active   
+    ch.sort() 
     return ch
 
 def get_numsamples():
