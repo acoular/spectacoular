@@ -595,7 +595,7 @@ def update_amp_bar_plot():
 def update_mic_geom_plot():
     global MICSIZE, CLIPVALUE
     if micGeo.num_mics > 0: 
-        levels = np.array([L_p(tioAvg.data.data['data'].T[i]) for i in checkbox_micgeom.active]) # only take which are active
+        levels = np.array([L_p(tioAvg.data.data['data'].T[i]) for i in sorted(checkbox_micgeom.active)]) # only take which are active
         MicGeomCDS.data['sizes'] = levels/levels.max()*MICSIZE
         MicGeomCDS.data['colors'] = [MODECOLOR if val<CLIPVALUE else CLIPCOLOR for val in levels]
 
