@@ -508,7 +508,8 @@ class SpectraInOut( TimeInOut ):
             """
         wind = self.window_( self.block_size )
         weight = sqrt(self.block_size/dot(wind,wind)) # signal energy correction
+        fweight = (sqrt(2)/self.block_size)
         wind = wind[:, newaxis]
         for data in self.get_source_data():
-            ft = fft.rfft(data*wind*weight, None, 0).astype(self.precision)*(sqrt(2)/self.block_size)
+            ft = fft.rfft(data*wind*weight, None, 0).astype(self.precision)*fweight
             yield ft
