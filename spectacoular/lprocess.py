@@ -18,7 +18,7 @@ classes might move to Acoular module in the future.
 """
  
 from numpy import logical_and,savetxt,mean,array,newaxis, zeros,\
- pad, ones, hanning, hamming, bartlett, blackman,fft ,arange
+ pad, ones, hanning, hamming, bartlett, blackman,fft ,arange, empty, sqrt, dot
 
 from scipy.signal import lfilter
 from datetime import datetime
@@ -429,6 +429,10 @@ class SpectraInOut( TimeInOut ):
     block_size = Trait(1024, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536,
         desc="number of samples per FFT block")
 
+    #: Overlap factor for averaging: 'None'(default), '50%', '75%', '87.5%'.
+    overlap = Trait('None', {'None':1, '50%':2, '75%':4, '87.5%':8}, 
+        desc="overlap of FFT blocks")
+
     #: The floating-number-precision of entries of csm, eigenvalues and 
     #: eigenvectors, corresponding to numpy dtypes. Default is 64 bit.
     precision = Trait('complex128', 'complex64', 
@@ -436,16 +440,18 @@ class SpectraInOut( TimeInOut ):
     
     # internal identifier
     digest = Property( depends_on = ['source.digest','precision','block_size',
-                                    'window'])
+                                    'window','overlap'])
 
     trait_widget_mapper = {
                         'window': Select,
                         'block_size': Select,
+                        'overlap' : Select,
                        }
 
     trait_widget_args = {
                         'window':  {'disabled':False},
                         'block_size':  {'disabled':False},
+                        'overlap':  {'disabled':False},
                          }
 
     get_widgets = get_widgets
@@ -468,6 +474,22 @@ class SpectraInOut( TimeInOut ):
         return abs(fft.fftfreq(self.block_size, 1./self.source.sample_freq)\
                     [:int(self.block_size/2+1)])
 
+    #generator that yields the time data blocks for every channel (with optional overlap)
+    def get_source_data(self):
+        bs = self.block_size
+        temp = empty((2*bs, self.numchannels))
+        pos = bs
+        posinc = bs/self.overlap_
+        for data_block in self.source.result(bs):
+            ns = data_block.shape[0]
+            temp[bs:bs+ns] = data_block # fill from right
+            while pos+bs <= bs+ns:
+                yield temp[int(pos):int(pos+bs)]
+                pos += posinc
+            else:
+                temp[0:bs] = temp[bs:] # copy to left
+                pos -= bs
+
     #generator that yields the fft for every channel
     def result(self):
         """ 
@@ -484,11 +506,9 @@ class SpectraInOut( TimeInOut ):
         Samples in blocks of shape (numfreq, :attr:`numchannels`). 
             The last block may be shorter than num.
             """
-        for temp in self.source.result(self.block_size):
-            if temp.shape[0] < self.block_size:
-                z2pad = self.block_size - temp.shape[0]
-                temp  = pad(temp, [(0,z2pad),(0,0)], mode='constant', constant_values=0)
-            wind = self.window_(self.block_size)
-            wind = wind[:, newaxis]
-            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)*(2/self.block_size)
+        wind = self.window_( self.block_size )
+        weight = sqrt(self.block_size/dot(wind,wind)) # signal energy correction
+        wind = wind[:, newaxis]
+        for data in self.get_source_data():
+            ft = fft.rfft(data*wind*weight, None, 0).astype(self.precision)*(sqrt(2)/self.block_size)
             yield ft
