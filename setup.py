@@ -7,7 +7,7 @@ from os.path import join, abspath, dirname
 import os
 
 
-bf_version = "21.08"
+bf_version = "22.08"
 bf_author = "Acoular Development Team"
 
 # Get the long description from the relevant file
@@ -53,6 +53,8 @@ setup(name="spectacoular",
       'License :: OSI Approved :: BSD License',
       'Programming Language :: Python :: 3.7',
       'Programming Language :: Python :: 3.8',
+      'Programming Language :: Python :: 3.9',      
+      'Programming Language :: Python :: 3.10',      
       ],
       keywords='acoustic beamforming microphone array GUI',
       packages = ['spectacoular'],
