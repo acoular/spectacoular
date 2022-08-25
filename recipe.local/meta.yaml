@@ -1,6 +1,6 @@
 package:
   name: spectacoular
-  version: "21.08"
+  version: "22.08"
 
 source:
   path: ../../spectacoular
