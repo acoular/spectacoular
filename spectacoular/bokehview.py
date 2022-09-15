@@ -730,3 +730,15 @@ trait_widget_args = {'name': {'disabled':False},
                      }
 
 add_bokeh_attr(WriteH5,trait_widget_mapper,trait_widget_args)
+
+from acoular import SoundDeviceSamplesGenerator
+
+trait_widget_mapper = {'device': NumericInput,
+                       'sample_freq': NumericInput,
+                       'numchannels' : NumericInput
+                       }
+trait_widget_args = {'device': {'disabled':False,'mode':'int'},
+                     'numchannels' : {'disabled':False,'mode':'int'},
+                     'sample_freq':  {'disabled':True,'mode':'float'},
+                     }
+add_bokeh_attr(SoundDeviceSamplesGenerator,trait_widget_mapper,trait_widget_args)
