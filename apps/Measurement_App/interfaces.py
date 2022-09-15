@@ -22,9 +22,9 @@ if not os.path.exists(DATAPATH):
 H5PATH = os.path.join(DATAPATH,H5SAVEFILE)
 
 def get_interface(device,syncorder=[]):
-    if device == 'uma16':
-        from acuma16 import UMA16SamplesGenerator
-        InputSignalGen = UMA16SamplesGenerator()
+    if device == 'sounddevice':
+        from spectacoular import SoundDeviceSamplesGenerator
+        InputSignalGen = SoundDeviceSamplesGenerator()
         return InputSignalGen
     elif device == 'phantom':
         exist = os.path.isfile(H5PATH)
