@@ -175,7 +175,7 @@ grid.set_widgets(**{'z':zSlider})
 rgWidgets['z'] = zSlider # replace textfield with slider
 
 select_micgeom = Select(title="Select MicGeom:", value=micGeo.from_file,
-                                options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)],
+                                options=["None"]+[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)],
                                 width=250)
 micGeo.set_widgets(**{'from_file':select_micgeom})
 mgWidgets = micGeo.get_widgets()
@@ -253,7 +253,7 @@ labelSelect.on_change('value',update_channel_labels)
 # Buttons
 reload_micgeom_button = Button(label="↻",disabled=False,width=60,height=60)
 def update_micgeom_options_callback():
-    select_micgeom.options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]+["None"]
+    select_micgeom.options=["None"]+[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]
 reload_micgeom_button.on_click(update_micgeom_options_callback)
 
 # button to stop the server
