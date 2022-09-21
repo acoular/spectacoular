@@ -603,7 +603,7 @@ def update_mic_geom_plot():
 
 def update_beamforming_plot():
     if bfdata['data'].size > 0:
-        BeamfCDS.data['beamformer_data'] = [bfdata['data'][:,::-1]]
+        BeamfCDS.data['beamformer_data'] = [bfdata['data']]
         if checkbox_autolevel_mode.active:
             dynamicValue = (dynamicSlider.value[1] - dynamicSlider.value[0])
             maxValue = bfdata['data'].max()
