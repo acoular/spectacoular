@@ -66,7 +66,7 @@ ClipSlider = Slider(start=0, end=120, value=0, step=.5, title="Clip Level (only 
 # Checkboxes
 checkbox_use_current_time = CheckboxGroup(labels=["use current time"], active=[0])
 checkbox_paint_mode = CheckboxGroup(labels=["paint mode"], active=[])
-checkbox_autolevel_mode = CheckboxGroup(labels=["auto level mode"], active=[])
+checkbox_autolevel_mode = CheckboxGroup(labels=["auto level mode"], active=[0])
 
 # Amplitude Figure
 # Tooltips

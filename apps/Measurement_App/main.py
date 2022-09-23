@@ -59,7 +59,7 @@ parser.add_argument(
   '--device',
   type=str,
   default="phantom",
-  choices=["uma16","tornado","typhoon","phantom","apollo"],
+  choices=["sounddevice","tornado","typhoon","phantom","apollo"],
   help='Connected device.')
 parser.add_argument(
   '--blocksize',
@@ -112,13 +112,14 @@ logger.info("start Measurement App...")
 # load device
 # =============================================================================
 sinus_enabled=False
-if DEVICE == 'uma16':
-    mg_file = 'minidsp_uma16.xml'
+if DEVICE == 'sounddevice':
+    import sounddevice as sd
     inputSignalGen = get_interface(DEVICE)
     ch_names = [str(_) for _ in range(inputSignalGen.numchannels)]
-    grid = RectGrid( x_min=-0.15, x_max=0.15, y_min=-0.15, y_max=0.15, z=0.2, increment=0.01)
+    micGeo = MicGeom(from_file = '')
+    grid = RectGrid()
 elif DEVICE == 'phantom':
-    mg_file = 'array_64.xml'
+    micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,'array_64.xml'))
     inputSignalGen = get_interface(DEVICE)
     ch_names = [str(_) for _ in range(inputSignalGen.numchannels)]
     grid = RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
@@ -130,15 +131,13 @@ else: # otherwise it must be sinus
         raise NotImplementedError("sinus module cannot be imported!")
     from sinus_dev import get_interface, append_left_column,append_disable_obj,\
         get_callbacks, close_device_callback, get_teds_component, gather_metadata
-    mg_file = 'tub_vogel64.xml'
+    micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,'tub_vogel64.xml'))
     iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,SYNCORDER)
     ch_names = inputSignalGen.inchannels_
     grid = RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
     
 NUMCHANNELS = inputSignalGen.numchannels
-
-micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,mg_file))
-# Spplitting of incoming samples
+# Splitting of incoming samples
 sampSplit = SampleSplitter(source = inputSignalGen, buffer_size=BUFFERSIZE)
 # ProcesampSpliting display Mode
 timePow = TimePower(source=sampSplit)
@@ -175,8 +174,8 @@ zSlider = Slider(start=0.01, end=10.0, value=grid.z, step=.02, title="z",disable
 grid.set_widgets(**{'z':zSlider})
 rgWidgets['z'] = zSlider # replace textfield with slider
 
-select_micgeom = Select(title="Select MicGeom:", value=os.path.join(MGEOMPATH,mg_file),
-                                options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)],
+select_micgeom = Select(title="Select MicGeom:", value=micGeo.from_file,
+                                options=["None"]+[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)],
                                 width=250)
 micGeo.set_widgets(**{'from_file':select_micgeom})
 mgWidgets = micGeo.get_widgets()
@@ -191,10 +190,13 @@ calfiltWidgets = fo_cal.get_widgets()
 ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,NUMCHANNELS+1)),
                                        'level':np.zeros(NUMCHANNELS),
                                        'colors':[COLOR[1]]*NUMCHANNELS} )
-MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
-                                    'sizes':np.array([MICSIZE]*micGeo.num_mics),
-                                    'channels':[str(_) for _ in range(micGeo.num_mics)],
-                                    'colors':[COLOR[1]]*micGeo.num_mics}) 
+if micGeo.num_mics > 0:
+    MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0],'y':micGeo.mpos[1],
+                                        'sizes':np.array([MICSIZE]*micGeo.num_mics),
+                                        'channels':[str(_) for _ in range(micGeo.num_mics)],
+                                        'colors':[COLOR[1]]*micGeo.num_mics}) 
+else:
+    MicGeomCDS = ColumnDataSource(data={'x': [],'sizes':[], 'channels':[],'colors':[]})                                                                                                        
 BeamfCDS = ColumnDataSource({'beamformer_data':[]})
 calibCDS = ColumnDataSource(data={"calibvalue":[],"caliblevel":[],"calibfactor":[], "channel":[]})
 
@@ -251,7 +253,7 @@ labelSelect.on_change('value',update_channel_labels)
 # Buttons
 reload_micgeom_button = Button(label="↻",disabled=False,width=60,height=60)
 def update_micgeom_options_callback():
-    select_micgeom.options=[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]+["None"]
+    select_micgeom.options=["None"]+[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]
 reload_micgeom_button.on_click(update_micgeom_options_callback)
 
 # button to stop the server
@@ -601,7 +603,7 @@ def update_mic_geom_plot():
 
 def update_beamforming_plot():
     if bfdata['data'].size > 0:
-        BeamfCDS.data['beamformer_data'] = [bfdata['data'][:,::-1]]
+        BeamfCDS.data['beamformer_data'] = [bfdata['data']]
         if checkbox_autolevel_mode.active:
             dynamicValue = (dynamicSlider.value[1] - dynamicSlider.value[0])
             maxValue = bfdata['data'].max()
@@ -684,13 +686,39 @@ left_column = column(display_toggle,
                      Spacer(width=250, height=10))
 
 if sinus_enabled:
-
     # Additional Panel when SINUS Messtechnik API is used
     teds_component = get_teds_component(devInputManager,logger)
     sinusTab = Panel(child=teds_component,title='SINUS Messtechnik')
     figureTabs.tabs.append(sinusTab)
     # add buttons
     append_left_column(left_column)
+if DEVICE == 'sounddevice':
+    # set up devices choice
+    devices = {}
+    for i,dev in enumerate(sd.query_devices()):
+        if dev['max_input_channels']>0:
+            devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
+    device_select = Select(title="Choose input device:", 
+        value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
+    inputSignalGen.device=int(device_select.value)
+    inputSignalGen.set_widgets(device=device_select)
+    left_column.children.insert(1,device_select)
+    sdwidgets = list(inputSignalGen.get_widgets().values())
+    left_column.children.insert(2,sdwidgets[2]) # numchannels
+    sdwidgets[2].disabled=True
+
+    def device_update(attr,old,new):
+        inputSignalGen.numchannels = sd.query_devices(inputSignalGen.device)['max_input_channels']
+        ticker = list(np.arange(1,inputSignalGen.numchannels+1))
+        ChLevelsCDS.data = {'channels':ticker,'level': np.zeros(inputSignalGen.numchannels)}
+        amp_fig.xaxis.ticker = ticker
+        checkbox_micgeom.labels = [str(_) for _ in range(inputSignalGen.numchannels)]
+        checkbox_micgeom.active = [_ for _ in range(inputSignalGen.numchannels)]
+        if micGeo.num_mics > 0:
+            MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
+                    'sizes':np.array([7]*micGeo.num_mics),
+                    'channels':[str(_) for _ in checkbox_micgeom.active]} 
+    device_select.on_change('value',device_update)
 
 right_column = column(figureTabs)
 
