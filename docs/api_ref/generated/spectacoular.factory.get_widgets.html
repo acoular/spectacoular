@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>spectacoular.factory.get_widgets &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="BaseSpectacoular" href="spectacoular.factory.BaseSpectacoular.html" />
+    <link rel="prev" title="factory" href="../spectacoular.factory.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>spectacoular.factory.get_widgets</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.factory.BaseSpectacoular.html">BaseSpectacoular</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="spectacoular-factory-get-widgets">
+<h1>spectacoular.factory.get_widgets<a class="headerlink" href="#spectacoular-factory-get-widgets" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="spectacoular.factory.get_widgets">
+<span class="sig-prename descclassname"><span class="pre">spectacoular.factory.</span></span><span class="sig-name descname"><span class="pre">get_widgets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trait_widget_mapper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trait_widget_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.factory.get_widgets" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates a View (a bunch of instanciated widgets without a layout) 
+defined by the <code class="xref py py-attr docutils literal notranslate"><span class="pre">trait_widget_mapper</span></code> mapping attribute
+of the given object (or specified via <a class="reference internal" href="#spectacoular.factory.get_widgets" title="spectacoular.factory.get_widgets"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_widgets()</span></code></a> method arguments).</p>
+<p>This function is implemented in all SpectAcoular classes and is added to
+Acoular’s classes in bokehview.py. It builds Bokeh widgets from 
+corresponding class trait attributes by utilizing the <code class="xref py py-class docutils literal notranslate"><span class="pre">TraitWidgetMapper</span></code> 
+derived classes. The desired mapping is defined by the <code class="xref py py-attr docutils literal notranslate"><span class="pre">trait_widget_mapper</span></code> 
+dictionary.</p>
+<p>This function implements multiple cases of View construction:</p>
+<ul class="simple">
+<li><p>(Case 1 - Default View) get_widgets() is called by a BaseSpectacoular 
+derived instance without specifying trait_widget_mapper and trait_widget_args 
+as function arguments. In this case, the mapping defined by the object instance attributes
+(<cite>self.trait_widget_mapper</cite>,self.`trait_widget_args`) will be used to 
+construct the View.</p></li>
+<li><p>(Case 2 - Custom View (a)) get_widgets() is called by a BaseSpectacoular 
+derived instance and the desired mapping is given by the 
+<a class="reference internal" href="#spectacoular.factory.get_widgets" title="spectacoular.factory.get_widgets"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_widgets()</span></code></a> function arguments (trait_widget_mapper and trait_widget_args).
+In this case, the mapping defined by the function arguments will be used to
+create the View. The instance attributes (<cite>self.trait_widget_mapper</cite>,self.`trait_widget_args`) 
+will be superseded.</p></li>
+<li><p>(Case 3 - No Predefined View) <a class="reference internal" href="#spectacoular.factory.get_widgets" title="spectacoular.factory.get_widgets"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_widgets()</span></code></a> is called and a HasTraits derived instance 
+is given as the first argument to the function. The instance object has no 
+trait_widget_mapper and trait_widget_args attributes. 
+In this case, a default mapping is created from all editable traits to create the view.</p></li>
+<li><p>(Case 4 - Custom View (b)) <a class="reference internal" href="#spectacoular.factory.get_widgets" title="spectacoular.factory.get_widgets"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_widgets()</span></code></a> is called and a HasTraits derived instance 
+is given as the first argument to the function. The instance object has no 
+trait_widget_mapper and trait_widget_args attributes, but a mapping is defined by the 
+second (and third) function argument. In this case, the mapping defined by the function arguments will be used to create the View.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>trait_widget_mapper</strong><span class="classifier">dict, optional</span></dt><dd><p>contains the desired mapping of a variable name (dict key) 
+to a Bokeh widget type (dict value), by default {}</p>
+</dd>
+<dt><strong>trait_widget_args</strong><span class="classifier">dict, optional</span></dt><dd><dl class="simple">
+<dt>contains the desired widget kwargs (dict values) for each variable name (dict key),</dt><dd><p>by default {}</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>dict</dt><dd><p>A dictionary containing the variable names as the key and the Bokeh widget
+instance as value.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.factory.BaseSpectacoular.html">BaseSpectacoular</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

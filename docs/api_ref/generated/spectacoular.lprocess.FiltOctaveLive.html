@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>FiltOctaveLive &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="TimeSamplesPlayback" href="spectacoular.lprocess.TimeSamplesPlayback.html" />
+    <link rel="prev" title="CalibHelper" href="spectacoular.lprocess.CalibHelper.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>FiltOctaveLive</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.lprocess.CalibHelper.html">CalibHelper</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.lprocess.html">lprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.lprocess.TimeSamplesPlayback.html">TimeSamplesPlayback</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="filtoctavelive">
+<h1>FiltOctaveLive<a class="headerlink" href="#filtoctavelive" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectacoular.lprocess.FiltOctaveLive">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">spectacoular.lprocess.</span></span><span class="sig-name descname"><span class="pre">FiltOctaveLive</span></span><a class="headerlink" href="#spectacoular.lprocess.FiltOctaveLive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">acoular.tprocess.FiltFiltOctave</span></code>, <a class="reference internal" href="spectacoular.factory.BaseSpectacoular.html#spectacoular.factory.BaseSpectacoular" title="spectacoular.factory.BaseSpectacoular"><code class="xref py py-class docutils literal notranslate"><span class="pre">spectacoular.factory.BaseSpectacoular</span></code></a></p>
+<p>Octave or third-octave filter (not zero-phase).</p>
+<p>This class is similar to Acoular’s <code class="xref py py-class docutils literal notranslate"><span class="pre">FiltFiltOctave</span></code>.
+The only difference is that the filter coefficients can be changed while 
+the result function is executed.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.lprocess.FiltOctaveLive.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.lprocess.FiltOctaveLive.result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Python generator that yields the output block-wise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>num</strong><span class="classifier">integer</span></dt><dd><p>This parameter defines the size of the blocks to be yielded
+(i.e. the number of samples per block).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>Samples in blocks of shape (num, numchannels).</dt><dd><p>Delivers the bandpass filtered output of source.
+The last block may be shorter than num.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.lprocess.CalibHelper.html">CalibHelper</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.lprocess.html">lprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.lprocess.TimeSamplesPlayback.html">TimeSamplesPlayback</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

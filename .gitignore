@@ -15,7 +15,6 @@ apps/Measurement_App/data/
 sphinx/_static/api_ref/generated/
 sphinx/api_ref/generated/
 sphinx/_build
-docs/
 copy_html.sh
 
 *.SEC
