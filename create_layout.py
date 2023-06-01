@@ -43,7 +43,7 @@ for path in paths:
     # yaml file
     yaml_file = open('apps/' + path + '/theme.yaml', 'w')
     yaml_lines = [f'attrs:',
-                  f'    Figure:',
+                  f'    figure:',
                   f'        background_fill_color: "{bg_col}"',
                   f'        border_fill_color: "{bg_col}"',
                   f'        outline_line_color: "{txt_col}"',
