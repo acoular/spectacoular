@@ -10,16 +10,16 @@ bokeh serve --show SLM
 import threading
 import sys
 from itertools import cycle
-from bokeh.models.widgets.inputs import NumericInput
 
-from numpy import array, searchsorted, polyfit, argsort, cumsum, log10
+from numpy import array, searchsorted, polyfit, argsort, log10
 
 from bokeh.layouts import column, row
-from bokeh.models.widgets import Panel, Tabs, Button, Toggle, Select, RadioGroup,\
+from bokeh.models import TabPanel as Panel, Tabs
+from bokeh.models.widgets import Button, Toggle, Select, RadioGroup,\
     TableColumn, DataTable, Div, NumericInput
 from bokeh.models import CDSView, CustomJSFilter, CustomJSTransform, HoverTool,\
      CustomJSHover, CustomJS, Spacer, WheelPanTool, Range1d, DataRange1d, Slider,\
-         LegendItem, Legend, Slope, ColumnDataSource, NumberFormatter
+         Slope, ColumnDataSource, NumberFormatter
 from bokeh.transform import transform
 from bokeh.plotting import figure, curdoc
 from bokeh.server.server import Server
@@ -156,7 +156,7 @@ custom_filter = CustomJSFilter(code=
     indices[size-1]=true
     return indices;
     ''')
-view = CDSView(source=tic.ds, filters=[custom_filter])
+view = CDSView(filter=custom_filter)
 
 tofixed = CustomJSTransform(v_func=
     '''
@@ -185,7 +185,7 @@ todB = CustomJSTransform(v_func=
 
 # plot for level time history
 ch = list(tic.ch_names())[0]
-levelhistory = figure(output_backend="webgl",plot_width=800, plot_height=600,
+levelhistory = figure(output_backend="webgl",width=800, height=600,
                     y_range=Range1d(start=10,end=90,bounds='auto',min_interval=40))
 levelhistory.xaxis.axis_label = 'time / s'
 levelhistory.yaxis.axis_label = 'sound pressure level / dB'
@@ -198,7 +198,7 @@ levelhistory.x_range = DataRange1d(follow='end', follow_interval=10, range_paddi
 
 # plot for band level time history
 levelhistory2 = figure(output_backend='webgl', tools='pan,wheel_zoom,xbox_select,reset,xbox_zoom',
-                    active_drag="xbox_select",plot_width=800, plot_height=600,
+                    active_drag="xbox_select",width=800, height=600,
                     y_range=Range1d(start=10,end=90,bounds='auto',min_interval=40))
 levelhistory2.xaxis.axis_label = 'time / s'
 levelhistory2.yaxis.axis_label = 'sound pressure level / dB'
@@ -216,7 +216,7 @@ levelhistory2.x_range = DataRange1d(follow='end', follow_interval=10, range_padd
 
 # bar graph plot for 3rd octave average
 barplot = figure(x_range=tbc.lfunc(fob.bands), y_range=(0,80),
-                 plot_width=800, plot_height=600, output_backend="webgl")
+                 width=800, height=600, output_backend="webgl")
 barplot.xaxis.axis_label = 'band center frequency / Hz'
 barplot.yaxis.axis_label = 'sound pressure level / dB'
 barplot.add_tools(HoverTool(tooltips = [("val","@timedata0{custom}")], 
@@ -229,7 +229,7 @@ barplot.vbar(x='t', top=transform(ch,todB), source=tbc.ds,
 
 # plot for scope
 ch = list(tic2.ch_names())[0]
-scope = figure(output_backend="webgl",plot_width=800, plot_height=600)
+scope = figure(output_backend="webgl",width=800, height=600)
 scope.xaxis.axis_label = 'time / s'
 scope.yaxis.axis_label = 'sound pressure / Pa'
 scope.line(x='t', y=ch, source=tic2.ds, color='orange')
@@ -293,7 +293,7 @@ instruction_T60 = Div(text='''To estimate reverberation time T, make recording a
 the select tool to carefully select the decay part of the time history. Make sure not to select 
 parts of the time history before and after decay. T is then automatically computed for both the 
 case of interrupted noise and impulse excitation.
-''')
+''', width=400, height=100)
 
 # data save buttons
 save_spectrum = Button(label="Download data", button_type="warning")
