@@ -7,8 +7,9 @@ import os
 from os import path
 import acoular
 from bokeh.io import curdoc
-from bokeh.layouts import column, row,widgetbox
-from bokeh.models.widgets import Panel,Tabs, Select, Toggle, Slider
+from bokeh.layouts import column, row
+from bokeh.models import TabPanel as Panel, Tabs
+from bokeh.models.widgets import Select, Toggle, Slider
 from bokeh.models import LinearColorMapper, ColorBar, PointDrawTool, ColumnDataSource
 from bokeh.events import Reset
 from bokeh.plotting import figure
@@ -16,7 +17,7 @@ from bokeh.palettes import Viridis256
 from bokeh.server.server import Server
 from spectacoular import MicGeom, SteeringVector, RectGrid, PointSpreadFunction,\
 PointSpreadFunctionPresenter,set_calc_button_callback
-from pylab import ravel_multi_index, array
+from numpy import ravel_multi_index, array
 PALETTE = Viridis256
 
 doc = curdoc()
@@ -69,9 +70,9 @@ psfFreqSlider.on_change('value',psf_update) # change psf plot when frequency cha
 #%% MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', 
                 tools = 'pan,wheel_zoom,reset,lasso_select',
-                plot_width=600, plot_height=600)
+                width=600, height=600)
 mgPlot.toolbar.logo=None
-micRenderer = mgPlot.circle_cross(x='x',y='y',size=20,fill_alpha=.8,
+micRenderer = mgPlot.scatter(marker='circle_cross', x='x',y='y',size=20,fill_alpha=.8,
                                   source=mgWidgets['mpos_tot'].source)
 drawtool = PointDrawTool(renderers=[micRenderer],empty_value=0.) 
 # empty_value: a value of 0. is inserted for the third column (z-axis) when
@@ -89,7 +90,7 @@ PSF_TOOLTIPS = [
     ("(x,y)", "($x, $y)"),]
 psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
                  tooltips=PSF_TOOLTIPS,
-                 plot_width=600, plot_height=600)
+                 width=600, height=600)
 psfPlot.toolbar.logo=None
 psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
 cm = LinearColorMapper(low=-20, high=0,palette=PALETTE, low_color= '#2F2F2F')
@@ -101,7 +102,7 @@ psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Lp/dB",\
 
 src_pos = ColumnDataSource(data={'x':[0],'y':[0]}) 
 src_pos.on_change('data',lambda attr,old,new:calc()) # automatically re-calc if set  
-srcRenderer = psfPlot.cross(x='x',y='y',size=10, fill_alpha=.8, source=src_pos)
+srcRenderer = psfPlot.scatter(marker='cross', x='x',y='y',size=10, fill_alpha=.8, source=src_pos)
 marktool = PointDrawTool(renderers=[srcRenderer], num_objects=1)
 psfPlot.add_tools(marktool)
 psfPlot.toolbar.active_tap = marktool
