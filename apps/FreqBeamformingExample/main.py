@@ -11,12 +11,12 @@ from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
 from bokeh.models.tools import BoxEditTool
 from bokeh.models import LinearColorMapper,ColorBar,ColumnDataSource, Range1d, HoverTool, Spacer
-from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider,Div, Paragraph,\
+from bokeh.models.widgets import Select, Toggle, RangeSlider,Div, \
     NumberFormatter
 from bokeh.plotting import figure
 from bokeh.palettes import viridis, Spectral11
 from bokeh.server.server import Server
-from numpy import array, nan, zeros
+from numpy import array, nan
 import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
 RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
@@ -84,7 +84,7 @@ beamformerSelector = Select(title="Beamforming Method:",
 
 # use additional classes for data evaluation/view
 bv = BeamformerPresenter(source=bb,num=3,freq=4000.)
-bv.trait_widget_args.update(num={'width':40},freq={'width':100})
+bv.trait_widget_args.update({'num':{'width':40},'freq':{'width':100}})
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
 tsWidgets['invalid_channels'].height = 100 
@@ -172,7 +172,7 @@ freqdata = ColumnDataSource(data={'freqs':[array(f_ticks)], # initialize
 f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
                     500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
                     20000: '20'}
-freqplot = figure(title="Sector-Integrated Spectrum", plot_width=bfplotwidth, plot_height=700,
+freqplot = figure(title="Sector-Integrated Spectrum", width=bfplotwidth, height=700,
                   x_axis_type="log", x_axis_label="f / kHz", 
                   y_axis_label="SPL / dB", )#tooltips=TOOLTIPS)
 freqplot.toolbar.logo=None
