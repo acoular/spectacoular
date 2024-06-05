@@ -37,8 +37,9 @@ from functools import partial
 import argparse
 from bokeh.plotting import curdoc, figure
 from bokeh.models import ColumnDataSource, RadioGroup, Spacer, CustomJS,Div
-from bokeh.models.widgets import Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider,\
+from bokeh.models.widgets import Select,TextInput,Button,CheckboxGroup,Slider,\
 TableColumn,NumberEditor,DataTable
+from bokeh.models import TabPanel as Panel, Tabs
 from bokeh.layouts import column,row
 from acoular import TimePower, TimeAverage, L_p, MicGeom, \
 SteeringVector, BeamformerTime,  SampleSplitter, BeamformerBase, WriteH5
@@ -322,7 +323,7 @@ checkbox_micgeom = CheckboxGroup(labels=ch_names,
 
 # Figures and Glyphs
 amp_bar = amp_fig.vbar(x='channels', width=0.5, bottom=0,top='level', color='colors', source=ChLevelsCDS)
-micgeom_fig.circle(x='x',y='y', size='sizes', color='colors', source=MicGeomCDS)
+micgeom_fig.scatter(marker='circle', x='x',y='y', size='sizes', color='colors', source=MicGeomCDS)
 
 # make image
 dx = grid.x_max-grid.x_min
@@ -330,7 +331,7 @@ dy = grid.y_max-grid.y_min
 width = 800
 height = int(width * dy/dx+0.5)
 
-beam_fig = figure(plot_width=width, plot_height=height,
+beam_fig = figure(width=width, height=height,
                    tools = 'pan,wheel_zoom,save,reset')
 if cam_enabled:
     beam_fig.image_rgba(image='image_data',
@@ -444,15 +445,15 @@ def checkbox_micgeom_callback(attr, old, new):
         MicGeomCDS.data['channels'] = get_active_channels()
 checkbox_micgeom.on_change('active',checkbox_micgeom_callback)    
 
-def checkbox_use_current_time_callback(arg):
-    if arg == []:
+def checkbox_use_current_time_callback(attr,old,new):
+    if new == []:
         disable_obj_rec.append(ti_savename)
         ti_savename.disabled = False
-    elif arg == [0]:
+    elif new == [0]:
         if ti_savename in disable_obj_rec:
             disable_obj_rec.remove(ti_savename)
         ti_savename.disabled = True
-checkbox_use_current_time.on_click(checkbox_use_current_time_callback)
+checkbox_use_current_time.on_change('active', checkbox_use_current_time_callback)
 
 def checkbox_autolevel_mode_callback(arg):
     if not arg:
