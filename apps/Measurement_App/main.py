@@ -214,8 +214,9 @@ ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
 ti_savename = TextInput(value="", title="Filename:",disabled=True)
 
 # RadioGroup
-geomviewlabels= ["Back View", "Front View"]
-geomview = RadioGroup(labels=geomviewlabels, active=0)
+view_labels= ["Back View", "Front View"]
+geomview = RadioGroup(labels=view_labels, active=0)
+bfview = RadioGroup(labels=view_labels, active=0)
 def update_micgeom_view(attr,old,new):
     if new == 0: # BackView
         MicGeomCDS.data['x'] = micGeo.mpos[0,:]
@@ -587,6 +588,8 @@ bfdata = {'data':np.array([])}
 def get_bf_data(num):
     for temp in bf_used.result(num):
         bfdata['data'] = L_p(temp.reshape(grid.shape)).T #L_p(synthetic(temp,f.fftfreq(),bfFilt.band,1))
+        if bfview.active == 1:
+            bfdata['data'] = bfdata['data'][::-1]
         yield
 
 def update_amp_bar_plot():
@@ -670,7 +673,7 @@ micgeomTab = Panel(child=column(
     row(column(row(Spacer(width=25),cliplevel,Spacer(width=15),micsizeSlider,Spacer(width=15),geomview),micgeom_fig),Spacer(width=30, height=1000),mgWidgetCol)),title='Microphone Geometry')
 beamformTab = Panel(child=column(
                         row(beam_fig,Spacer(width=30, height=1000),gridCol,Spacer(width=20, height=1000),
-                        column(freqSlider,wtimeSlider,dynamicSlider,
+                        column(bfview, freqSlider, wtimeSlider, dynamicSlider,
                          ClipSlider,checkbox_autolevel_mode,*camWidgets,
                          width=200)
                          #checkbox_paint_mode
