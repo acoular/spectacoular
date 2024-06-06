@@ -138,12 +138,11 @@ RED = "#961400"
 BLUE = "#3288bd"
 
 # beamformerPlot
-bfplotwidth = 700
 bfPlot = figure(title='Source Map', 
                 tools = 'pan,wheel_zoom,reset', 
                 #tooltips=bftooltips,
-                width=bfplotwidth,
-                height=700)
+                width=500,
+                height=500)
 # ('x', 'y', 'width', 'height', 'angle', 'dilate')
 bfPlot.rect(-0.38, 0.0, 0.2, 0.5,alpha=1.,color='gray',fill_alpha=.8,line_width=5,line_color="#1e3246")
 bfPlot.rect(-.3, 0.0, 0.6, 0.6,alpha=1.,color='#d2d6da',fill_alpha=0,line_width=1)#line_color="#213447")
@@ -172,7 +171,7 @@ freqdata = ColumnDataSource(data={'freqs':[array(f_ticks)], # initialize
 f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
                     500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
                     20000: '20'}
-freqplot = figure(title="Sector-Integrated Spectrum", width=bfplotwidth, height=700,
+freqplot = figure(title="Sector-Integrated Spectrum", width=500, height=500,
                   x_axis_type="log", x_axis_label="f / kHz", 
                   y_axis_label="SPL / dB", )#tooltips=TOOLTIPS)
 freqplot.toolbar.logo=None
@@ -258,7 +257,6 @@ bv.cdsource.on_change('data',integrate_result) # also change integration result 
 
 #%% Instructions
 
-
 instruction_calculation = Div(text="""<p><b>Calculate Source Map:</b></p> <b>Select a desired beamforming method</b> via the "Beamforming Method" widget and <b>press the Calculate Button</b>.
 Depending on the method, this may take some time. You may also want to change the desired frequency and bandwith of interest with the "freq" and "num" Textfield widget.
 """)
@@ -292,7 +290,11 @@ leftlayout=layout([
         [bfPlot],
         ])
 
-layout = row(leftlayout,vspace,calcRow,Spacer(width=20),settingsCol,Spacer(width=40),instructionsCol)
+layout = column(
+    instructionsCol,
+    Spacer(height=20),
+    row(leftlayout,vspace,calcRow,Spacer(width=20),settingsCol,Spacer(width=40)),
+)
 
 # make Document
 def server_doc(doc):
