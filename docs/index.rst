@@ -18,7 +18,7 @@ A few highlights of the framework:
     * individual client-server applications with interactive visualization
     * Easily expandable interface to meet the requirements of flexible software design with custom processing
 
-Problems, suggestions and success using Spectacoular may be reported via the `acoular-users  <https://groups.google.com/forum/#!forum/acoular-users>`_ discussion forum or to *info (at) acoular.org*.
+Problems, suggestions and success using SpectAcoular may be reported via the Acoular Discussions Forum `acoular-users  <https://github.com/acoular/acoular/discussions>`_ discussion forum or to *info (at) acoular.org*.
 
 
 .. toctree::

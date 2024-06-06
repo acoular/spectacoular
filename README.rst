@@ -9,7 +9,6 @@ SpectAcoular
 ================
 
 :Documentation: https://acoular.github.io/spectacoular/
-:User forum: https://groups.google.com/g/acoular-users
 
 .. image:: docs/_static/poster.png
     :align: left
