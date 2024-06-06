@@ -18,7 +18,7 @@ current_time = lambda: datetime.now().isoformat('_').replace(':','-').replace('.
 
 APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
 CONFPATH = os.path.join(APPFOLDER,"config_files/")
-BUFFBAR_ARGS = {'plot_width':280,  'plot_height':50}
+BUFFBAR_ARGS = {'width':280,  'height':50}
 DEV_SERIAL_NUMBERS = {'tornado': ['10142', '10112', '10125', '10126'],
                         'typhoon': [
                                 '10092','10095','10030','10038',

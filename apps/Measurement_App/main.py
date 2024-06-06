@@ -344,7 +344,7 @@ bfImage = beam_fig.image(image='beamformer_data', x=grid.x_min, y=grid.y_min, dw
 beam_fig.toolbar.logo=None
 if cam_enabled: set_alpha_callback(bfImage)
 # color_bar = ColorBar(color_mapper=bfColorMapper,label_standoff=12, 
-#                      background_fill_color = '#2F2F2F',
+#                      background_fill_color = '#f6f6f6',
 #                      border_line_color=None, location=(0,0))
 #beam_fig.add_layout(color_bar, 'right')
 

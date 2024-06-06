@@ -70,7 +70,7 @@ psfFreqSlider.on_change('value',psf_update) # change psf plot when frequency cha
 #%% MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', 
                 tools = 'pan,wheel_zoom,reset,lasso_select',
-                width=600, height=600)
+                frame_width=500, frame_height=500)
 mgPlot.toolbar.logo=None
 micRenderer = mgPlot.scatter(marker='circle_cross', x='x',y='y',size=20,fill_alpha=.8,
                                   source=mgWidgets['mpos_tot'].source)
@@ -90,15 +90,15 @@ PSF_TOOLTIPS = [
     ("(x,y)", "($x, $y)"),]
 psfPlot = figure(title='Point-Spread Function', tools = 'pan,wheel_zoom,reset',
                  tooltips=PSF_TOOLTIPS,
-                 width=600, height=600)
+                 frame_width=500, frame_height=500)
 psfPlot.toolbar.logo=None
 psfPlot.x_range.range_padding = psfPlot.y_range.range_padding = 0
-cm = LinearColorMapper(low=-20, high=0,palette=PALETTE, low_color= '#2F2F2F')
+cm = LinearColorMapper(low=-20, high=0,palette=PALETTE, low_color= '#f6f6f6')
 psfPlot.image(image='psf', x='x', y='y', dw='dw', dh='dh',
              source=psfPresenter.cdsource, color_mapper=cm)
 psfPlot.add_layout(ColorBar(color_mapper=cm,location=(0,0),title="Lp/dB",\
                             title_standoff=5,
-                            background_fill_color = '#2F2F2F'),'right')
+                            background_fill_color = '#f6f6f6'),'right')
 
 src_pos = ColumnDataSource(data={'x':[0],'y':[0]}) 
 src_pos.on_change('data',lambda attr,old,new:calc()) # automatically re-calc if set  
@@ -129,7 +129,8 @@ mgWidgets['mpos_tot'].height = 280
 mgTab = Panel(child=column(mgWidgets['from_file'],
                            row(mgWidgets['num_mics'],width = twidth),
                            hspace,
-                          mgWidgets['mpos_tot']),
+                          mgWidgets['mpos_tot'],
+                          ),
                           title='Microphone Geometry')
 psfTab = Panel(child=column(*psfWidgets.values()),
                title='Point-Spread Function')
