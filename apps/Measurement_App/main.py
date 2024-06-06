@@ -31,7 +31,6 @@ except:
     cam_enabled=False
     camWidgets = []
 from datetime import datetime
-from time import time
 from threading import Event
 from functools import partial
 import argparse
@@ -709,7 +708,6 @@ if DEVICE == 'sounddevice':
     left_column.children.insert(1,device_select)
     sdwidgets = list(inputSignalGen.get_widgets().values())
     left_column.children.insert(2,sdwidgets[2]) # numchannels
-    sdwidgets[2].disabled=True
 
     def device_update(attr,old,new):
         inputSignalGen.numchannels = sd.query_devices(inputSignalGen.device)['max_input_channels']
