@@ -15,7 +15,7 @@ import threading
 from numpy import arange
 from acoular import TimeInOut
 from bokeh.models import ColumnDataSource
-from traits.api import List, Int, Trait, Float, Bool, Array, Property, on_trait_change,\
+from traits.api import List, Int, Trait, Float, Array, Property, on_trait_change,\
     cached_property, Callable 
 
 

@@ -21,3 +21,4 @@ docs/
 copy_html.sh
 
 *.SEC
+tests/.hypothesis/*
