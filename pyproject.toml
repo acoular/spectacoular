@@ -71,7 +71,7 @@ dependencies = [
 ]
 
 [tool.hatch.envs.docs.scripts]
-build = ["cd sphinx && make html"]
+build = ["cd docs && make html"]
 
 [tool.hatch.envs.tests]
 dependencies = [
