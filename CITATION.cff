@@ -41,9 +41,9 @@ contact:
   - email: "info@acoular.org"
     name: "Acoular Development Team"
 preferred-citation:
-  - type: "conference-paper"
+    type: "conference-paper"
     title: "SpectAcoular! An Extension for Acoular"
-    year: 2021
+    year: "2021"
     collection-title: "Tagungsband - DAGA 2021 : 47. Jahrestagung für Akustik"
     authors:
       - family-names: "Kujawski"
@@ -62,6 +62,6 @@ preferred-citation:
         given-names: "Simon"
         affiliation: "Department of Engineering Acoustics, TU Berlin"
     conference:
-    - name: Fortschritte der Akustik - DAGA 2021, 47. Jahrestagung für Akustik
-      city: Wien
-      country: Austria
+      - name: "Fortschritte der Akustik - DAGA 2021, 47. Jahrestagung für Akustik"
+        city: "Wien"
+        country: "Austria"
