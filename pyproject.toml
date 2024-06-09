@@ -4,7 +4,7 @@
 
 [project]
 name = "spectacoular"
-version = "22.08"
+version = "24.06"
 description = "Library for SpectAcoular interactive applications with Acoular"
 requires-python = ">=3.8,<=12"
 authors = [
