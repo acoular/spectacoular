@@ -38,9 +38,6 @@ def set_calc_button_callback(calcFunc, calcButton, label='Calculate', active_lab
     if (cb_obj.active) {
         cb_obj.label = active_label;
         cb_obj.disabled = true;
-        setTimeout(function() {
-            cb_obj.trigger('change');
-        }, 500);
     }
     else {
         cb_obj.label = label;
