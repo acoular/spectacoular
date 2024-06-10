@@ -2,7 +2,7 @@
 #pylint: disable-msg=E0611, E1101, E1103, C0103, R0901, R0902, R0903, R0904
 #pylint: disable-msg=W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) Acoular Development Team.
 #------------------------------------------------------------------------------
 from six.moves import xrange  # solves the xrange/range issue for python2/3: in py3 'xrange' is now treated as 'range' and in py2 nothing changes
 
