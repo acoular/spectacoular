@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
-#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
 # Copyright (c), Acoular Development Team.
 #------------------------------------------------------------------------------
 """Implements controller classes and functions """
 
+from bokeh.models import CustomJS
 
 
-def set_calc_button_callback(calcFunc,calcButton,label='Calculate',active_label='Calculating ...'):
+def set_calc_button_callback(calcFunc, calcButton, label='Calculate', active_label='Calculating ...'):
     """
     Sets a simple wrapper function to set a Bokeh button inactive and change 
     its label during calculation.
@@ -19,27 +18,42 @@ def set_calc_button_callback(calcFunc,calcButton,label='Calculate',active_label=
         A callable function that sould be executed when calcButton is active.
     calcButton : bokeh.models.widgets.buttons.Toggle
         The Button, executing the calcFunc function.
+    label : str, optional
+        The label of the button when it is inactive. The default is 'Calculate'.
+    active_label : str, optional
+        The label of the button when it is active. The default is 'Calculating ...'.
 
     Returns
     -------
     None.
 
     """
-    def calc(arg):
-        if arg:
-            calcButton.label = active_label
-            calcButton.disabled = True
-            while not calcButton.label == active_label and not calcButton.disabled:
-                pass
+
+    js_callback = CustomJS(args=dict(label=label, active_label=active_label), code="""
+
+    // Callback disabeling the button
+
+    if (cb_obj.active) {
+        cb_obj.label = active_label;
+        cb_obj.disabled = true;
+    }
+    else {
+        cb_obj.label = label;
+        cb_obj.disabled = false;
+    }
+
+    """)
+
+
+    def calc(attr, old, new):
+        if calcButton.active:
             try:
                 calcFunc()
             except Exception as ex:
                 print(ex)
-            calcButton.active = False
-            calcButton.disabled = False
-            calcButton.label = label
-        else:
-            calcButton.label = label
-    calcButton.on_click(calc)
+            finally:
+                calcButton.active = False
+    calcButton.js_on_change('active', js_callback)
+    calcButton.on_change('active', calc)
 
 

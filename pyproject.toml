@@ -1,0 +1,100 @@
+#------------------------------------------------------------------------------
+# Copyright (c) Acoular Development Team.
+#------------------------------------------------------------------------------
+
+[project]
+name = "spectacoular"
+version = "24.06"
+description = "Library for SpectAcoular interactive applications with Acoular"
+requires-python = ">=3.8,<=12"
+authors = [
+    {name = "Acoular Development Team", email = "info@acoular.org"},
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = [
+    "acoustics",
+    "beamforming",
+    "microphone array",
+    "GUI"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+      'acoular>=24.05',
+      'bokeh >=3.0',
+      'sounddevice',
+]
+
+maintainers = [
+    {name = "Adam Kujawski", email = "adam.kujawski@tu-berlin.de"},
+    {name = "Art Pelling", email = "a.pelling@tu-berlin.de"},
+    {name = "Ennes Sarradj", email = "ennes.sarradj@tu-berlin.de"},
+    {name = "Gert Herold", email = "gert.herold@tu-berlin.de"},
+    {name = "Mikolaj Czuchaj", email = "mikolaj.czuchaj@tu-berlin.de"},
+    {name = "Simon Jekosch", email = "s.jekosch@tu-berlin.de"},
+]
+
+[project.urls]
+homepage = "https://acoular.github.io/spectacoular/"
+documentation = "https://acoular.github.io/spectacoular/"
+repository = "https://github.com/acoular/spectacoular"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# [tool.hatch.envs.hatch-static-analysis]
+# dependencies = ["ruff==0.4.1"]
+# config-path = [".ruff.toml"]
+
+[tool.hatch.envs.docs]
+platforms = ["linux"]
+python = "3.12"
+dependencies = [
+    "ipython",
+    "graphviz",
+    "matplotlib",
+    "numpydoc",
+    "pickleshare",
+    "sphinx",
+]
+
+[tool.hatch.envs.docs.scripts]
+build = ["cd docs && make html"]
+
+[tool.hatch.envs.tests]
+dependencies = [
+    "pytest",
+]
+
+[[tool.hatch.envs.tests.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+[tool.hatch.envs.tests.scripts]
+import = ["python -c \"import spectacoular\""]
+test = ["python -m pytest -v tests"]
+
+[tool.hatch.envs.tests.overrides]
+platform.linux.pre-install-commands = ['cat /proc/cpuinfo']
+platform.macos.pre-install-commands = ['sysctl -a machdep.cpu']
+platform.windows.pre-install-commands = ['systeminfo']
+
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/spectacoular",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["spectacoular"]

@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) Acoular Development Team.
 #------------------------------------------------------------------------------
 """
 Example how to plot TimeData
@@ -10,12 +8,16 @@ from bokeh.io import curdoc
 from bokeh.layouts import row, column
 # from bokeh.events import MouseLeave
 from bokeh.models import ColumnDataSource
+# bokeh > 3.0
+from bokeh.models import Tabs, TabPanel as Panel
+# bokeh < 3.0
+# from bokeh.models.widgets import Panel, Tabs
 from bokeh.models.widgets import Toggle, TextInput, Button, PreText, \
-Tabs, Panel, MultiSelect, RangeSlider, Slider
+MultiSelect, RangeSlider, Slider
 from bokeh.plotting import figure
-from bokeh.palettes import Blues, Turbo256
+from bokeh.palettes import Turbo256
 from bokeh.server.server import Server
-from numpy import mean, conj, real, array, log10, logspace,append,sort
+from numpy import real, array, log10, logspace,append,sort
 from numpy.random import shuffle
 from acoular import L_p, MaskedTimeInOut
 from spectacoular import MaskedTimeSamples, TimeSamplesPresenter,\
@@ -31,8 +33,13 @@ COLORS=array(Turbo256) # for plotting different colors
 shuffle(COLORS)
 doc = curdoc()
 
+line_opts = dict(
+    line_color='color', line_alpha=0.6,
+    hover_line_color='color', hover_line_alpha=1.0,
+)
+
 # build processing chain
-ts       = MaskedTimeSamples(name='example_data.h5')
+ts       = MaskedTimeSamples(name='/home/kujawski/Documents/Code/spectacoular_dev/spectacoular/apps/example_data.h5')
 tv       = TimeSamplesPresenter(source=ts, _numsubsamples = 1000)
 tio      = MaskedTimeInOut(source=ts,invalid_channels=[])
 ps       = PowerSpectra(time_data=tio, cached=False) #SpectraInOut(source=ts)
@@ -46,6 +53,7 @@ chidx = [str(i) for i in range(ts.numchannels)]
 # create widget to select the channel that should be plotted
 mselect = MultiSelect(title="Select Channel:", value=["0"],
                                options=[(i,i) for i in chidx])
+tv.cdsource.data['color'] = [COLORS[int(v)] for v in mselect.value]
 
 # create Button to trigger plot
 plotButton = Toggle(label="Plot Data",button_type="primary")
@@ -56,6 +64,7 @@ def update_linesize(attr,old,new):
     tv.cdsource.data['sizes'] = array([linesizeSlider.value]*len(tv.channels))
     #freqdata.data['sizes'] = array([linesizeSlider.value]*len(tv.channels))
 linesizeSlider.on_change('value', update_linesize)
+update_linesize(None,None,None) 
 
 
 # get widgets to control settings
@@ -152,20 +161,22 @@ ts.on_trait_change( change_selectable_channels, "numchannels")
 
 # TimeSignalPlot
 timeplottips = [("Channel Index", "@ch"),("Sample", "$x"),("p", "$y")]
-tsPlot = figure(title="Time Signals",plot_width=1500, plot_height=800,
+tsPlot = figure(title="Time Signals",width=1500, height=800,
                 x_axis_label="sample index", y_axis_label="p [Pa]",
                 tooltips=timeplottips,)
 tsPlot.toolbar.logo = None
-tsPlot.multi_line(xs='xs', ys='ys',line_width='sizes',color='color',source=tv.cdsource)
+tsPlot.multi_line(xs='xs', ys='ys',
+                    line_width='sizes',
+                    source=tv.cdsource, **line_opts)
 
 # FrequencySignalPlot
 freqplottips = [("Channel", "@chn"),("Frequency in Hz", "$x"),("|P(f)|^2 in dB", "$y")]
-freqplot = figure(title="Auto Power Spectra", plot_width=1500, plot_height=800,
+freqplot = figure(title="Auto Power Spectra", width=1500, height=800,
                   x_axis_type="log", x_axis_label="f in Hz", y_axis_label="|P(f)|^2 / dB",
                   tooltips=freqplottips, x_range=(40,26000))
 freqplot.toolbar.logo = None
 freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit="Hz")
-freqplot.multi_line(xs='freqs', ys='amp',color='color', line_width=3, source=freqdata)
+freqplot.multi_line(xs='freqs', ys='amp',line_width=3, source=freqdata, **line_opts)
 #create layout
 tsWidgetsCol = column(plotButton,mselect,*tsWidgets.values(),width=200)
 psWidgetsCol = column(plotButton,mselect,*list(psWidgets.values()),

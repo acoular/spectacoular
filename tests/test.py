@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
-#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) Acoular Development Team.
 #------------------------------------------------------------------------------
 from traits.api import HasPrivateTraits, Str, CArray, Range, Int, Float,\
-File, CLong, Long, Property, Trait, List, ListStr, ListInt, ListFloat, ListBool,\
+File, CLong, Long, Property, Trait, List, ListStr, ListInt, ListFloat, \
 Bool,Tuple, Any
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import TextInput, Slider,DataTable, Select,TableColumn
-from spectacoular import get_widgets, set_widgets, TraitWidgetMapper, traitdispatcher
+from spectacoular import get_widgets, set_widgets
 from numpy import array, float64
 
 #TODO: see below:
@@ -31,6 +29,7 @@ class Test(HasPrivateTraits):
 columns = [TableColumn(field='x', title='x'),
            TableColumn(field='y', title='y'),
            TableColumn(field='z', title='z')]
+
 class CArrayWidgetMapping(Test):
     
     testIntCArray = CArray( dtype=int )

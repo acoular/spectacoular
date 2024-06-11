@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
 # Copyright (c), Acoular Development Team.
 #------------------------------------------------------------------------------
@@ -14,11 +12,11 @@
     PointSpreadFunctionPresenter
     TimeSamplesPresenter
 """
-from bokeh.models.widgets import TextInput, NumericInput, DataTable
+from bokeh.models.widgets import NumericInput, DataTable
 from bokeh.models import ColumnDataSource
 from traits.api import Trait, Int, Float, on_trait_change, Instance, ListInt
 import numpy as np
-from acoular import TimeSamples,BeamformerBase, L_p, MicGeom, SteeringVector,\
+from acoular import TimeSamples,BeamformerBase, L_p, MicGeom,\
 PointSpreadFunction, MaskedTimeSamples
 from .factory import BaseSpectacoular
 

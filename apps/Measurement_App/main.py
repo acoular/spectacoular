@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
 # Copyright (c) 2007-2020, Acoular Development Team.
 #------------------------------------------------------------------------------
@@ -31,14 +29,14 @@ except:
     cam_enabled=False
     camWidgets = []
 from datetime import datetime
-from time import time
 from threading import Event
 from functools import partial
 import argparse
 from bokeh.plotting import curdoc, figure
 from bokeh.models import ColumnDataSource, RadioGroup, Spacer, CustomJS,Div
-from bokeh.models.widgets import Select,TextInput,Button,CheckboxGroup,Tabs,Panel,Slider,\
+from bokeh.models.widgets import Select,TextInput,Button,CheckboxGroup,Slider,\
 TableColumn,NumberEditor,DataTable
+from bokeh.models import TabPanel as Panel, Tabs
 from bokeh.layouts import column,row
 from acoular import TimePower, TimeAverage, L_p, MicGeom, \
 SteeringVector, BeamformerTime,  SampleSplitter, BeamformerBase, WriteH5
@@ -213,8 +211,9 @@ ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
 ti_savename = TextInput(value="", title="Filename:",disabled=True)
 
 # RadioGroup
-geomviewlabels= ["Back View", "Front View"]
-geomview = RadioGroup(labels=geomviewlabels, active=0)
+view_labels= ["Back View", "Front View"]
+geomview = RadioGroup(labels=view_labels, active=0)
+bfview = RadioGroup(labels=view_labels, active=0)
 def update_micgeom_view(attr,old,new):
     if new == 0: # BackView
         MicGeomCDS.data['x'] = micGeo.mpos[0,:]
@@ -322,7 +321,7 @@ checkbox_micgeom = CheckboxGroup(labels=ch_names,
 
 # Figures and Glyphs
 amp_bar = amp_fig.vbar(x='channels', width=0.5, bottom=0,top='level', color='colors', source=ChLevelsCDS)
-micgeom_fig.circle(x='x',y='y', size='sizes', color='colors', source=MicGeomCDS)
+micgeom_fig.scatter(marker='circle', x='x',y='y', size='sizes', color='colors', source=MicGeomCDS)
 
 # make image
 dx = grid.x_max-grid.x_min
@@ -330,7 +329,7 @@ dy = grid.y_max-grid.y_min
 width = 800
 height = int(width * dy/dx+0.5)
 
-beam_fig = figure(plot_width=width, plot_height=height,
+beam_fig = figure(width=width, height=height,
                    tools = 'pan,wheel_zoom,save,reset')
 if cam_enabled:
     beam_fig.image_rgba(image='image_data',
@@ -343,7 +342,7 @@ bfImage = beam_fig.image(image='beamformer_data', x=grid.x_min, y=grid.y_min, dw
 beam_fig.toolbar.logo=None
 if cam_enabled: set_alpha_callback(bfImage)
 # color_bar = ColorBar(color_mapper=bfColorMapper,label_standoff=12, 
-#                      background_fill_color = '#2F2F2F',
+#                      background_fill_color = '#f6f6f6',
 #                      border_line_color=None, location=(0,0))
 #beam_fig.add_layout(color_bar, 'right')
 
@@ -444,15 +443,15 @@ def checkbox_micgeom_callback(attr, old, new):
         MicGeomCDS.data['channels'] = get_active_channels()
 checkbox_micgeom.on_change('active',checkbox_micgeom_callback)    
 
-def checkbox_use_current_time_callback(arg):
-    if arg == []:
+def checkbox_use_current_time_callback(attr,old,new):
+    if new == []:
         disable_obj_rec.append(ti_savename)
         ti_savename.disabled = False
-    elif arg == [0]:
+    elif new == [0]:
         if ti_savename in disable_obj_rec:
             disable_obj_rec.remove(ti_savename)
         ti_savename.disabled = True
-checkbox_use_current_time.on_click(checkbox_use_current_time_callback)
+checkbox_use_current_time.on_change('active', checkbox_use_current_time_callback)
 
 def checkbox_autolevel_mode_callback(arg):
     if not arg:
@@ -586,6 +585,8 @@ bfdata = {'data':np.array([])}
 def get_bf_data(num):
     for temp in bf_used.result(num):
         bfdata['data'] = L_p(temp.reshape(grid.shape)).T #L_p(synthetic(temp,f.fftfreq(),bfFilt.band,1))
+        if bfview.active == 1:
+            bfdata['data'] = bfdata['data'][::-1]
         yield
 
 def update_amp_bar_plot():
@@ -669,7 +670,7 @@ micgeomTab = Panel(child=column(
     row(column(row(Spacer(width=25),cliplevel,Spacer(width=15),micsizeSlider,Spacer(width=15),geomview),micgeom_fig),Spacer(width=30, height=1000),mgWidgetCol)),title='Microphone Geometry')
 beamformTab = Panel(child=column(
                         row(beam_fig,Spacer(width=30, height=1000),gridCol,Spacer(width=20, height=1000),
-                        column(freqSlider,wtimeSlider,dynamicSlider,
+                        column(bfview, freqSlider, wtimeSlider, dynamicSlider,
                          ClipSlider,checkbox_autolevel_mode,*camWidgets,
                          width=200)
                          #checkbox_paint_mode
@@ -705,7 +706,6 @@ if DEVICE == 'sounddevice':
     left_column.children.insert(1,device_select)
     sdwidgets = list(inputSignalGen.get_widgets().values())
     left_column.children.insert(2,sdwidgets[2]) # numchannels
-    sdwidgets[2].disabled=True
 
     def device_update(attr,old,new):
         inputSignalGen.numchannels = sd.query_devices(inputSignalGen.device)['max_input_channels']

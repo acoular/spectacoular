@@ -1,0 +1,67 @@
+cff-version: 1.2.0
+title: SpectAcoular! An Extension for Acoular
+abstract: "<p>Acoular is an open source software package written in Python programming language for processing and analysis of microphone array data. With its object-oriented design, it allows to build complex script-based processing pipelines. SpectAcoular is built on top of Acoular and offers additional modules to further simplify the handling of Acoular. It implements interactive controls (widgets) for building individual graphical user interfaces with the visualization library Bokeh. Bokeh uses web browsers for visualization, whereby rendering and event handling is performed by a high-level JavaScript library. This allows to create real-time applications and to use the capabilities of Acoular independently from the operating system. In addition, building client-server applications is supported, which makes it possible to interactively control microphone array data processing in a distributed scenario. Examples of SpectAcoular use for acquisition and analysis of microphone array data with a low cost sensor array are given. The talk will be held in german language.</p>"
+message: >-
+  If you use this software, please cite both the article and the software
+  itself using the metadata from this file.
+type: software
+authors:
+  - given-names: "Adam"
+    family-names: "Kujawski"
+    affiliation: "Department of Engineering Acoustics, TU Berlin"
+    orcid: "https://orcid.org/0000-0003-4579-8813"
+  - given-names: "Ennes"
+    family-names: "Sarradj"
+    affiliation: "Department of Engineering Acoustics, TU Berlin"
+    orcid: "https://orcid.org/0000-0002-0274-8456"
+  - given-names: "Gert"
+    family-names: "Herold"
+    affiliation: "Department of Engineering Acoustics, TU Berlin"
+    orcid: "https://orcid.org/0000-0001-5284-051X"
+  - given-names: "Simon"
+    family-names: "Jekosch"
+    affiliation: "Department of Engineering Acoustics, TU Berlin"
+identifiers:
+  - description: "spectacoular: all versions"
+    type: "doi"
+    value: "10.5281/zenodo.7060188"
+  - description: "spectacoular: 22.08"
+    type: "doi"
+    value: "10.5281/zenodo.7060188"
+  - description: "spectacoular: 21.08"
+    type: "doi"
+    value: "10.5281/zenodo.5242827"
+
+repository-code: "https://github.com/acoular/spectacoular"
+url: "https://acoular.org"
+license: "BSD-3-Clause"
+version: "22.08"
+date-released: "2022-09-25"
+contact:
+  - email: "info@acoular.org"
+    name: "Acoular Development Team"
+preferred-citation:
+  type: "conference-paper"
+  title: "SpectAcoular! An Extension for Acoular"
+  year: "2021"
+  collection-title: "Tagungsband - DAGA 2021 : 47. Jahrestagung für Akustik"
+  authors:
+    - family-names: "Kujawski"
+      given-names: "Adam"
+      affiliation: "Department of Engineering Acoustics, TU Berlin"
+      orcid: "https://orcid.org/0000-0003-4579-8813"
+    - family-names: "Herold"
+      given-names: "Gert"
+      affiliation: "Department of Engineering Acoustics, TU Berlin"
+      orcid: "https://orcid.org/0000-0001-5284-051X"
+    - family-names: "Sarradj"
+      given-names: "Ennes"
+      affiliation: "Department of Engineering Acoustics, TU Berlin"
+      orcid: "https://orcid.org/0000-0002-0274-8456"
+    - family-names: "Jekosch"
+      given-names: "Simon"
+      affiliation: "Department of Engineering Acoustics, TU Berlin"
+  conference:
+    name: "Fortschritte der Akustik - DAGA 2021, 47. Jahrestagung für Akustik"
+    city: "Wien"
+    country: "AT"

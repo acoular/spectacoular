@@ -15,8 +15,8 @@ CheckboxGroup, Slider, TextAreaInput
 COLOR = Spectral11
 MODE_COLORS = {'display':COLOR[1],'calib':COLOR[5],'msm':COLOR[8]}
 CLIP_COLORS = {'display':COLOR[8],'calib':COLOR[8],'msm':COLOR[8]}
-AMPFIG_ARGS = {'y_range': (0,140),'plot_width':1200, 'plot_height':800} 
-MGEOMFIG_ARGS = {'plot_width':800,  'plot_height':800}
+AMPFIG_ARGS = {'y_range': (0,140),'width':1200, 'height':800} 
+MGEOMFIG_ARGS = {'width':800,  'height':800}
 
 
 # status Definitions

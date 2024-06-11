@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
 # Copyright (c), Acoular Development Team.
 #------------------------------------------------------------------------------
@@ -15,7 +13,7 @@ import threading
 from numpy import arange
 from acoular import TimeInOut
 from bokeh.models import ColumnDataSource
-from traits.api import List, Int, Trait, Float, Bool, Array, Property, on_trait_change,\
+from traits.api import List, Int, Trait, Float, Array, Property, on_trait_change,\
     cached_property, Callable 
 
 

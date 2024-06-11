@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
-# Copyright (c) 2007-2019, Acoular Development Team.
+# Copyright (c) Acoular Development Team.
 #------------------------------------------------------------------------------
 """
 Example that demonstrates different beamforming algorithms
@@ -10,19 +8,18 @@ from os import path
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
 from bokeh.models import LogColorMapper,ColorBar
-from bokeh.models.widgets import Panel,Tabs,Select, Toggle, RangeSlider
+from bokeh.models.widgets import Select, Toggle, RangeSlider
+from bokeh.models import TabPanel as Panel, Tabs
 from bokeh.plotting import figure
-from bokeh.palettes import viridis, plasma, inferno, magma
+from bokeh.palettes import viridis
 from bokeh.server.server import Server
 import acoular
 from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
-RectGrid,SteeringVector,SpatialInterpolator,\
-SpatialInterpolatorRotation,AngleTracker,Trigger,\
-SpatialInterpolatorConstantRotation,\
+RectGrid,SteeringVector, SpatialInterpolatorConstantRotation,\
 BeamformerBase, BeamformerFunctional,BeamformerCapon,\
 BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
 BeamformerCleansc, BeamformerClean, BeamformerPresenter,\
-BeamformerCMF,BeamformerGIB,Environment,Calib,set_calc_button_callback
+BeamformerCMF,BeamformerGIB,Environment, set_calc_button_callback
 
 doc = curdoc() 
 # build processing chain

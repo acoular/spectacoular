@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#pylint: disable-msg=E0611, E1101, C0103, R0901, R0902, R0903, R0904, W0232
 #------------------------------------------------------------------------------
 # Copyright (c) 2007-2020, Acoular Development Team.
 #------------------------------------------------------------------------------
@@ -18,7 +16,7 @@ current_time = lambda: datetime.now().isoformat('_').replace(':','-').replace('.
 
 APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
 CONFPATH = os.path.join(APPFOLDER,"config_files/")
-BUFFBAR_ARGS = {'plot_width':280,  'plot_height':50}
+BUFFBAR_ARGS = {'width':280,  'height':50}
 DEV_SERIAL_NUMBERS = {'tornado': ['10142', '10112', '10125', '10126'],
                         'typhoon': [
                                 '10092','10095','10030','10038',

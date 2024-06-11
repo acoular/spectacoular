@@ -8,14 +8,17 @@ cache/
 td/
 build/
 _build/
+*.egg-info/
+.eggs/
 
 apps/Measurement_App/static/two_sources_one_moving_10s.h5
 apps/Measurement_App/data/
 *.log
-sphinx/_static/api_ref/generated/
-sphinx/api_ref/generated/
-sphinx/_build
+docs/_static/api_ref/generated/
+docs/api_ref/generated/
+docs/_build
 docs/
 copy_html.sh
 
 *.SEC
+tests/.hypothesis/*
