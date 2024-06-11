@@ -20,7 +20,7 @@ requirements:
     - wheel
   run:
     - python >=3.8
-    - acoular>=24.05
+    - acoular >=24.05
     - bokeh >=3.0
 
 test:
