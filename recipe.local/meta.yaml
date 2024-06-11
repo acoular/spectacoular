@@ -20,8 +20,9 @@ requirements:
     - wheel
   run:
     - python >=3.8
-    - acoular['full'] >=24.05
+    - acoular >=24.05
     - bokeh >=3.0
+    - python-sounddevice
 
 test:
   # Python imports
