@@ -31,7 +31,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-docs
-          path: ./docs/build/html
+          path: ./docs/_build/html
 
   deploy:
     needs: build
@@ -42,13 +42,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-docs
-          path: ./docs/build/html
+          path: ./docs/_build/html
       - name: Upload docs to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/build/html
+          publish_dir: ./docs/_build/html
           force_orphan: true # This allows you to make your publish branch with only the latest commit.
           enable_jekyll: false
 
