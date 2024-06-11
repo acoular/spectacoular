@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  path: ../../spectacoular
+  path: ..
 
 build:
   noarch: python
@@ -20,7 +20,7 @@ requirements:
     - wheel
   run:
     - python >=3.8
-    - Acoular>=24.05
+    - acoular>=24.05
     - bokeh >=3.0
 
 test:
