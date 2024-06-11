@@ -22,15 +22,16 @@ requirements:
     - python >=3.8
     - acoular >=24.05
     - bokeh >=3.0
+    - sounddevice
 
-# test:
-#   # Python imports
+test:
+  # Python imports
 
-#   files: # from recipe folder
-#  #   - some file
+  files: # from recipe folder
+ #   - some file
 
-#   imports:
-#     - spectacoular
+  imports:
+    - spectacoular
 
 about:
   home: https://acoular.github.io/spectacoular/
