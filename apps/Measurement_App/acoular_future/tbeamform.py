@@ -37,7 +37,7 @@ class BeamformerFreqTime( BeamformerTime,TimeInOut ):
     
     # internal identifier
     digest = Property( 
-        depends_on = ['_steer_obj.digest', 'source.digest', 'beamformer.digest', '__class__'], 
+        depends_on = ['steer.digest', 'source.digest', 'beamformer.digest'], 
         )
 
     @cached_property
