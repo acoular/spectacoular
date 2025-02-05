@@ -7,10 +7,14 @@ bokeh serve --show SLM
 """
 import threading
 import sys
+import acoular as ac
+import spectacoular as sp
+import numpy as np
+import sounddevice as sd
+
 from itertools import cycle
 
-from numpy import array, searchsorted, polyfit, argsort, log10
-
+# bokeh imports
 from bokeh.layouts import column, row
 from bokeh.models import TabPanel as Panel, Tabs
 from bokeh.models.widgets import Button, Toggle, Select, RadioGroup,\
@@ -22,79 +26,76 @@ from bokeh.transform import transform
 from bokeh.plotting import figure, curdoc
 from bokeh.server.server import Server
 from bokeh.palettes import Category10_10
-from spectacoular import TimeAverage, add_bokeh_attr, TimeBandsConsumer, TimeConsumer
-from acoular import TimePower, FiltOctave, TimeExpAverage, FiltFreqWeight,\
-    TimeCumAverage, OctaveFilterBank, SoundDeviceSamplesGenerator, L_p
 
-import sounddevice as sd
+
 
 palette = cycle(Category10_10)
 
 # spectacoular related definitions
 trait_widget_mapper = {'device': NumericInput,
                        'sample_freq': NumericInput,
-                       'numchannels' : NumericInput
+                       'num_channels' : NumericInput
                        }
 trait_widget_args = {'device': {'disabled':False,'mode':'int'},
                      'sample_freq':  {'disabled':True,'mode':'float'},
-                     'numchannels': {'disabled':True,'mode':'int'},
+                     'num_channels': {'disabled':True,'mode':'int'},
                      }
-add_bokeh_attr(SoundDeviceSamplesGenerator,trait_widget_mapper,trait_widget_args)
+sp.add_bokeh_attr(ac.SoundDeviceSamplesGenerator,trait_widget_mapper,trait_widget_args)
 
 trait_widget_mapper = {'band': NumericInput}
 trait_widget_args = {'band': {'disabled':False,'mode':'float'},
                      }
-add_bokeh_attr(FiltOctave,trait_widget_mapper,trait_widget_args)
+sp.add_bokeh_attr(ac.FiltOctave,trait_widget_mapper,trait_widget_args)
 
 trait_widget_mapper = {'weight': Select}
 trait_widget_args = {'weight': {'disabled':False},
                      }
-add_bokeh_attr(TimeExpAverage,trait_widget_mapper,trait_widget_args)
+sp.add_bokeh_attr(ac.TimeExpAverage,trait_widget_mapper,trait_widget_args)
 
 trait_widget_mapper = {'weight': Select}
 trait_widget_args = {'weight': {'disabled':False},
                      }
-add_bokeh_attr(FiltFreqWeight,trait_widget_mapper,trait_widget_args)
+sp.add_bokeh_attr(ac.FiltFreqWeight,trait_widget_mapper,trait_widget_args)
 
 trait_widget_mapper = {'elapsed': NumericInput}
 trait_widget_args = {'elapsed': {'disabled':True,'mode':'float'},
                      }
-add_bokeh_attr(TimeBandsConsumer,trait_widget_mapper,trait_widget_args)
+sp.add_bokeh_attr(sp.TimeBandsConsumer,trait_widget_mapper,trait_widget_args)
 
-all_iso_bands = array([1,1.25,1.6,2,2.5,3.15,4,5,6.3,8,10,12.5,16,20,31.5,40,50,63,80,100,
+all_iso_bands = np.array([1,1.25,1.6,2,2.5,3.15,4,5,6.3,8,10,12.5,16,20,31.5,40,50,63,80,100,
 125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000,6300,8000,10000,
 12500,16000,20000,25000])
 
 def iso_bands(bands):
-    return all_iso_bands[searchsorted(all_iso_bands,array(bands)/1.01)]
+    return all_iso_bands[np.searchsorted(all_iso_bands,np.array(bands)/1.01)]
 
 def bands_label(bands):
     return ["{:.0f}".format(x) for x in iso_bands(bands)]
 
 # build processing chains
-ts = SoundDeviceSamplesGenerator(numsamples=-1,numchannels=1)
+ts = ac.SoundDeviceSamplesGenerator(numsamples=-1,num_channels=1)
 
 # slm chain
-fw = FiltFreqWeight(source=ts)
-tp = TimePower(source=fw)
-te = TimeExpAverage(source=tp, weight='F')
-tca = TimeCumAverage(source=tp)
-tic = TimeConsumer(source=te,down=1024,channels=[0,],
+fw = ac.FiltFreqWeight(source=ts)
+tp = ac.TimePower(source=fw)
+te = ac.TimeExpAverage(source=tp, weight='F')
+tca = ac.TimeCumAverage(source=tp)
+tic = sp.TimeConsumer(source=te,down=1024,channels=[0,],
     num=8192,rollover=16*2*96)
 
 # spectrum chain
-fob = OctaveFilterBank(source=ts, fraction='Third octave')
-tbc = TimeBandsConsumer(source=te,channels=[0,],num=8192, lfunc=bands_label)
+fob = ac.OctaveFilterBank(source=ts, fraction='Third octave')
+tbc = sp.TimeBandsConsumer(source=te,channels=[0,],num=8192, lfunc=bands_label)
 
 # band slm chain
-fob2 = OctaveFilterBank(source=ts, fraction='Octave')
-tp2 = TimePower(source=fob2)
-ta = TimeAverage(source=tp2, naverage=512) # hack for *about* 50~ms average
-tic3 = TimeConsumer(source=ta,down=1,channels=list(range(ta.numchannels)),
+fob2 = ac.OctaveFilterBank(source=ts, fraction='Octave')
+tp2 = ac.TimePower(source=fob2)
+ta = sp.TimeAverage(source=tp2, naverage=512) # hack for *about* 50~ms average
+tic3 = sp.TimeConsumer(source=ta,down=1,channels=list(range(ta.num_channels)),
     num=32,rollover=16*2*96)
 
 # oscilloscope chain
-tic2 = TimeConsumer(source=ts,down=32,channels=[0,],
+tic2 = sp.TimeConsumer(source=ts,down=32,channels=[0,],
     num=8192,rollover=32*4*96)
 
 
@@ -129,7 +130,7 @@ def toggle_handler(arg):
         lin_or_exp.disabled = True
         exit_button.disabled = True
         active_consumer = (tic,tbc,tic2,tic3)[layout.active]
-        print(active_consumer.numchannels)
+        print(active_consumer.num_channels)
         active_consumer.thread = threading.Thread(target=active_consumer.consume,args=[curdoc(),])
         active_consumer.thread.start()
         play_button.label = "⏹︎"
@@ -252,7 +253,7 @@ def selection_change(attrname, old, new):
     T60b = []
     # iterate over bands
     for ch,color,band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands)):
-        levels = L_p(tic3.ds.data[ch][new])
+        levels = ac.L_p(tic3.ds.data[ch][new])
         # dynamic range should be at least 20 dB
         if len(new)>2 and levels.ptp() > 20:
             levels1 = levels[levels>levels.min()+10]
@@ -260,11 +261,11 @@ def selection_change(attrname, old, new):
             t1 = t[levels>levels.min()+10]
             if len(levels1)>2:
                 # fit line for interrupted noise
-                gradient, y_intercept = polyfit(t1,levels1,1)
+                gradient, y_intercept = np.polyfit(t1,levels1,1)
                 # backward integration (impulse response)
-                levels2 = (tic3.ds.data[ch][new][argsort(t)])
+                levels2 = (tic3.ds.data[ch][new][np.argsort(t)])
                 # fit on backward integrated imp. response squared
-                gradient2, _ = polyfit(t,10*log10(levels2[::-1].cumsum()[::-1]),1)
+                gradient2, _ = np.polyfit(t,10*np.log10(levels2[::-1].cumsum()[::-1]),1)
                 # reverberation time
                 bands.append(band)
                 T60a.append(-60/gradient)
