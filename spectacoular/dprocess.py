@@ -14,7 +14,7 @@
 """
 from bokeh.models.widgets import NumericInput, DataTable
 from bokeh.models import ColumnDataSource
-from traits.api import Trait, Int, Float, on_trait_change, Instance, ListInt
+from traits.api import Trait, Int, Float, on_trait_change, Instance, ListInt, Bool, observe
 import numpy as np
 from acoular import TimeSamples,BeamformerBase, L_p, MicGeom,\
 PointSpreadFunction, MaskedTimeSamples
@@ -41,9 +41,9 @@ class BasePresenter(BaseSpectacoular):
     source = Trait()
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = ColumnDataSource()
+    cdsource = Instance(ColumnDataSource, args=())
 
-    def update(self,attr,old,new):
+    def update(self, **optional_items):
         """
         Function that updates the `cdsource` attribute.    
         
@@ -63,7 +63,7 @@ class MicGeomPresenter(BasePresenter):
     Example: 
                 
         >>>    import spectacoular
-        >>>    mg = spectacoular.MicGeom(from_file='/path/to/file.xml')
+        >>>    mg = spectacoular.MicGeom(file='/path/to/file.xml')
         >>>    mv = spectacoular.MicGeomPresenter(source=mg)
         >>>    
         >>>    mgPlot = figure(title='Microphone Geometry')
@@ -74,21 +74,22 @@ class MicGeomPresenter(BasePresenter):
     source = Instance(MicGeom)
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = ColumnDataSource(data={'x':[],'y':[], 'channels':[]})
+    cdsource = Instance(ColumnDataSource, kw={'data':{'x':[],'y':[], 'channels':[]}})
 
     @on_trait_change("digest")
     def _update(self):
         self.update()
     
-    def update(self):
+    def update(self, **optional_items):
         if self.source.num_mics > 0:
             self.cdsource.data = {
                     'x' : self.source.mpos[0,:],
                     'y' : self.source.mpos[1,:],
                     'channels' : [str(_) for _ in range(self.source.num_mics)],
+                    **optional_items
                     }        
         else:
-            self.cdsource.data = {'x':[],'y':[], 'channels':[]}        
+            self.cdsource.data = {'x':[],'y':[], 'channels':[], **optional_items}        
 
 
 
@@ -103,8 +104,8 @@ class BeamformerPresenter(BasePresenter):
     source = Trait(BeamformerBase)
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = ColumnDataSource(data={'bfdata':[],'x':[],'y':[],
-                                      'pdata':[],'dw':[],'dh':[]})
+    cdsource = Instance(ColumnDataSource, kw={'data':{
+        'bfdata':[],'x':[],'y':[],'pdata':[],'dw':[],'dh':[]}})
 
     #: Trait to set the width of the frequency bands considered.
     #: defaults to 0 (single frequency line).
@@ -124,7 +125,7 @@ class BeamformerPresenter(BasePresenter):
                          'freq': {'disabled':False},
                      }
     
-    def update(self):
+    def update(self, **optional_items):
         """
         Function that updates the keys and values of :attr:`cdsource` attribute.    
         
@@ -141,7 +142,8 @@ class BeamformerPresenter(BasePresenter):
             'x':[self.source.steer.grid.x_min], 
             'y':[self.source.steer.grid.y_min], 
             'dw':[dx], 
-            'dh':[dy]
+            'dh':[dy],
+            **optional_items
             }
 
 
@@ -150,10 +152,22 @@ class PointSpreadFunctionPresenter(BasePresenter):
     #: Data source; :class:`~acoular.fbeamform.PointSpreadFunction` or derived object.
     source = Trait(PointSpreadFunction)
     
-    #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = ColumnDataSource(data={'psf':[],'x':[],'y':[],'dw':[],'dh':[]})
+    def _get_digest(self):
+        return self.source.digest
 
-    def update(self):
+    #: ColumnDataSource that holds data that can be consumed by plots and glyphs
+    cdsource = Instance(ColumnDataSource, kw={'data':{
+        'psf':[],'x':[],'y':[],'dw':[],'dh':[]}})
+
+    auto_update = Bool(False, 
+        desc="If True, the presenter will update the data source when the digest changes.")
+
+    @observe("source.digest, source.freq, source.grid_indices")
+    def _auto_update(self, event):
+        if self.auto_update:
+            self.update()
+
+    def update(self, **optional_items):
         """
         Function that updates the keys and values of :attr:`cdsource` attribute.    
         
@@ -162,16 +176,18 @@ class PointSpreadFunctionPresenter(BasePresenter):
         None.
 
         """
-        data = L_p(self.source.psf.reshape(self.source.grid.shape)).T
+        psf = self.source.psf
+        data = L_p(psf.reshape(self.source.steer.grid.shape)).T
         data -= data.max()
-        dx = self.source.grid.x_max-self.source.grid.x_min
-        dy = self.source.grid.y_max-self.source.grid.y_min
+        dx = self.source.steer.grid.x_max-self.source.steer.grid.x_min
+        dy = self.source.steer.grid.y_max-self.source.steer.grid.y_min
         self.cdsource.data = {'psf' : [data],
-        'x':[self.source.grid.x_min], 
-        'y':[self.source.grid.y_min], 
+        'x':[self.source.steer.grid.x_min], 
+        'y':[self.source.steer.grid.y_min], 
         'dw':[dx], 
-        'dh':[dy]
-            }            
+        'dh':[dy],
+        **optional_items
+        }            
         
 
 class TimeSamplesPresenter(BasePresenter):
@@ -195,7 +211,8 @@ class TimeSamplesPresenter(BasePresenter):
     source = Trait(TimeSamples)
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = ColumnDataSource(data={'xs':[],'ys':[],'ch':[]})
+    cdsource = Instance(ColumnDataSource, kw={'data':{
+        'xs':[],'ys':[],'ch':[]}})
     
     #: Indices of channel to be considered for updating of ColumnDataSource 
     channels = ListInt([])
@@ -209,7 +226,7 @@ class TimeSamplesPresenter(BasePresenter):
     trait_widget_args = {'channels': {'disabled':False},
                      }
 
-    def update(self):
+    def update(self, **optional_items):
         """
         Function that updates the keys and values of :attr:`cdsource` attribute.    
         
@@ -246,6 +263,7 @@ class TimeSamplesPresenter(BasePresenter):
         if self.source.numsamples > 0 and numSelected > 0:
             self.cdsource.data = {'xs' : xs, 
                                   'ys' : ys,
-                                  'ch' : [[c] for c in self.channels]}
+                                  'ch' : [[c] for c in self.channels],
+                                  **optional_items}
         else:
-            self.cdsource.data = {'xs' :[],'ys' :[], 'ch':[]}
+            self.cdsource.data = {'xs' :[],'ys' :[], 'ch':[], **optional_items}

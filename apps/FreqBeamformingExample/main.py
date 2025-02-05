@@ -4,7 +4,12 @@
 """
 Example that demonstrates different beamforming algorithms
 """
-from os import path
+from pathlib import Path
+import acoular as ac
+import spectacoular as sp
+import numpy as np
+
+# bokeh imports
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
 from bokeh.models.tools import BoxEditTool
@@ -14,13 +19,7 @@ from bokeh.models.widgets import Select, Toggle, RangeSlider,Div, \
 from bokeh.plotting import figure
 from bokeh.palettes import viridis, Spectral11
 from bokeh.server.server import Server
-from numpy import array, nan
-import acoular
-from spectacoular import MaskedTimeSamples, MicGeom, PowerSpectra, \
-RectGrid, SteeringVector, BeamformerBase, BeamformerFunctional,BeamformerCapon,\
-BeamformerEig,BeamformerMusic,BeamformerDamas,BeamformerDamasPlus,BeamformerOrth,\
-BeamformerCleansc, BeamformerClean, BeamformerPresenter,\
-BeamformerCMF,BeamformerGIB,Environment,Calib,set_calc_button_callback
+
 
 
 COLORS = list(Spectral11)
@@ -30,35 +29,35 @@ BLUE = "#3288bd"
 doc = curdoc() 
 
 #%% Build processing chain
-micgeofile = path.join( path.split(acoular.__file__)[0],'xml','array_56.xml')
+micgeofile = Path(ac.__file__).parent / 'xml' / 'array_56.xml'
 tdfile = 'example_data.h5'
 calibfile = 'example_calib.xml'
-ts = MaskedTimeSamples(name=tdfile)
-cal = Calib(from_file=calibfile)
+ts = sp.MaskedTimeSamples(name=tdfile)
+cal = sp.Calib(file=calibfile)
 ts.start = 0 # first sample, default
 ts.stop = 16000 # last valid sample = 15999
 invalid = [1,7] # list of invalid channels (unwanted microphones etc.)
 ts.invalid_channels = invalid 
 ts.calib = cal
-mg = MicGeom(from_file=micgeofile,invalid_channels = invalid)
-ps = PowerSpectra(time_data=ts,block_size=1024,overlap="50%")
-rg = RectGrid(x_min=-0.6, x_max=-0.1, y_min=-0.3, y_max=0.3, z=0.68,increment=0.01)
-env = Environment(c = 346.04)
-st = SteeringVector( grid = rg, mics=mg, env=env )    
+mg = sp.MicGeom(file=micgeofile,invalid_channels = invalid)
+ps = sp.PowerSpectra(source=ts,block_size=1024,overlap="50%")
+rg = sp.RectGrid(x_min=-0.6, x_max=-0.1, y_min=-0.3, y_max=0.3, z=0.68,increment=0.01)
+env = sp.Environment(c = 346.04)
+st = sp.SteeringVector( grid = rg, mics=mg, env=env )    
 
 #%%  Beamforming Algorithms
-bb = BeamformerBase( freq_data=ps, steer=st )  
-bf = BeamformerFunctional( freq_data=ps, steer=st, gamma=4)
-bc = BeamformerCapon( freq_data=ps, steer=st )  
-be = BeamformerEig( freq_data=ps, steer=st, n=54)
-bm = BeamformerMusic( freq_data=ps, steer=st, n=6)   
-bd = BeamformerDamas(beamformer=bb, n_iter=100)
-bdp = BeamformerDamasPlus(beamformer=bb, n_iter=100)
-bo = BeamformerOrth(beamformer=be, eva_list=list(range(38,54)))
-bs = BeamformerCleansc(freq_data=ps, steer=st, r_diag=True)
-bl = BeamformerClean(beamformer=bb, n_iter=100)
-bcmf = BeamformerCMF(freq_data=ps, steer=st, method='LassoLarsBIC')
-bgib = BeamformerGIB(freq_data=ps, steer=st, method= 'LassoLars', n=10)
+bb = sp.BeamformerBase( freq_data=ps, steer=st )  
+bf = sp.BeamformerFunctional( freq_data=ps, steer=st, gamma=4)
+bc = sp.BeamformerCapon( freq_data=ps, steer=st )  
+be = sp.BeamformerEig( freq_data=ps, steer=st, n=54)
+bm = sp.BeamformerMusic( freq_data=ps, steer=st, n=6)   
+bd = sp.BeamformerDamas(freq_data=ps, n_iter=100)
+bdp = sp.BeamformerDamasPlus(freq_data=ps, n_iter=100)
+bo = sp.BeamformerOrth(freq_data=ps, eva_list=list(range(38,54)))
+bs = sp.BeamformerCleansc(freq_data=ps, steer=st, r_diag=True)
+bl = sp.BeamformerClean(freq_data=ps, n_iter=100)
+bcmf = sp.BeamformerCMF(freq_data=ps, steer=st, method='LassoLarsBIC')
+bgib = sp.BeamformerGIB(freq_data=ps, steer=st, method= 'LassoLars', n=10)
 
 #%% Beamformer selector
 
@@ -84,7 +83,7 @@ beamformerSelector = Select(title="Beamforming Method:",
                         height=75, sizing_mode='stretch_width')
 
 # use additional classes for data evaluation/view
-bv = BeamformerPresenter(source=bb,num=3,freq=4000.)
+bv = sp.BeamformerPresenter(source=bb,num=3,freq=4000.)
 bv.trait_widget_args.update({'num':{'width':40},'freq':{'width':100}})
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
@@ -95,8 +94,8 @@ mgWidgets = mg.get_widgets()
 mgWidgets['invalid_channels'].height = 100 
 mgWidgets['invalid_channels'].width = 300 
 mgWidgets['invalid_channels'].editable = False 
-mgWidgets['mpos_tot'].width = 300 
-mgWidgets['mpos_tot'].editable = False 
+mgWidgets['pos_total'].width = 300 
+mgWidgets['pos_total'].editable = False 
 envWidgets = env.get_widgets()
 calWidgets = cal.get_widgets()
 psWidgets = ps.get_widgets()
@@ -106,7 +105,7 @@ bbWidgets = bb.get_widgets()
 bvWidgets = bv.get_widgets()
 
 formatter = NumberFormatter(format="0.00")
-for f in mgWidgets['mpos_tot'].columns:
+for f in mgWidgets['pos_total'].columns:
     f.formatter = formatter
 
 settings_dict = {
@@ -129,8 +128,8 @@ grid_data = ColumnDataSource(data={
 })
 
 f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
-freqdata = ColumnDataSource(data={'freqs':[array(f_ticks)], # initialize
-                                  'amp':[array([0]*len(f_ticks))],
+freqdata = ColumnDataSource(data={'freqs':[np.array(f_ticks)], # initialize
+                                  'amp':[np.array([0]*len(f_ticks))],
                                   'colors':['white']})
 
 sectordata = ColumnDataSource(data={'x':[],'y':[],'width':[], 'height':[]})
@@ -167,7 +166,7 @@ freqSlider.on_change("value",freqSlider_callback)
 
 # create Button to trigger beamforming result calculation
 calcButton = Toggle(button_type="primary", width=125,height=50, label="Calculate")
-set_calc_button_callback(bv.update,calcButton)
+sp.set_calc_button_callback(bv.update,calcButton)
 
 def update_grid(attr,old,new):
     """update grid data source when grid settings change"""
@@ -269,23 +268,23 @@ def integrate_result(attr,old,new):
         ffreq = []
         colors = []
         for i in range(numsectors):
-            sector = array([
+            sector = np.array([
                 sectordata.data['x'][i]-sectordata.data['width'][i]/2, 
                 sectordata.data['y'][i]-sectordata.data['height'][i]/2, 
                 sectordata.data['x'][i]+sectordata.data['width'][i]/2, 
                 sectordata.data['y'][i]+sectordata.data['height'][i]/2
                 ])
             print(sector)
-            specamp = acoular.L_p(bv.source.integrate(sector))
-            specamp[specamp<-300] = nan
+            specamp = ac.L_p(bv.source.integrate(sector))
+            specamp[specamp<-300] = np.nan
             famp.append(specamp)
             ffreq.append(ps.fftfreq())
             colors.append(COLORS[i])
         freqdata.data.update(amp=famp, freqs=ffreq, colors=colors)
     else:
         frLine.glyph.line_alpha=0.0 # make transparent if no integration sector exist
-        freqdata.data = {'freqs':[array(f_ticks)],
-                        'amp':[array([0]*len(f_ticks))],
+        freqdata.data = {'freqs':[np.array(f_ticks)],
+                        'amp':[np.array([0]*len(f_ticks))],
                         'colors':['white']}
 
    

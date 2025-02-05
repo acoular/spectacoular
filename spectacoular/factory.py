@@ -22,7 +22,7 @@ from bokeh.core.property.descriptors import UnsetValueError
 from traits.api import Enum, Map, TraitEnum, TraitMap, Array, CArray, Any, \
 List, Float, CFloat, Int, CInt, Range, Long, Dict,\
 CLong, HasPrivateTraits, TraitCompound,\
-BaseStr, BaseFile, Delegate, Bool, Tuple, Str
+BaseStr, BaseFile, Delegate, Bool, Tuple, Str, Union
 from numpy import array, newaxis, array_equal,\
     concatenate, stack
 from warnings import warn
@@ -32,12 +32,12 @@ NUMERIC_TYPES = (Int,Long,CLong,int,
                  #Complex, complex) # Complex Numbers Missing at the Moment
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
-    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate), # (Trait,Property,Delegate)
-    Toggle : (Bool,) + (TraitCompound,Any,Delegate), 
+    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate,Union), # (Trait,Property,Delegate)
+    Toggle : (Bool,) + (TraitCompound,Any,Delegate,Union), 
     Select : (Enum, TraitEnum, Map, TraitMap, BaseStr, BaseFile, ) + NUMERIC_TYPES, # Numeric types and Str types should also be allowed here, to further use the set_widgets method with predefined options
     Slider : (Range, ) + NUMERIC_TYPES,
     DataTable : (Array,CArray,List,Tuple, ),
-    TextInput : (BaseStr, Str, BaseFile, ) + (TraitCompound,Any,Delegate),
+    TextInput : (BaseStr, Str, BaseFile, ) + (TraitCompound,Any,Delegate,Union),
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {

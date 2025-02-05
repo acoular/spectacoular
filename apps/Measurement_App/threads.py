@@ -2,23 +2,7 @@
 # Copyright (c) 2007-2021, Acoular Development Team.
 #------------------------------------------------------------------------------
 
-from traits.api import Instance
 from threading import Thread
-from numpy import shape
-
-# acoular imports
-from acoular import TimeInOut, SampleSplitter
-
-class LastInOut(TimeInOut):
-    
-    source = Instance(SampleSplitter)
-    
-    def result(self,num):
-        for temp in self.source.result(num):
-            anz = min(num,shape(temp)[0])
-            yield temp[:anz]
-            self.source._clear_block_buffer(self)
-
 
 class EventThread(Thread):
     
@@ -42,7 +26,7 @@ class SamplesThread(Thread):
     event is set when thread finishes
     '''
     
-    def __init__(self,samplesGen,splitterObj,splitterDestination,event=None):
+    def __init__(self, samplesGen, splitterObj, splitterDestination, buffer_size, event=None):
         Thread.__init__(self)
         self.splitterObj = splitterObj
         self.splitterDestination = splitterDestination

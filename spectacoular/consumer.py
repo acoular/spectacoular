@@ -11,7 +11,7 @@
 """
 import threading
 from numpy import arange
-from acoular import TimeInOut
+from acoular import TimeOut
 from bokeh.models import ColumnDataSource
 from traits.api import List, Int, Trait, Float, Array, Property, on_trait_change,\
     cached_property, Callable 
@@ -19,9 +19,9 @@ from traits.api import List, Int, Trait, Float, Array, Property, on_trait_change
 
 
 
-class TimeConsumer(TimeInOut):
+class TimeConsumer(TimeOut):
     """
-    :class:`TimeInOut` derived class for building an interface from Acoular's generator 
+    :class:`TimeOut` derived class for building an interface from Acoular's generator 
     pipelines to Bokeh's ColumnDataSource model that serves as a source for
     plots and tables.
     
@@ -60,7 +60,7 @@ class TimeConsumer(TimeInOut):
     #: transport between consume / update
     data = Array
 
-    @on_trait_change('channels,source.numchannels')
+    @on_trait_change('channels,source.num_channels')
     def init_ds(self):
         data = {}
         data['t'] = []

@@ -12,38 +12,26 @@ classes might move to Acoular module in the future.
     CalibHelper
     FiltOctaveLive
     TimeSamplesPlayback
-    SpectraInOut
 """
- 
-from numpy import logical_and,savetxt,mean,array,newaxis, zeros,\
- pad, ones, hanning, hamming, bartlett, blackman,fft ,arange, empty, sqrt, dot
+import acoular as ac
+
+from numpy import logical_and,mean,array,newaxis, zeros,\
+ arange
 
 from scipy.signal import lfilter
 from datetime import datetime
 from time import time,sleep
 from bokeh.models.widgets import TextInput,DataTable,TableColumn,\
-    NumberEditor, Select, NumericInput
+    NumberEditor, NumericInput
 from bokeh.models import ColumnDataSource
-from traits.api import Property, File, CArray,Int, Delegate, Trait,\
-cached_property, on_trait_change, Float,Bool, Instance, ListInt
-try:
-    import sounddevice as sd
-    sd_enabled=True
-except:
-    sd_enabled = False
+from traits.api import Property, File, CArray,Int, cached_property, on_trait_change, Float,Bool, Instance, ListInt
 
-# acoular imports
-from acoular import TimeInOut, L_p,TimeAverage,FiltFiltOctave, \
-    SamplesGenerator,MaskedTimeSamples
-from acoular.internal import digest
-# 
 from .dprocess import BasePresenter
-from .bokehview import get_widgets, set_widgets
 from .factory import BaseSpectacoular
 
 invch_columns = [TableColumn(field='invalid_channels', title='invalid_channels', editor=NumberEditor()),]
 
-class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
+class TimeSamplesPhantom(ac.MaskedTimeSamples,BaseSpectacoular):
     """
     TimeSamples derived class for propagating signal processing blocks with
     user-defined time delay.
@@ -69,7 +57,7 @@ class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
                         'numsamples': NumericInput,
                         'sample_freq': NumericInput,
                         'invalid_channels':DataTable,
-                        'numchannels' : NumericInput,
+                        'num_channels' : NumericInput,
                         'time_delay': NumericInput,
                         }
     trait_widget_args = {'name': {'disabled':False},
@@ -79,7 +67,7 @@ class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
                         'numsamples':  {'disabled':True, 'mode':'int'},
                         'sample_freq':  {'disabled':True, 'mode':'float'},
                         'invalid_channels': {'disabled':False,'editable':True, 'columns':invch_columns},
-                        'numchannels': {'disabled':True,'mode':'int'},
+                        'num_channels': {'disabled':True,'mode':'int'},
                         'time_delay': {'disabled':False, 'mode':'float'},
                         }
 
@@ -95,7 +83,7 @@ class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
         
         Returns
         -------
-        Samples in blocks of shape (num, numchannels). 
+        Samples in blocks of shape (num, num_channels). 
             The last block may be shorter than num.
         """
         
@@ -108,11 +96,11 @@ class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
             raise IOError("no samples available")
         i = 0
         if self.calib:
-            if self.calib.num_mics == self.numchannels:
+            if self.calib.num_mics == self.num_channels:
                 cal_factor = self.calib.data[newaxis]
             else:
                 raise ValueError("calibration data not compatible: %i, %i" % \
-                            (self.calib.num_mics, self.numchannels))
+                            (self.calib.num_mics, self.num_channels))
             while i < self.numsamples and self.collectsamples:
                 yield self.data[i:i+num]*cal_factor
                 sleep(slp_time)
@@ -125,9 +113,9 @@ class TimeSamplesPhantom(MaskedTimeSamples,BaseSpectacoular):
                 
                 
                 
-class TimeInOutPresenter(TimeInOut,BasePresenter):
+class TimeInOutPresenter(ac.TimeOut,BasePresenter):
     """
-    :class:`TimeInOut` derived class for building an interface from Acoular's generator 
+    :class:`TimeOut` derived class for building an interface from Acoular's generator 
     pipelines to Bokeh's ColumnDataSource model that serves as a source for
     plots and tables.
     
@@ -150,7 +138,7 @@ class TimeInOutPresenter(TimeInOut,BasePresenter):
         
         Returns
         -------
-        Samples in blocks of shape (num, numchannels). 
+        Samples in blocks of shape (num, num_channels). 
             The last block may be shorter than num.
         """
         for temp in self.source.result(num):
@@ -162,13 +150,13 @@ class TimeInOutPresenter(TimeInOut,BasePresenter):
 columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
 
-class CalibHelper(TimeInOut, BaseSpectacoular):
+class CalibHelper(ac.TimeOut, BaseSpectacoular):
     """
     Class for calibration of individual source channels 
     """
 
-    #: Data source; :class:`~acoular.sources.TimeAverage` or derived object.
-    source = Instance(TimeAverage)
+    #: Data source; :class:`~acoular.sources.Average` or derived object.
+    source = Instance(ac.Average)
     
     #: Name of the file to be saved. If none is given, the name will be
     #: automatically generated from a time stamp.
@@ -180,12 +168,12 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
         desc="calibration level of calibration device")
     
     #: calibration values determined during evaluation of :meth:`result`.
-    #: array of floats with dimension (numchannels, 2)
+    #: array of floats with dimension (num_channels, 2)
     calibdata = CArray(dtype=float,
        desc="determined calibration values")
 
     #: calibration factor determined during evaluation of :meth:`save`.
-    #: array of floats with dimension (numchannels)
+    #: array of floats with dimension (num_channels)
     calibfactor = CArray(dtype=float,
        desc="determined calibration factor")
 
@@ -227,13 +215,13 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 
     @cached_property
     def _get_digest( self ):
-        return digest(self)
+        return ac.internal.digest(self)
 
-    @on_trait_change('source, source.numchannels')
+    @on_trait_change('source, source.num_channels')
     def adjust_calib_values(self):
-        diff = self.numchannels-self.calibdata.shape[0]
+        diff = self.num_channels-self.calibdata.shape[0]
         if self.calibdata.size == 0 or diff != 0:
-            self.calibdata = zeros((self.numchannels,2))
+            self.calibdata = zeros((self.num_channels,2))
 
     def create_filename(self):
         if self.name == '':
@@ -245,7 +233,7 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
 
         with open(self.name,'w') as f:
             f.write(f'<?xml version="1.0" encoding="utf-8"?>\n<Calib name="{self.name}">\n')
-            for i in range(self.numchannels):
+            for i in range(self.num_channels):
                 channel_string = str(i+1)
                 fac = self.calibfactor[i]
                 f.write(f'	<pos Name="Point {channel_string}" factor="{fac}"/>\n')
@@ -264,18 +252,18 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
         
         Returns
         -------
-        Samples in blocks of shape (num, numchannels). 
+        Samples in blocks of shape (num, num_channels). 
             The last block may be shorter than num.
         """
         self.adjust_calib_values()
-        nc = self.numchannels
-        self.calibfactor = zeros(self.numchannels)
+        nc = self.num_channels
+        self.calibfactor = zeros(self.num_channels)
         buffer = zeros((self.buffer_size,nc))
         for temp in self.source.result(num):
             ns = temp.shape[0]
             bufferidx = self.buffer_size-ns
             buffer[0:bufferidx] = buffer[-bufferidx:]  # copy remaining samples in front of next block
-            buffer[-ns:,:] = L_p(temp)
+            buffer[-ns:,:] = ac.L_p(temp)
             calibmask = logical_and(buffer > (self.magnitude-self.delta),
                                   buffer < (self.magnitude+self.delta)
                                   ).sum(0) 
@@ -290,12 +278,12 @@ class CalibHelper(TimeInOut, BaseSpectacoular):
                     self.calibdata = calibdata
                     print(self.calibdata[idx,:])
                         
-            for i in arange(self.numchannels):
+            for i in arange(self.num_channels):
                 self.calibfactor[i] = self.to_pa(self.magnitude)/self.to_pa(float(self.calibdata[i,0]))
             yield temp
             
 
-class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
+class FiltOctaveLive( ac.FiltFiltOctave, BaseSpectacoular ):
     """
     Octave or third-octave filter (not zero-phase).
     
@@ -323,21 +311,22 @@ class FiltOctaveLive( FiltFiltOctave, BaseSpectacoular ):
         
         Returns
         -------
-        Samples in blocks of shape (num, numchannels). 
+        Samples in blocks of shape (num, num_channels). 
             Delivers the bandpass filtered output of source.
             The last block may be shorter than num.
         """
         
         for block in self.source.result(num):
             b, a = self.ba(3) # filter order = 3
-            zi = zeros((max(len(a), len(b))-1, self.source.numchannels))
+            zi = zeros((max(len(a), len(b))-1, self.source.num_channels))
             block, zi = lfilter(b, a, block, axis=0, zi=zi)
             yield block
 
-if sd_enabled:                
+if ac.config.have_sounddevice:                
+    import sounddevice as sd
     columns = [TableColumn(field='channels', title='channels', editor=NumberEditor()),]
 
-    class TimeSamplesPlayback(TimeInOut,BaseSpectacoular):
+    class TimeSamplesPlayback(ac.TimeOut,BaseSpectacoular):
         """
         Naive class implementation to allow audio playback of .h5 file contents. 
         
@@ -373,7 +362,7 @@ if sd_enabled:
     
         @cached_property
         def _get_digest( self ):
-            return digest(self)
+            return ac.internal.digest(self)
         
         def _get_device( self ):
             return list(sd.default.device)
@@ -382,11 +371,11 @@ if sd_enabled:
             sd.default.device = device
         
         def play( self ):
-            '''
+            """
             normalized playback of source channels given by :attr:`channels` trait
-            '''
+            """
             if self.channels:
-                if isinstance(self.source,MaskedTimeSamples):
+                if isinstance(self.source,ac.MaskedTimeSamples):
                     sig = self.source.data[
                         self.source.start:self.source.stop,self.channels].sum(1)
                 else:
@@ -397,117 +386,10 @@ if sd_enabled:
                         blocking=False)
             
         def stop( self ):
-            ''' method stops audio playback of file content '''
+            """method stops audio playback of file content"""
             sd.stop()
 
+        def result(self, num):
+            """simple generator that yields the output block-wise."""
+            yield from self.source.result(num)
 
-class SpectraInOut( TimeInOut ):
-    """Provides the spectra of multichannel time data. 
-    
-    Returns Spectra per block over a Generator.       
-    """
-    
-    #: Data source; :class:`~acoular.sources.SamplesGenerator` or derived object.
-    source = Trait(SamplesGenerator)
-
-    #: Sampling frequency of output signal, as given by :attr:`source`.
-    sample_freq = Delegate('source')
-    
-    #:the Windows function for the fft
-    window = Trait('Rectangular', 
-        {'Rectangular':ones, 
-        'Hanning':hanning, 
-        'Hamming':hamming, 
-        'Bartlett':bartlett, 
-        'Blackman':blackman}, 
-        desc="type of window for FFT")
-    
-    #: FFT block size, one of: 128, 256, 512, 1024, 2048 ... 65536,
-    #: defaults to 1024.
-    block_size = Trait(1024, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536,
-        desc="number of samples per FFT block")
-
-    #: Overlap factor for averaging: 'None'(default), '50%', '75%', '87.5%'.
-    overlap = Trait('None', {'None':1, '50%':2, '75%':4, '87.5%':8}, 
-        desc="overlap of FFT blocks")
-
-    #: The floating-number-precision of entries of csm, eigenvalues and 
-    #: eigenvectors, corresponding to numpy dtypes. Default is 64 bit.
-    precision = Trait('complex128', 'complex64', 
-                      desc="precision csm, eva, eve")
-    
-    # internal identifier
-    digest = Property( depends_on = ['source.digest','precision','block_size',
-                                    'window','overlap'])
-
-    trait_widget_mapper = {
-                        'window': Select,
-                        'block_size': Select,
-                        'overlap' : Select,
-                       }
-
-    trait_widget_args = {
-                        'window':  {'disabled':False},
-                        'block_size':  {'disabled':False},
-                        'overlap':  {'disabled':False},
-                         }
-
-    get_widgets = get_widgets
-    
-    set_widgets = set_widgets
-
-    @cached_property
-    def _get_digest( self ):
-        return digest(self)
-
-    def fftfreq ( self ):
-        """
-        Return the Discrete Fourier Transform sample frequencies.
-        
-        Returns
-        -------
-        f : ndarray
-            Array of length *block_size/2+1* containing the sample frequencies.
-        """
-        return abs(fft.fftfreq(self.block_size, 1./self.source.sample_freq)\
-                    [:int(self.block_size/2+1)])
-
-    #generator that yields the time data blocks for every channel (with optional overlap)
-    def get_source_data(self):
-        bs = self.block_size
-        temp = empty((2*bs, self.numchannels))
-        pos = bs
-        posinc = bs/self.overlap_
-        for data_block in self.source.result(bs):
-            ns = data_block.shape[0]
-            temp[bs:bs+ns] = data_block # fill from right
-            while pos+bs <= bs+ns:
-                yield temp[int(pos):int(pos+bs)]
-                pos += posinc
-            else:
-                temp[0:bs] = temp[bs:] # copy to left
-                pos -= bs
-
-    #generator that yields the fft for every channel
-    def result(self):
-        """ 
-        Python generator that yields the output block-wise.
-        
-        Parameters
-        ----------
-        num : integer
-            This parameter defines the size of the blocks to be yielded
-            (i.e. the number of samples per block).
-        
-        Returns
-        -------
-        Samples in blocks of shape (numfreq, :attr:`numchannels`). 
-            The last block may be shorter than num.
-            """
-        wind = self.window_( self.block_size )
-        weight = sqrt(self.block_size/dot(wind,wind)) # signal energy correction
-        fweight = (sqrt(2)/self.block_size)
-        wind = wind[:, newaxis]
-        for data in self.get_source_data():
-            ft = fft.rfft(data*wind*weight, None, 0).astype(self.precision)*fweight
-            yield ft
