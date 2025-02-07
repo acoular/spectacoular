@@ -7,9 +7,9 @@ bokeh serve --show Measurement_App --args --argName=argValue
 
 # Processing / Acoular
 #
-#                                    |-> TimePower -> TimeAverage -> Amplitude Bar
-#                                    |-> FiltOctave ->  TimePower -> TimeAverage -> Calibration    
-# SamplesGenerator -> SampleSplitter |-> LastInOut -> BeamformerTime -> FiltOctave -> TimePower -> TimeAverage -> Beamforming
+#                                    |-> TimePower -> Average -> Amplitude Bar
+#                                    |-> FiltOctave ->  TimePower -> Average -> Calibration    
+# SamplesGenerator -> SampleSplitter |-> BeamformerTime -> FiltOctave -> TimePower -> Average -> Beamforming
 #                                    |-> WriteH5   
 
 In case of SINUS Devices:
@@ -17,10 +17,14 @@ if sync order of pci cards should be specified use
 bokeh serve --show Measurement_App --args --device=typhoon --syncorder SerialNb1 SerialNb2 ...
 """
 import sys
-import os
-from bokeh.models.widgets.inputs import NumericInput
+import argparse
+import acoular as ac
+import spectacoular as sp
 import numpy as np 
-import logging
+from pathlib import Path
+from datetime import datetime
+from threading import Event
+from functools import partial
 try:
     import cv2
     cam_enabled=True
@@ -28,30 +32,34 @@ try:
 except:
     cam_enabled=False
     camWidgets = []
-from datetime import datetime
-from threading import Event
-from functools import partial
-import argparse
+
+# local imports
+from log import LogWidget
+from acoular_future import CSMInOut, BeamformerFreqTime
+from threads import SamplesThread,EventThread
+from interfaces import get_interface
+from layout import plot_colors, toggle_labels, selectPerCallPeriod, checkbox_use_current_time, bfColorMapper,\
+select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,calib_toggle,\
+dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider,\
+  COLOR
+
+# bokeh imports
+from bokeh.models.widgets.inputs import NumericInput
 from bokeh.plotting import curdoc, figure
 from bokeh.models import ColumnDataSource, RadioGroup, Spacer, CustomJS,Div
 from bokeh.models.widgets import Select,TextInput,Button,CheckboxGroup,Slider,\
 TableColumn,NumberEditor,DataTable
 from bokeh.models import TabPanel as Panel, Tabs
 from bokeh.layouts import column,row
-from acoular import TimePower, TimeAverage, L_p, MicGeom, \
-SteeringVector, BeamformerTime,  SampleSplitter, BeamformerBase, WriteH5
-from acoular_future import CSMInOut, BeamformerFreqTime
-from SamplesProcessor import SamplesThread,EventThread,LastInOut
-from spectacoular import RectGrid,CalibHelper,FiltOctaveLive,TimeInOutPresenter,FiltOctave
-from interfaces import get_interface, StreamToLogger
-from layout import plot_colors, toggle_labels,micgeom_fig, \
-amp_fig, selectPerCallPeriod, checkbox_use_current_time, bfColorMapper,\
-select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,calib_toggle,\
-logText, dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider,\
-  COLOR
 
+# logging
+log = LogWidget()
+logger = log.logger
 doc = curdoc()
-if cam_enabled: set_camera_callback(doc)
+
+if cam_enabled: 
+    set_camera_callback(doc)
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
   '--device',
@@ -74,11 +82,11 @@ args = parser.parse_args()
 DEVICE = args.device
 BLOCKSIZE = args.blocksize
 SYNCORDER = args.syncorder
-APPFOLDER =os.path.dirname(os.path.abspath( __file__ ))
-MGEOMPATH = os.path.join(APPFOLDER,"micgeom/")
-TDPATH = os.path.join(APPFOLDER,"td/")
-if not os.path.exists(TDPATH): 
-    os.mkdir(TDPATH)
+APPFOLDER = Path(__file__).resolve().parent
+MGEOMPATH = APPFOLDER / "micgeom"
+TDPATH = APPFOLDER / "td"
+if not TDPATH.exists():
+    TDPATH.mkdir()
 MICSIZE = 25
 CLIPVALUE = 120 # value in dB at which CLIP_COLOR is applied
 BANDWIDTH = 3
@@ -89,22 +97,6 @@ NBLOCKS = 5 # number of blocks after which to do beamforming
 WTIME = 0.025
 XCAM = (-0.5,-0.375,1.,0.75)
 
-# logging
-LOGLENGTH = 50 # how many lines of log messages are displayed in Log Tab
-LOGLEVEL = logging.DEBUG 
-LOGNAME = "MeasurementApp.log"
-logging.basicConfig(level=LOGLEVEL) # root logger
-root_logger = logging.getLogger()
-logger = logging.getLogger(__name__)
-app_file_log = logging.FileHandler(LOGNAME,mode="w") # log everything to file
-app_file_log.setFormatter(logging.Formatter('%(asctime)s.%(msecs)02d %(message)s', datefmt='%H:%M:%S'))
-stdout_handler = logging.StreamHandler(sys.stdout)
-root_logger.addHandler(app_file_log) 
-root_logger.addHandler(stdout_handler) 
-logger.setLevel(LOGLEVEL)
-sys.stdout = StreamToLogger(logger,logging.INFO)
-sys.stderr = StreamToLogger(logger,logging.ERROR)
-logger.info("start Measurement App...")
 
 # =============================================================================
 # load device
@@ -113,54 +105,76 @@ sinus_enabled=False
 if DEVICE == 'sounddevice':
     import sounddevice as sd
     inputSignalGen = get_interface(DEVICE)
-    ch_names = [str(_) for _ in range(inputSignalGen.numchannels)]
-    micGeo = MicGeom(from_file = '')
-    grid = RectGrid()
+    ch_names = [str(_) for _ in range(inputSignalGen.num_channels)]
+    micGeo = sp.MicGeom(file = '')
+    grid = sp.RectGrid()
 elif DEVICE == 'phantom':
-    micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,'array_64.xml'))
+    micGeo = sp.MicGeom(file = MGEOMPATH / 'array_64.xml')
     inputSignalGen = get_interface(DEVICE)
-    ch_names = [str(_) for _ in range(inputSignalGen.numchannels)]
-    grid = RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
+    ch_names = [str(_) for _ in range(inputSignalGen.num_channels)]
+    grid = sp.RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
 else: # otherwise it must be sinus
     try:
         import sinus
         sinus_enabled=True
-    except:
+    except ImportError:
         raise NotImplementedError("sinus module cannot be imported!")
     from sinus_dev import get_interface, append_left_column,append_disable_obj,\
         get_callbacks, close_device_callback, get_teds_component, gather_metadata
-    micGeo = MicGeom(from_file = os.path.join(MGEOMPATH,'tub_vogel64.xml'))
+    micGeo = sp.MicGeom(file = MGEOMPATH / 'tub_vogel64.xml')
     iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,SYNCORDER)
     ch_names = inputSignalGen.inchannels_
-    grid = RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
+    grid = sp.RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
     
-NUMCHANNELS = inputSignalGen.numchannels
+num_channels = inputSignalGen.num_channels
 # Splitting of incoming samples
-sampSplit = SampleSplitter(source = inputSignalGen, buffer_size=BUFFERSIZE)
-# ProcesampSpliting display Mode
-timePow = TimePower(source=sampSplit)
-timePowAvg = TimeAverage(source=timePow,naverage=BLOCKSIZE) 
-tioAvg = TimeInOutPresenter(source=timePowAvg)
-# ProcesampSpliting calib Mode
-fo_cal = FiltOctave(source=sampSplit,band=1000.0)
-tp_cal = TimePower(source=fo_cal)
-ta_cal = TimeAverage(source=tp_cal,naverage=BLOCKSIZE)          
-ch = CalibHelper(source = ta_cal)
-# procesampSpliting rec Mode
-wh5 = WriteH5(source=sampSplit)
-# procesampSpliting beamforming Mode
-stVec = SteeringVector(grid=grid, mics=micGeo, steer_type = 'true location')
-lastOut = LastInOut(source=sampSplit)
-#f = CSMInOut(source=lastOut, block_size=BLOCKSIZE)
-f = CSMInOut(source=lastOut, block_size=BLOCKSIZE, center_freq= CFREQ, 
+splitter = ac.SampleSplitter(source = inputSignalGen)
+# display Mode
+timePow = ac.TimePower(source=splitter)
+timePowAvg = ac.Average(source=timePow,num_per_average=BLOCKSIZE) 
+tioAvg = sp.TimeOutPresenter(source=timePowAvg) # not necessary!
+# calib Mode
+fo_cal = sp.FiltOctave(source=splitter,band=1000.0)
+tp_cal = ac.TimePower(source=fo_cal)
+ta_cal = ac.Average(source=tp_cal,num_per_average=BLOCKSIZE)          
+ch = sp.CalibHelper(source = ta_cal)
+# rec Mode
+wh5 = ac.WriteH5(source=splitter)
+# beamforming Mode
+csm = CSMInOut(source=splitter, block_size=BLOCKSIZE, center_freq= CFREQ, 
              band_width=BANDWIDTH, weight_time=WTIME)
-bb = BeamformerBase(steer=stVec, r_diag=True, cached = False)
-bfFreq = BeamformerFreqTime(source=f, beamformer = bb)
-bfTime = BeamformerTime(source=lastOut, steer=stVec) 
-bfFilt = FiltOctaveLive(source=bfTime, band=CFREQ)
-bfPow = TimePower(source=bfFilt)
-bfAvg = TimeAverage(source=bfPow, naverage = BLOCKSIZE)
-bf_used = bfFreq
+steer = ac.SteeringVector(grid=grid, mics=micGeo, steer_type = 'true location')
+beamformer = BeamformerFreqTime(
+    source=csm, 
+    beamformer = ac.BeamformerBase(steer=steer, r_diag=True, cached = False)
+    )
+bfTime = ac.BeamformerTime(source=splitter, steer=steer) 
+bfFilt = sp.FiltOctaveLive(source=bfTime, band=CFREQ)
+bfPow = ac.TimePower(source=bfFilt)
+bfAvg = ac.Average(source=bfPow, num_per_average = BLOCKSIZE)
+bf_used = beamformer
+
+
+# =============================================================================
+# Figures
+# =============================================================================
+
+# Amplitude Figure
+# Tooltips
+amp_fig = figure(
+    title='SPL/dB',tooltips=[("Lp/dB", "@level"), ("Channel", "@channels"),], tools="",**{
+    'y_range': (0,140),'width':1200, 'height':800}
+    )
+amp_fig.xgrid.visible = False
+amp_fig.xaxis.major_label_orientation = np.pi/2
+amp_fig.toolbar.logo=None
+
+# MicGeomFigure
+micgeom_fig = figure(
+        title='Array Geometry', tooltips=[("Channel Index", "@channels"),("(x,y)", "(@x, @y)"),],
+        tools = 'pan,wheel_zoom,reset',**{'width':800,  'height':800}
+        )
+
 
 # =============================================================================
 # spectacoular widgets
@@ -172,12 +186,12 @@ zSlider = Slider(start=0.01, end=10.0, value=grid.z, step=.02, title="z",disable
 grid.set_widgets(**{'z':zSlider})
 rgWidgets['z'] = zSlider # replace textfield with slider
 
-select_micgeom = Select(title="Select MicGeom:", value=micGeo.from_file,
-                                options=["None"]+[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)],
+select_micgeom = Select(title="Select MicGeom:", value=str(micGeo.file),
+                                options=["None"]+[str(file) for file in MGEOMPATH.iterdir() if file.is_file()],
                                 width=250)
-micGeo.set_widgets(**{'from_file':select_micgeom})
+micGeo.set_widgets(**{'file':select_micgeom})
 mgWidgets = micGeo.get_widgets()
-mgWidgets['from_file'] = select_micgeom
+mgWidgets['file'] = select_micgeom
 calWidgets = ch.get_widgets()
 calfiltWidgets = fo_cal.get_widgets()
 
@@ -185,11 +199,11 @@ calfiltWidgets = fo_cal.get_widgets()
 # bokeh
 # =============================================================================
 # Columndatasources
-ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,NUMCHANNELS+1)),
-                                       'level':np.zeros(NUMCHANNELS),
-                                       'colors':[COLOR[1]]*NUMCHANNELS} )
+ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,num_channels+1)),
+                                       'level':np.zeros(num_channels),
+                                       'colors':[COLOR[1]]*num_channels} )
 if micGeo.num_mics > 0:
-    MicGeomCDS = ColumnDataSource(data={'x':micGeo.mpos[0],'y':micGeo.mpos[1],
+    MicGeomCDS = ColumnDataSource(data={'x':micGeo.pos[0],'y':micGeo.pos[1],
                                         'sizes':np.array([MICSIZE]*micGeo.num_mics),
                                         'channels':[str(_) for _ in range(micGeo.num_mics)],
                                         'colors':[COLOR[1]]*micGeo.num_mics}) 
@@ -216,9 +230,9 @@ geomview = RadioGroup(labels=view_labels, active=0)
 bfview = RadioGroup(labels=view_labels, active=0)
 def update_micgeom_view(attr,old,new):
     if new == 0: # BackView
-        MicGeomCDS.data['x'] = micGeo.mpos[0,:]
+        MicGeomCDS.data['x'] = micGeo.pos[0,:]
     elif new == 1: # FrontView
-        MicGeomCDS.data['x'] = micGeo.mpos[0,:]*-1
+        MicGeomCDS.data['x'] = micGeo.pos[0,:]*-1
 geomview.on_change('active',update_micgeom_view)
 
 
@@ -234,15 +248,15 @@ labelSelect = Select(title="Select Channel Labeling:", value="Index",
 
 def _get_channel_labels(ltype):
     if ltype == 'Index':
-        labels = [str(i) for i in range(inputSignalGen.numchannels)]
+        labels = [str(i) for i in range(inputSignalGen.num_channels)]
     elif ltype == 'Number':
-        labels = [str(i+1) for i in range(inputSignalGen.numchannels)]
+        labels = [str(i+1) for i in range(inputSignalGen.num_channels)]
     elif ltype == 'Physical':
-        labels = [inputSignalGen.inchannels_[i] for i in range(inputSignalGen.numchannels)]
+        labels = [inputSignalGen.inchannels_[i] for i in range(inputSignalGen.num_channels)]
     return labels
 
 def update_channel_labels(attr,old,new):
-    ticker = list(range(1,inputSignalGen.numchannels+1))
+    ticker = list(range(1,inputSignalGen.num_channels+1))
     labels = _get_channel_labels(new)
     amp_fig.xaxis.ticker = ticker
     amp_fig.xaxis.major_label_overrides = {str(ticker[i]): label for i,label in enumerate(labels)}
@@ -252,7 +266,7 @@ labelSelect.on_change('value',update_channel_labels)
 # Buttons
 reload_micgeom_button = Button(label="↻",disabled=False,width=60,height=60)
 def update_micgeom_options_callback():
-    select_micgeom.options=["None"]+[os.path.join(MGEOMPATH,fname) for fname in os.listdir(MGEOMPATH)]
+    select_micgeom.options=["None"]+[str(file) for file in MGEOMPATH.iterdir() if file.is_file()]
 reload_micgeom_button.on_click(update_micgeom_options_callback)
 
 # button to stop the server
@@ -282,14 +296,15 @@ def _calibtable_callback():
                      "caliblevel":ch.calibdata[:,1],
                      "calibfactor":ch.calibfactor[:],
                      "channel":_get_channel_labels(labelSelect.value)}
-calibtable_callback = lambda: doc.add_next_tick_callback(_calibtable_callback)
+def calibtable_callback():
+    return doc.add_next_tick_callback(_calibtable_callback)
 ch.on_trait_change(calibtable_callback,"calibdata")
 
 # save calib button
 savecal = Button(label="save to .xml",button_type="warning",width=200, height=60)
 def save_calib_callback():
     if not calWidgets['name'].value:
-        fname = os.path.join("Measurement_App","metadata",f"calibdata_{current_time()}.xml")
+        fname = Path("Measurement_App") / "metadata" / f"calibdata_{current_time()}.xml"
         calWidgets['name'].value = fname
     else:
         fname = calWidgets['name'].value
@@ -298,13 +313,13 @@ savecal.on_click(save_calib_callback)
 
 freqSlider = Slider(start=50, end=10000, value=CFREQ, 
                     step=1, title="Frequency",disabled=False)
-bfFilt.set_widgets(**{'band':freqSlider}) # 
-f.set_widgets(**{'center_freq':freqSlider})
+#bfFilt.set_widgets(**{'band':freqSlider}) # 
+csm.set_widgets(**{'center_freq':freqSlider})
 
 wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
                      step=0.0025, title="Time weighting (FAST: 0.125, SLOW: 1.0)",
                      disabled=False)
-f.set_widgets(**{'weight_time':wtimeSlider})
+csm.set_widgets(**{'weight_time':wtimeSlider})
 
 micsizeSlider = Slider(start=1, end=50, value=MICSIZE, 
                     step=0.5, title="Circle Size",disabled=False)
@@ -316,7 +331,7 @@ micsizeSlider.on_change('value', update_micsizes)
 
 # checkboxes # inline=True -> arange horizontally, False-> vertically
 checkbox_micgeom = CheckboxGroup(labels=ch_names,
-                                 active=[_ for _ in range(NUMCHANNELS)],
+                                 active=[_ for _ in range(num_channels)],
                                  width=100,height=100,inline=False)
 
 # Figures and Glyphs
@@ -340,7 +355,8 @@ bfImage = beam_fig.image(image='beamformer_data', x=grid.x_min, y=grid.y_min, dw
                 color_mapper=bfColorMapper,
                 source=BeamfCDS)
 beam_fig.toolbar.logo=None
-if cam_enabled: set_alpha_callback(bfImage)
+if cam_enabled: 
+    set_alpha_callback(bfImage)
 # color_bar = ColorBar(color_mapper=bfColorMapper,label_standoff=12, 
 #                      background_fill_color = '#f6f6f6',
 #                      border_line_color=None, location=(0,0))
@@ -383,7 +399,8 @@ widgets_enable =    {'msm': [],
 # Callbacks
 # =============================================================================
 # small functions
-current_time = lambda: datetime.now().isoformat('_').replace(':','-').replace('.','_') # for timestamp filename
+def current_time():
+    return datetime.now().isoformat('_').replace(':', '-').replace('.', '_') # for timestamp filename
 
 # non bokeh functions
 def get_active_channels():
@@ -406,13 +423,6 @@ def dynamic_slider_callback(attr, old, new):
         (bfColorMapper.low, bfColorMapper.high) = new
 dynamicSlider.on_change('value', dynamic_slider_callback)    
 
-# def checkbox_paint_mode_callback(arg):
-#     if arg == []:
-#         f.accumulate = False
-#     elif arg == [0]:
-#         f.accumulate = True
-# checkbox_paint_mode.on_click(checkbox_paint_mode_callback)
-
 def update_bfImage_axis(attr,old,new):
     dx = grid.x_max-grid.x_min
     dy = grid.y_max-grid.y_min
@@ -428,7 +438,7 @@ rgWidgets['y_min'].on_change('value',update_bfImage_axis)
 rgWidgets['y_max'].on_change('value',update_bfImage_axis)
   
 def select_micgeom_callback(attr, old, new):
-    MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
+    MicGeomCDS.data = {'x':micGeo.pos[0,:],'y':micGeo.pos[1,:],
                        'sizes':np.array([MICSIZE]*micGeo.num_mics),
                        'channels':get_active_channels(),
                        'colors': [COLOR[1]]*micGeo.num_mics}
@@ -458,7 +468,7 @@ def checkbox_autolevel_mode_callback(arg):
         (bfColorMapper.low, bfColorMapper.high) = dynamicSlider.value
         
 def savename_callback(attr,old,new):
-    wh5.name = os.path.join(TDPATH,new+'.h5')
+    wh5.name = TDPATH / f"{new}.h5"
 ti_savename.on_change("value", savename_callback)
 
 def widget_activation_callback(mode,isSet):
@@ -486,9 +496,10 @@ def displaytoggle_handler(arg):
                 event=dispEvent)
         amp_thread = SamplesThread(
                     samplesGen=tioAvg.result(1),
-                    splitterObj= sampSplit,
+                    splitterObj= splitter,
                     splitterDestination=timePow,
-                    event=dispEvent)
+                    event=dispEvent,
+                    buffer_size=BUFFERSIZE)
         disp_threads = [amp_thread,dispEventThread]
         [thread.start() for thread in disp_threads]
         periodic_plot_callback = doc.add_periodic_callback(update_app,
@@ -513,8 +524,9 @@ def beamftoggle_handler(arg):
                 event=beamfEvent)
         bf_thread = SamplesThread(
                     samplesGen=get_bf_data(NBLOCKS),
-                    splitterObj= sampSplit,
-                    splitterDestination=lastOut,
+                    splitterObj= splitter,
+                    splitterDestination=csm,
+                    buffer_size=1,
                     event=beamfEvent)        
         bf_thread.start()
         beamfEventThread.start()
@@ -542,8 +554,9 @@ def msmtoggle_handler(arg):
                 event=wh5_event)
         wh5_thread = SamplesThread(
                 samplesGen=wh5.result(BLOCKSIZE),
-                splitterObj=sampSplit,
+                splitterObj=splitter,
                 splitterDestination=wh5,
+                buffer_size=BUFFERSIZE,
                 event = wh5_event)
         wh5_thread.start()
         wh5_consumer.start()
@@ -566,8 +579,9 @@ def calibtoggle_handler(arg):
                 event=calibEvent)
         calib_thread = SamplesThread(
                 samplesGen= ch.result(1),
-                splitterObj= sampSplit,
+                splitterObj= splitter,
                 splitterDestination=fo_cal,
+                buffer_size=BUFFERSIZE,
                 event=calibEvent)
         calib_thread.start()
         calibEventThread.start()
@@ -580,25 +594,25 @@ def calibtoggle_handler(arg):
 
 calib_toggle.on_click(calibtoggle_handler)
 
-# procesampSpliting functions
+# functions
 bfdata = {'data':np.array([])}
 def get_bf_data(num):
     for temp in bf_used.result(num):
-        bfdata['data'] = L_p(temp.reshape(grid.shape)).T #L_p(synthetic(temp,f.fftfreq(),bfFilt.band,1))
+        bfdata['data'] = ac.L_p(temp.reshape(grid.shape)).T
         if bfview.active == 1:
             bfdata['data'] = bfdata['data'][::-1]
         yield
 
 def update_amp_bar_plot():
     if tioAvg.data.data['data'].size > 0:
-        levels = L_p(tioAvg.data.data['data'].T)
+        levels = ac.L_p(tioAvg.data.data['data'].T)
         ChLevelsCDS.data['level'] =  levels
         ChLevelsCDS.data['colors'] = [MODECOLOR if val<CLIPVALUE else CLIPCOLOR for val in levels]
 #                                            'channel': inputSignalGen.inchannels_}
 def update_mic_geom_plot():
     global MICSIZE, CLIPVALUE
     if micGeo.num_mics > 0: 
-        levels = np.array([L_p(tioAvg.data.data['data'].T[i]) for i in sorted(checkbox_micgeom.active)]) # only take which are active
+        levels = np.array([ac.L_p(tioAvg.data.data['data'].T[i]) for i in sorted(checkbox_micgeom.active)]) # only take which are active
         MicGeomCDS.data['sizes'] = levels/levels.max()*MICSIZE
         MicGeomCDS.data['colors'] = [MODECOLOR if val<CLIPVALUE else CLIPCOLOR for val in levels]
 
@@ -626,13 +640,6 @@ def update_app():  # only update figure when tab is active
     if sinus_enabled:
          update_buffer_bar_plot()
 
-def periodic_update_log():
-    with open(LOGNAME,'r') as file:
-        lines = file.readlines()
-        n = min(len(lines),LOGLENGTH)
-        last_lines = lines[-n:]
-        text = "".join(last_lines[::-1])
-        logText.value = text
 
 # =============================================================================
 #  Set Up Bokeh Document Layout
@@ -640,8 +647,8 @@ def periodic_update_log():
 
 # Calibration Panel
 calWidgets['name'].width=500
-caldiv1 = Div(text="""<b>Calibration Filter Settings<b\>""")
-caldiv2 = Div(text="""<b>Basic Calibration Settings<b\>""")
+caldiv1 = Div(text=r"""<b>Calibration Filter Settings<b\>""")
+caldiv2 = Div(text=r"""<b>Basic Calibration Settings<b\>""")
 calCol = column(Spacer(height=15),
                 row(labelSelect,savecal,calWidgets['name']),
                 Spacer(height=15),
@@ -655,7 +662,7 @@ calCol = column(Spacer(height=15),
                 width=150)))
 
 mgWidgetCol = column(
-                row(reload_micgeom_button,mgWidgets['from_file']),
+                row(reload_micgeom_button,mgWidgets['file']),
                 mgWidgets['num_mics'],
                 select_all_channels_button,
                 checkbox_micgeom,
@@ -665,7 +672,7 @@ mgWidgetCol = column(
 gridCol = column(*rgWidgets.values(),width=200)
 
 # Tabs
-amplitudesTab = Panel(child=column(row(Spacer(width=25),cliplevel,Spacer(width=25),labelSelect),amp_fig),title='Channel Levels')
+amplitudesTab = Panel(child=column(row(Spacer(width=25),cliplevel,Spacer(width=25),labelSelect),row(amp_fig, log.log_text)),title='Channel Levels')
 micgeomTab = Panel(child=column(
     row(column(row(Spacer(width=25),cliplevel,Spacer(width=15),micsizeSlider,Spacer(width=15),geomview),micgeom_fig),Spacer(width=30, height=1000),mgWidgetCol)),title='Microphone Geometry')
 beamformTab = Panel(child=column(
@@ -677,8 +684,12 @@ beamformTab = Panel(child=column(
                          ),
                         ),title='Beamforming')
 calibrationTab = Panel(child=calCol, title="Calibration")
-figureTabs = Tabs(tabs=[amplitudesTab,micgeomTab,beamformTab,calibrationTab],width=850)
-logTab = Tabs(tabs=[Panel(child=logText, title="Log")],width=1500,height=300)
+figureTabs = Tabs(tabs=[
+    amplitudesTab,
+    micgeomTab,
+    beamformTab,
+    calibrationTab
+    ],width=850)
 
 left_column = column(display_toggle,
                      ti_savename,checkbox_use_current_time,
@@ -705,24 +716,28 @@ if DEVICE == 'sounddevice':
     inputSignalGen.set_widgets(device=device_select)
     left_column.children.insert(1,device_select)
     sdwidgets = list(inputSignalGen.get_widgets().values())
-    left_column.children.insert(2,sdwidgets[2]) # numchannels
+    left_column.children.insert(2,sdwidgets[2]) # num_channels
 
     def device_update(attr,old,new):
-        inputSignalGen.numchannels = sd.query_devices(inputSignalGen.device)['max_input_channels']
-        ticker = list(np.arange(1,inputSignalGen.numchannels+1))
-        ChLevelsCDS.data = {'channels':ticker,'level': np.zeros(inputSignalGen.numchannels)}
+        inputSignalGen.num_channels = sd.query_devices(inputSignalGen.device)['max_input_channels']
+        ticker = list(np.arange(1,inputSignalGen.num_channels+1))
+        ChLevelsCDS.data = {'channels':ticker,'level': np.zeros(inputSignalGen.num_channels)}
         amp_fig.xaxis.ticker = ticker
-        checkbox_micgeom.labels = [str(_) for _ in range(inputSignalGen.numchannels)]
-        checkbox_micgeom.active = [_ for _ in range(inputSignalGen.numchannels)]
+        checkbox_micgeom.labels = [str(_) for _ in range(inputSignalGen.num_channels)]
+        checkbox_micgeom.active = [_ for _ in range(inputSignalGen.num_channels)]
         if micGeo.num_mics > 0:
-            MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
+            MicGeomCDS.data = {'x':micGeo.pos[0,:],'y':micGeo.pos[1,:],
                     'sizes':np.array([7]*micGeo.num_mics),
                     'channels':[str(_) for _ in checkbox_micgeom.active]} 
     device_select.on_change('value',device_update)
 
 right_column = column(figureTabs)
 
-layout = column(row(Spacer(width=1400),exit_button),row(Spacer(width=20, height=1000),left_column,Spacer(width=20, height=1000),right_column,),Spacer(height=50),logText)
+layout = column(row(Spacer(width=1400),exit_button),row(Spacer(width=20, height=1000),
+    left_column,
+    Spacer(width=20, height=1000),
+    right_column,
+    ),
+)
 doc.add_root(layout)
-doc.add_periodic_callback(periodic_update_log,1000)
 doc.title = "Measurement App"

@@ -12,7 +12,7 @@ attribute is to be mapped into which Bokeh widget type.
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable,\
-TableColumn, NumberEditor, NumericInput, Toggle
+TableColumn, NumberEditor, NumericInput, Toggle, MultiSelect
 from .factory import get_widgets, set_widgets
 
 def add_bokeh_attr(cls,trait_widget_mapper,trait_widget_args):
@@ -198,20 +198,18 @@ from acoular import BeamformerDamasPlus
 
 trait_widget_mapper = {'method': Select,
                        'alpha': Slider,
-                       'max_iter' : NumericInput,
+                       'n_iter' : NumericInput,
                        'unit_mult' : NumericInput,
                         'damp': NumericInput,
-                        'n_iter' : NumericInput,
                         'calcmode' : Select,
                         'psf_precision': Select,
                        'cached': Toggle,
                        }
 trait_widget_args = {'method' : {'disabled':False},
                      'alpha': {'disabled':False,'step':0.01},
-                     'max_iter' : {'disabled':False, 'mode':'int'},
+                     'n_iter' : {'disabled':False, 'mode':'int'},
                      'unit_mult' : {'disabled':False, 'mode':'float'},
                      'damp' : {'disabled':False, 'mode':'float'},
-                     'n_iter' : {'disabled':False, 'mode':'int'},
                      'calcmode' : {'disabled':False},
                      'psf_precision': {'disabled':False},
                      'cached': {'disabled':False},
@@ -243,7 +241,7 @@ add_bokeh_attr(BeamformerOrth,trait_widget_mapper,trait_widget_args)
 from acoular import BeamformerCleansc
 
 trait_widget_mapper = {
-                        'n' : NumericInput,
+                        'n_iter' : NumericInput,
                         'damp' : Slider,
                         'stopn' : NumericInput,
                         'r_diag': Toggle,
@@ -252,7 +250,7 @@ trait_widget_mapper = {
                        'cached': Toggle,
                        }
 trait_widget_args = {
-                    'n': {'disabled':False,'mode':'int'},
+                    'n_iter': {'disabled':False,'mode':'int'},
                     'damp': {'disabled':False,'step':0.01},
                     'stopn': {'disabled':False,'mode':'int'},
                     'r_diag': {'disabled':False},
@@ -287,7 +285,7 @@ from acoular import BeamformerCMF
 trait_widget_mapper = {
                         'method' : Select,
                         'alpha' : Slider,
-                        'max_iter' : NumericInput,
+                        'n_iter' : NumericInput,
                         'unit_mult' : NumericInput,
                         'r_diag': Toggle,
                         'precision': Select,
@@ -296,7 +294,7 @@ trait_widget_mapper = {
 trait_widget_args = {
                     'method': {'disabled':False},
                     'alpha': {'disabled':False,'step':0.01},
-                    'max_iter': {'disabled':False,'mode':'int'},
+                    'n_iter': {'disabled':False,'mode':'int'},
                     'unit_mult' : {'disabled':False,'mode':'float'},
                     'r_diag': {'disabled':False},
                     'precision': {'disabled':False},
@@ -310,7 +308,7 @@ from acoular import BeamformerGIB
 
 trait_widget_mapper = {
                         'unit_mult' : NumericInput,
-                        'max_iter' : NumericInput,
+                        'n_iter' : NumericInput,
                         'method' : Select,
                         'alpha' : Slider,
                         'pnorm' : NumericInput,
@@ -324,7 +322,7 @@ trait_widget_mapper = {
                        }
 trait_widget_args = {
                     'unit_mult' : {'disabled':False,'mode':'float'},
-                    'max_iter': {'disabled':False,'mode':'int'},
+                    'n_iter': {'disabled':False,'mode':'int'},
                     'method': {'disabled':False},
                     'alpha': {'disabled':False,'step':0.01},
                     'pnorm': {'disabled':False,'mode':'float'},
@@ -427,16 +425,15 @@ editor = NumberEditor()
 mpos_columns = [TableColumn(field='x', title='x', editor=editor),
                 TableColumn(field='y', title='y', editor=editor),
                 TableColumn(field='z', title='z', editor=editor)]
-invch_columns = [TableColumn(field='invalid_channels', title='invalid_channels', editor=editor),]
 
 trait_widget_mapper = {'file': TextInput,
-                       'invalid_channels': DataTable,
+                       'invalid_channels': MultiSelect,
                        'num_mics': NumericInput,
                        'pos_total': DataTable
                        }
 
 trait_widget_args = {'file': {'disabled':False},
-                     'invalid_channels':  {'disabled':False, 'editable':True,'columns':invch_columns,},
+                     'invalid_channels':  {'disabled':False},
                      'num_mics':  {'disabled':True, 'mode':'int'},
                      'pos_total':  {'editable':True, 'transposed':True, 'columns':mpos_columns,}
                      }

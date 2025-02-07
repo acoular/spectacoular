@@ -113,12 +113,12 @@ def get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
                   MicGeomCDS,micGeo,logger):
     
     def single_update_settings():
-        ticker = list(arange(1,inputSignalGen.numchannels+1))
-        ChLevelsCDS.data = {'channels':ticker,'level': zeros(inputSignalGen.numchannels)}
+        ticker = list(arange(1,inputSignalGen.num_channels+1))
+        ChLevelsCDS.data = {'channels':ticker,'level': zeros(inputSignalGen.num_channels)}
         amp_fig.xaxis.ticker = ticker
-        amp_fig.xaxis.major_label_overrides = {str(ticker[i]): inputSignalGen.inchannels_[i] for i in range(inputSignalGen.numchannels)}
+        amp_fig.xaxis.major_label_overrides = {str(ticker[i]): inputSignalGen.inchannels_[i] for i in range(inputSignalGen.num_channels)}
         checkbox_micgeom.labels = inputSignalGen.inchannels_
-        checkbox_micgeom.active = [_ for _ in range(inputSignalGen.numchannels)]
+        checkbox_micgeom.active = [_ for _ in range(inputSignalGen.num_channels)]
         buffer_bar.x_range=Range1d(0,int(devManager.BlockCount[0]))
         if micGeo.num_mics > 0:
             MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],

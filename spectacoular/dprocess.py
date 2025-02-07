@@ -14,7 +14,7 @@
 """
 from bokeh.models.widgets import NumericInput, DataTable
 from bokeh.models import ColumnDataSource
-from traits.api import Trait, Int, Float, on_trait_change, Instance, ListInt, Bool, observe
+from traits.api import Trait, Int, Float, Instance, ListInt, Bool, observe
 import numpy as np
 from acoular import TimeSamples,BeamformerBase, L_p, MicGeom,\
 PointSpreadFunction, MaskedTimeSamples
@@ -42,6 +42,14 @@ class BasePresenter(BaseSpectacoular):
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
     cdsource = Instance(ColumnDataSource, args=())
+
+    auto_update = Bool(False, 
+        desc="If True, the presenter will update the data source when the digest changes.")
+
+    @observe("source.digest")
+    def _auto_update(self, event):
+        if self.auto_update:
+            self.update()
 
     def update(self, **optional_items):
         """
@@ -74,23 +82,30 @@ class MicGeomPresenter(BasePresenter):
     source = Instance(MicGeom)
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = Instance(ColumnDataSource, kw={'data':{'x':[],'y':[], 'channels':[]}})
+    cdsource = Instance(ColumnDataSource, kw={'data':{'x':[],'y':[],'z':[],'xi':[],'yi':[],'zi':[], 'channels':[]}})
 
-    @on_trait_change("digest")
-    def _update(self):
-        self.update()
+    @observe("source.digest")
+    def _update(self, event):
+        if self.auto_update:
+            self.update()
     
     def update(self, **optional_items):
         if self.source.num_mics > 0:
+            pos = self.source.pos_total.copy()
+            pos[:,self.source.invalid_channels] = np.nan
             self.cdsource.data = {
-                    'x' : self.source.mpos[0,:],
-                    'y' : self.source.mpos[1,:],
-                    'channels' : [str(_) for _ in range(self.source.num_mics)],
+                    'x' : self.source.pos_total[0,:].tolist(), 
+                    'y' : self.source.pos_total[1,:].tolist(),
+                    'z' : self.source.pos_total[2,:].tolist(),
+                    'xi' : pos[0,:].tolist(), # invalid channels are set to np.nan
+                    'yi' : pos[1,:].tolist(), # invalid channels are set to np.nan
+                    'zi' : pos[2,:].tolist(), # invalid channels are set to np.nan
+                    'channels' : [str(_) for _ in range(self.source.pos_total.shape[1])],
                     **optional_items
                     }        
         else:
-            self.cdsource.data = {'x':[],'y':[], 'channels':[], **optional_items}        
-
+            self.cdsource.data = {
+                'x':[],'y':[], 'z':[], 'xi' : [], 'yi' : [], 'zi' : [],'channels':[], **optional_items}   
 
 
 class BeamformerPresenter(BasePresenter):
@@ -124,7 +139,12 @@ class BeamformerPresenter(BasePresenter):
     trait_widget_args = {'num': {'disabled':False},
                          'freq': {'disabled':False},
                      }
-    
+
+    @observe("source.digest, freq, num")
+    def _auto_update(self, event):
+        if self.auto_update:
+            self.update()
+
     def update(self, **optional_items):
         """
         Function that updates the keys and values of :attr:`cdsource` attribute.    
@@ -152,15 +172,9 @@ class PointSpreadFunctionPresenter(BasePresenter):
     #: Data source; :class:`~acoular.fbeamform.PointSpreadFunction` or derived object.
     source = Trait(PointSpreadFunction)
     
-    def _get_digest(self):
-        return self.source.digest
-
-    #: ColumnDataSource that holds data that can be consumed by plots and glyphs
+        #: ColumnDataSource that holds data that can be consumed by plots and glyphs
     cdsource = Instance(ColumnDataSource, kw={'data':{
         'psf':[],'x':[],'y':[],'dw':[],'dh':[]}})
-
-    auto_update = Bool(False, 
-        desc="If True, the presenter will update the data source when the digest changes.")
 
     @observe("source.digest, source.freq, source.grid_indices")
     def _auto_update(self, event):
@@ -199,7 +213,7 @@ class TimeSamplesPresenter(BasePresenter):
     Example: 
                 
         >>>    import spectacoular
-        >>>    ts = spectacoular.TimeSamples(name='/path/to/file.h5')
+        >>>    ts = spectacoular.TimeSamples(file='/path/to/file.h5')
         >>>    tv = spectacoular.TimeSamplesPresenter(source=ts)  
         >>>    
         >>>    tsPlot = figure(title="Channel Data") 
@@ -246,8 +260,8 @@ class TimeSamplesPresenter(BasePresenter):
             stop = None
         
         plotlen = self._numsubsamples 
-        if plotlen>0 and plotlen < self.source.numsamples:
-            used_samples = self.source.numsamples//plotlen * plotlen
+        if plotlen>0 and plotlen < self.source.num_samples:
+            used_samples = self.source.num_samples//plotlen * plotlen
             newstop = start + used_samples
             sigraw = self.source.data[start:newstop,self.channels].reshape(plotlen,-1, numSelected)
             sig = np.reshape(np.array([sigraw.min(1), sigraw.max(1)]), (2*plotlen, numSelected), order='F') # use min/max of each plot block
@@ -255,12 +269,12 @@ class TimeSamplesPresenter(BasePresenter):
             #sig = sigraw[:,0,:] # only use first sample
             #samples = list(np.linspace(start, newstop, plotlen))
         else:
-            samples = list(range(0,self.source.numsamples))
+            samples = list(range(0,self.source.num_samples))
             sig = self.source.data[start:stop,self.channels]
         
         ys = [list(_) for _ in sig.T]
         xs = [samples for _ in range(numSelected)]
-        if self.source.numsamples > 0 and numSelected > 0:
+        if self.source.num_samples > 0 and numSelected > 0:
             self.cdsource.data = {'xs' : xs, 
                                   'ys' : ys,
                                   'ch' : [[c] for c in self.channels],

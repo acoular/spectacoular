@@ -8,7 +8,7 @@ classes might move to Acoular module in the future.
     :toctree: generated/
 
     TimeSamplesPhantom
-    TimeInOutPresenter
+    TimeOutPresenter
     CalibHelper
     FiltOctaveLive
     TimeSamplesPlayback
@@ -54,7 +54,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples,BaseSpectacoular):
                         'basename': TextInput,
                         'start' : NumericInput,
                         'stop' : NumericInput,
-                        'numsamples': NumericInput,
+                        'num_samples': NumericInput,
                         'sample_freq': NumericInput,
                         'invalid_channels':DataTable,
                         'num_channels' : NumericInput,
@@ -64,7 +64,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples,BaseSpectacoular):
                         'basename': {'disabled':True},
                         'start':  {'disabled':False, 'mode':'int'},
                         'stop':  {'disabled':False, 'mode':'int'},
-                        'numsamples':  {'disabled':True, 'mode':'int'},
+                        'num_samples':  {'disabled':True, 'mode':'int'},
                         'sample_freq':  {'disabled':True, 'mode':'float'},
                         'invalid_channels': {'disabled':False,'editable':True, 'columns':invch_columns},
                         'num_channels': {'disabled':True,'mode':'int'},
@@ -92,7 +92,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples,BaseSpectacoular):
         else:
             slp_time = (1/self.sample_freq)*num
         
-        if self.numsamples == 0:
+        if self.num_samples == 0:
             raise IOError("no samples available")
         i = 0
         if self.calib:
@@ -101,19 +101,19 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples,BaseSpectacoular):
             else:
                 raise ValueError("calibration data not compatible: %i, %i" % \
                             (self.calib.num_mics, self.num_channels))
-            while i < self.numsamples and self.collectsamples:
+            while i < self.num_samples and self.collectsamples:
                 yield self.data[i:i+num]*cal_factor
                 sleep(slp_time)
                 i += num
         else:
-            while i < self.numsamples and self.collectsamples:
+            while i < self.num_samples and self.collectsamples:
                 yield self.data[i:i+num]
                 sleep(slp_time)
                 i += num        
                 
                 
                 
-class TimeInOutPresenter(ac.TimeOut,BasePresenter):
+class TimeOutPresenter(ac.TimeOut,BasePresenter):
     """
     :class:`TimeOut` derived class for building an interface from Acoular's generator 
     pipelines to Bokeh's ColumnDataSource model that serves as a source for

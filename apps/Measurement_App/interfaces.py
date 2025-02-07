@@ -3,7 +3,6 @@
 #------------------------------------------------------------------------------
 import sys 
 import os
-import logging
 from spectacoular import TimeSamplesPhantom
 from acoular import MicGeom, WNoiseGenerator, PointSource,\
 Mixer, WriteH5, MovingPointSource, Trajectory
@@ -37,7 +36,7 @@ def create_three_sources_moving():
     duration = 10
     nsamples = duration*sfreq
     micgeofile = "Measurement_App/micgeom/array_64.xml"
-    mg = MicGeom( from_file=micgeofile )
+    mg = MicGeom( file=micgeofile )
     n1 = WNoiseGenerator( sample_freq=sfreq, numsamples=nsamples, seed=100 )
     n2 = WNoiseGenerator( sample_freq=sfreq, numsamples=nsamples, seed=200, rms=0.7 )
     n3 = WNoiseGenerator( sample_freq=sfreq, numsamples=nsamples, seed=300, rms=0.5 )
@@ -62,21 +61,3 @@ def create_three_sources_moving():
     wh5 = WriteH5( source=pa, name=H5PATH )
     wh5.save()
 
-
-
-class StreamToLogger(object):
-    """
-    Fake file-like stream object that redirects writes to a logger instance.
-    From: https://stackoverflow.com/questions/19425736/how-to-redirect-stdout-and-stderr-to-logger-in-python
-    """
-    def __init__(self, logger, level):
-       self.logger = logger
-       self.level = level
-       self.linebuf = ''
-
-    def write(self, buf):
-       for line in buf.rstrip().splitlines():
-          self.logger.log(self.level, line.rstrip())
-
-    def flush(self):
-        pass

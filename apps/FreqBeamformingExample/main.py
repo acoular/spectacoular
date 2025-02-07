@@ -14,8 +14,8 @@ from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
 from bokeh.models.tools import BoxEditTool
 from bokeh.models import LinearColorMapper,ColorBar,ColumnDataSource, Range1d, HoverTool, Spacer
-from bokeh.models.widgets import Select, Toggle, RangeSlider,Div, \
-    NumberFormatter
+from bokeh.models.widgets import Select, Toggle, RangeSlider, Div, NumberEditor, TableColumn, NumberFormatter
+from bokeh.models.glyphs import Scatter
 from bokeh.plotting import figure
 from bokeh.palettes import viridis, Spectral11
 from bokeh.server.server import Server
@@ -29,21 +29,15 @@ BLUE = "#3288bd"
 doc = curdoc() 
 
 #%% Build processing chain
-micgeofile = Path(ac.__file__).parent / 'xml' / 'array_56.xml'
-tdfile = 'example_data.h5'
-calibfile = 'example_calib.xml'
-ts = sp.MaskedTimeSamples(name=tdfile)
-cal = sp.Calib(file=calibfile)
-ts.start = 0 # first sample, default
-ts.stop = 16000 # last valid sample = 15999
-invalid = [1,7] # list of invalid channels (unwanted microphones etc.)
-ts.invalid_channels = invalid 
-ts.calib = cal
-mg = sp.MicGeom(file=micgeofile,invalid_channels = invalid)
-ps = sp.PowerSpectra(source=ts,block_size=1024,overlap="50%")
+invalid = [1,7]
+ts = sp.MaskedTimeSamples(file=Path(__file__).parent.parent / 'example_data.h5', invalid_channels=invalid, start=0, stop=16000)
+cal = sp.Calib(source=ts, file=Path(__file__).parent.parent / 'example_calib.xml', invalid_channels=ts.invalid_channels)
+mg = sp.MicGeom(file=Path(ac.__file__).parent / 'xml' / 'array_56.xml',invalid_channels = ts.invalid_channels)
+ps = sp.PowerSpectra(source=cal,block_size=1024,overlap="50%")
 rg = sp.RectGrid(x_min=-0.6, x_max=-0.1, y_min=-0.3, y_max=0.3, z=0.68,increment=0.01)
 env = sp.Environment(c = 346.04)
 st = sp.SteeringVector( grid = rg, mics=mg, env=env )    
+
 
 #%%  Beamforming Algorithms
 bb = sp.BeamformerBase( freq_data=ps, steer=st )  
@@ -59,7 +53,84 @@ bl = sp.BeamformerClean(freq_data=ps, n_iter=100)
 bcmf = sp.BeamformerCMF(freq_data=ps, steer=st, method='LassoLarsBIC')
 bgib = sp.BeamformerGIB(freq_data=ps, steer=st, method= 'LassoLars', n=10)
 
-#%% Beamformer selector
+bv = sp.BeamformerPresenter(source=bb,num=3,freq=4000.)
+mgp = sp.MicGeomPresenter(source=mg, auto_update=True)
+mgp.update()
+
+#%% figures
+
+# CDS
+grid_data = ColumnDataSource(data={
+    # x and y are the centers of the rectangle! 
+    'x': [(rg.x_max + rg.x_min)/2], 'y': [(rg.y_max + rg.y_min)/2],
+    'width': [rg.x_max-rg.x_min], 'height': [rg.y_max-rg.y_min]
+})
+
+f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
+freqdata = ColumnDataSource(data={'freqs':[np.array(f_ticks)], # initialize
+                                  'amp':[np.array([0]*len(f_ticks))],
+                                  'colors':['white']})
+
+sectordata = ColumnDataSource(data={'x':[],'y':[],'width':[], 'height':[]})
+
+
+# Beamforming Plot
+bfPlot = figure(title='Source Map', 
+                tools = 'pan,wheel_zoom,reset', 
+                width=700,
+                match_aspect=True)
+# draw airfoil
+bfPlot.rect(
+    -0.38, 0.0, 0.2, 0.5,alpha=1.,color='gray',fill_alpha=.8,line_width=5,line_color="#1e3246")
+bfPlot.rect( # draw rect grid bounds
+    alpha=1.,color='#d2d6da',fill_alpha=0,line_width=2, source=grid_data)#line_color="#213447")
+bfPlot.toolbar.logo=None
+bfPlot.xgrid.visible = False
+bfPlot.ygrid.visible = False
+colorMapper = LinearColorMapper(palette=viridis(100), low=40, high=50 ,low_color=(1,1,1,0))
+bfImage = bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',alpha=0.9,
+             color_mapper=colorMapper,source=bv.cdsource, anchor='bottom_left', origin='bottom_left')
+bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
+                           title="dB",
+                           title_standoff=10),'right')
+mic_layout = sp.layouts.MicGeomComponent(
+    glyph=Scatter(marker='circle_cross', x='xi', y='yi', size=15, fill_alpha=0.2),
+    presenter=mgp,figure=bfPlot)
+bfPlot.add_tools(HoverTool(tooltips=[("L_p (dB)", "@bfdata"),('mic', "@channels"),], 
+    mode="mouse",renderers=[bfImage, mic_layout._glyph_renderer]))
+
+
+# set up widgets for Microphone Geometry
+editor = NumberEditor()
+formatter = NumberFormatter(format="0.00")
+mpos_columns = [TableColumn(field='x', title='x/m', editor=editor, formatter=formatter),
+                TableColumn(field='y', title='x/m', editor=editor, formatter=formatter),
+                TableColumn(field='z', title='x/m', editor=editor, formatter=formatter)]
+mic_layout.mics_trait_widget_args.update(
+    {'pos_total':  {'width' : 280,'editable':True, 'transposed':True, 'columns':mpos_columns,},
+    'invalid_channels': {'width': 280, 'options':[str(i) for i in range(mg.pos_total.shape[1])]}}
+)
+
+# FrequencySignalPlot
+f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
+                    500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
+                    20000: '20'}
+freqplot = figure(title="Sector-Integrated Spectrum", width=800, match_aspect=True,
+                  x_axis_type="log", x_axis_label="f / kHz", 
+                  y_axis_label="SPL / dB", )#tooltips=TOOLTIPS)
+freqplot.toolbar.logo=None
+freqplot.xaxis.axis_label_text_font_style = "normal"
+freqplot.yaxis.axis_label_text_font_style = "normal"
+freqplot.xgrid.minor_grid_line_color = 'navy'
+freqplot.xgrid.minor_grid_line_alpha = 0.05
+freqplot.xaxis.ticker = f_ticks
+freqplot.x_range=Range1d(20, 20000)
+freqplot.y_range=Range1d(0, 120)
+freqplot.xaxis.major_label_overrides = f_ticks_override
+frLine = freqplot.multi_line('freqs', 'amp',color='colors',alpha=0.0,line_width=3, source=freqdata)
+
+
+#%% widgets
 
 beamformer_dict = {
     'Conventional Beamforming': (bb, bb.get_widgets()),
@@ -83,19 +154,10 @@ beamformerSelector = Select(title="Beamforming Method:",
                         height=75, sizing_mode='stretch_width')
 
 # use additional classes for data evaluation/view
-bv = sp.BeamformerPresenter(source=bb,num=3,freq=4000.)
 bv.trait_widget_args.update({'num':{'width':40},'freq':{'width':100}})
 # get widgets to control settings
 tsWidgets = ts.get_widgets()
-tsWidgets['invalid_channels'].height = 100 
-tsWidgets['invalid_channels'].width = 300 
-tsWidgets['invalid_channels'].editable = False 
-mgWidgets = mg.get_widgets()
-mgWidgets['invalid_channels'].height = 100 
-mgWidgets['invalid_channels'].width = 300 
-mgWidgets['invalid_channels'].editable = False 
-mgWidgets['pos_total'].width = 300 
-mgWidgets['pos_total'].editable = False 
+mgWidgets = mic_layout.widgets
 envWidgets = env.get_widgets()
 calWidgets = cal.get_widgets()
 psWidgets = ps.get_widgets()
@@ -103,10 +165,11 @@ rgWidgets = rg.get_widgets()
 stWidgets = st.get_widgets()
 bbWidgets = bb.get_widgets()
 bvWidgets = bv.get_widgets()
+tsWidgets.pop('invalid_channels')
 
-formatter = NumberFormatter(format="0.00")
-for f in mgWidgets['pos_total'].columns:
-    f.formatter = formatter
+invalid_widget = mgWidgets['invalid_channels']
+ts.set_widgets(invalid_channels = invalid_widget)
+cal.set_widgets(invalid_channels = invalid_widget)
 
 settings_dict = {
     "Time Data": tsWidgets,
@@ -119,26 +182,9 @@ settings_dict = {
     "Beamforming Method": bbWidgets,
 }
 
-#%% column data sources
-
-grid_data = ColumnDataSource(data={
-    # x and y are the centers of the rectangle! 
-    'x': [(rg.x_max + rg.x_min)/2], 'y': [(rg.y_max + rg.y_min)/2],
-    'width': [rg.x_max-rg.x_min], 'height': [rg.y_max-rg.y_min]
-})
-
-f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
-freqdata = ColumnDataSource(data={'freqs':[np.array(f_ticks)], # initialize
-                                  'amp':[np.array([0]*len(f_ticks))],
-                                  'colors':['white']})
-
-sectordata = ColumnDataSource(data={'x':[],'y':[],'width':[], 'height':[]})
-
 
 #%% Widgets for display
 
-colorMapper = LinearColorMapper(palette=viridis(100), 
-                              low=40, high=50 ,low_color=(1,1,1,0))
 dynamicSlider = RangeSlider(start=0, end=120, step=1., value=(40,50),
                             width=220,height=50,
                             title="Dynamic Range")
@@ -180,52 +226,6 @@ rgWidgets['x_max'].on_change('value',update_grid)
 rgWidgets['y_min'].on_change('value',update_grid)
 rgWidgets['y_max'].on_change('value',update_grid)
 
-# beamformerPlot
-bfPlot = figure(title='Source Map', 
-                tools = 'pan,wheel_zoom,reset', 
-                width=700,
-                match_aspect=True)
-# draw airfoil
-bfPlot.rect(
-    -0.38, 0.0, 0.2, 0.5,alpha=1.,color='gray',fill_alpha=.8,line_width=5,line_color="#1e3246")
-# draw rect grid bounds
-bfPlot.rect(
-    alpha=1.,color='#d2d6da',fill_alpha=0,line_width=2, source=grid_data)#line_color="#213447")
-
-bfPlot.toolbar.logo=None
-bfPlot.xgrid.visible = False
-bfPlot.ygrid.visible = False
-
-bfImage = bfPlot.image(image='bfdata', x='x', y='y', dw='dw', dh='dh',alpha=0.9,
-             color_mapper=colorMapper,source=bv.cdsource, anchor='bottom_left', origin='bottom_left')
-bfPlot.add_layout(ColorBar(color_mapper=colorMapper,location=(0,0),
-                           title="dB",
-                           title_standoff=10),'right')
-bftooltips = [
-    ("L_p (dB)", "@bfdata"),
-]
-hover = HoverTool(tooltips=bftooltips, mode="mouse",
-                    renderers=[bfImage]) # only use hover tool for image renderer
-bfPlot.add_tools(hover)
-
-
-# FrequencySignalPlot
-f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 
-                    500: '0.5', 1000: '1', 2000: '2', 5000: '5', 10000: '10', 
-                    20000: '20'}
-freqplot = figure(title="Sector-Integrated Spectrum", width=800, match_aspect=True,
-                  x_axis_type="log", x_axis_label="f / kHz", 
-                  y_axis_label="SPL / dB", )#tooltips=TOOLTIPS)
-freqplot.toolbar.logo=None
-freqplot.xaxis.axis_label_text_font_style = "normal"
-freqplot.yaxis.axis_label_text_font_style = "normal"
-freqplot.xgrid.minor_grid_line_color = 'navy'
-freqplot.xgrid.minor_grid_line_alpha = 0.05
-freqplot.xaxis.ticker = f_ticks
-freqplot.x_range=Range1d(20, 20000)
-freqplot.y_range=Range1d(0, 120)
-freqplot.xaxis.major_label_overrides = f_ticks_override
-frLine = freqplot.multi_line('freqs', 'amp',color='colors',alpha=0.0,line_width=3, source=freqdata)
 
 #%% Property Tabs
 selectedBfWidgets = column(*bbWidgets.values(),height=1000)  
@@ -309,13 +309,11 @@ instruction_sector_integration = Div(text="""<p><b>Integrate over Source Map Reg
 #%% Document layout
 
 left_layout=layout([
-        #[Spacer(width=40),instruction_calculation], 
         [Spacer(width=40),calcButton,*bvWidgets.values(),dynamicSlider],
         [bfPlot],
         ])
 
 center_layout = layout([
-    #[Spacer(width=40),instruction_sector_integration],
     [Spacer(width=40),splSlider, Spacer(width=20),freqSlider],
     [freqplot],
     ])
