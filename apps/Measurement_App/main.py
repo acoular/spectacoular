@@ -22,9 +22,6 @@ import acoular as ac
 import spectacoular as sp
 import numpy as np 
 from pathlib import Path
-from datetime import datetime
-from threading import Event
-from functools import partial
 try:
     import cv2
     cam_enabled=True
@@ -34,31 +31,20 @@ except:
     camWidgets = []
 
 # local imports
+from app import MeasurementControl, current_time
 from log import LogWidget
-from acoular_future import CSMInOut, BeamformerFreqTime
-from threads import SamplesThread,EventThread
 from interfaces import get_interface
-from layout import plot_colors, toggle_labels, selectPerCallPeriod, checkbox_use_current_time, bfColorMapper,\
-select_all_channels_button, msm_toggle, display_toggle,beamf_toggle,calib_toggle,\
-dynamicSlider, checkbox_paint_mode, checkbox_autolevel_mode, ClipSlider,\
-  COLOR
+from layout import bfColorMapper,select_all_channels_button, dynamicSlider, ClipSlider,checkbox_autolevel_mode, COLOR
 
 # bokeh imports
 from bokeh.models.widgets.inputs import NumericInput
 from bokeh.plotting import curdoc, figure
 from bokeh.models import ColumnDataSource, RadioGroup, Spacer, CustomJS,Div
-from bokeh.models.widgets import Select,TextInput,Button,CheckboxGroup,Slider,\
+from bokeh.models.widgets import Select,Button,CheckboxGroup,Slider,\
 TableColumn,NumberEditor,DataTable
 from bokeh.models import TabPanel as Panel, Tabs
 from bokeh.layouts import column,row
 
-# logging
-log = LogWidget()
-logger = log.logger
-doc = curdoc()
-
-if cam_enabled: 
-    set_camera_callback(doc)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -80,22 +66,16 @@ parser.add_argument(
 
 args = parser.parse_args()
 DEVICE = args.device
-BLOCKSIZE = args.blocksize
 SYNCORDER = args.syncorder
-APPFOLDER = Path(__file__).resolve().parent
-MGEOMPATH = APPFOLDER / "micgeom"
-TDPATH = APPFOLDER / "td"
-if not TDPATH.exists():
-    TDPATH.mkdir()
-MICSIZE = 25
+MGEOMPATH = Path(__file__).resolve().parent / "micgeom"
+MICSIZE = 10
 CLIPVALUE = 120 # value in dB at which CLIP_COLOR is applied
 BANDWIDTH = 3
-MAXMSG = 20 # maximum number of messages to display in GUI
 CFREQ = 4000 
-BUFFERSIZE = 400
 NBLOCKS = 5 # number of blocks after which to do beamforming
 WTIME = 0.025
 XCAM = (-0.5,-0.375,1.,0.75)
+
 
 
 # =============================================================================
@@ -119,65 +99,74 @@ else: # otherwise it must be sinus
         sinus_enabled=True
     except ImportError:
         raise NotImplementedError("sinus module cannot be imported!")
-    from sinus_dev import get_interface, append_left_column,append_disable_obj,\
-        get_callbacks, close_device_callback, get_teds_component, gather_metadata
+    from sinus_dev import get_interface, append_left_column,\
+        get_callbacks, close_device_callback, get_teds_component
     micGeo = sp.MicGeom(file = MGEOMPATH / 'tub_vogel64.xml')
     iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,SYNCORDER)
     ch_names = inputSignalGen.inchannels_
     grid = sp.RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
-    
 num_channels = inputSignalGen.num_channels
-# Splitting of incoming samples
-splitter = ac.SampleSplitter(source = inputSignalGen)
-# display Mode
-timePow = ac.TimePower(source=splitter)
-timePowAvg = ac.Average(source=timePow,num_per_average=BLOCKSIZE) 
-tioAvg = sp.TimeOutPresenter(source=timePowAvg) # not necessary!
-# calib Mode
-fo_cal = sp.FiltOctave(source=splitter,band=1000.0)
-tp_cal = ac.TimePower(source=fo_cal)
-ta_cal = ac.Average(source=tp_cal,num_per_average=BLOCKSIZE)          
-ch = sp.CalibHelper(source = ta_cal)
-# rec Mode
-wh5 = ac.WriteH5(source=splitter)
-# beamforming Mode
-csm = CSMInOut(source=splitter, block_size=BLOCKSIZE, center_freq= CFREQ, 
-             band_width=BANDWIDTH, weight_time=WTIME)
-steer = ac.SteeringVector(grid=grid, mics=micGeo, steer_type = 'true location')
-beamformer = BeamformerFreqTime(
-    source=csm, 
-    beamformer = ac.BeamformerBase(steer=steer, r_diag=True, cached = False)
-    )
-bfTime = ac.BeamformerTime(source=splitter, steer=steer) 
-bfFilt = sp.FiltOctaveLive(source=bfTime, band=CFREQ)
-bfPow = ac.TimePower(source=bfFilt)
-bfAvg = ac.Average(source=bfPow, num_per_average = BLOCKSIZE)
-bf_used = beamformer
 
+doc = curdoc()
+log = LogWidget(doc=doc)
+if cam_enabled: 
+    set_camera_callback(doc)
 
+control = MeasurementControl(
+    doc=doc,
+    source=inputSignalGen,
+    logger=log.logger,
+    blocksize=args.blocksize,
+    steer=ac.SteeringVector(grid=grid, mics=micGeo, ref=[0,0,0]),
+)
 # =============================================================================
-# Figures
+# DEFINE FIGURES
 # =============================================================================
+
+fig_height = 800
+fig_width = 800
 
 # Amplitude Figure
-# Tooltips
 amp_fig = figure(
     title='SPL/dB',tooltips=[("Lp/dB", "@level"), ("Channel", "@channels"),], tools="",**{
-    'y_range': (0,140),'width':1200, 'height':800}
+    'y_range': (0,140),'width':1200, 'height':fig_height}
     )
 amp_fig.xgrid.visible = False
 amp_fig.xaxis.major_label_orientation = np.pi/2
 amp_fig.toolbar.logo=None
 
-# MicGeomFigure
+# MicGeom Figure
 micgeom_fig = figure(
         title='Array Geometry', tooltips=[("Channel Index", "@channels"),("(x,y)", "(@x, @y)"),],
-        tools = 'pan,wheel_zoom,reset',**{'width':800,  'height':800}
+        tools = 'pan,wheel_zoom,reset',**{'width':fig_width,  'height':fig_height}
         )
 
+# Beamforming Figure
+dx = grid.x_max-grid.x_min
+dy = grid.y_max-grid.y_min
+height = int(fig_width * dy/dx+0.5)
+beam_fig = figure(width=fig_width, height=height, tools = 'pan,wheel_zoom,save,reset')
+beam_fig.toolbar.logo=None
+       
+# =============================================================================
+# DEFINE COLUMN DATA SOURCES
+# =============================================================================
+
+ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,num_channels+1)),
+                                       'level':np.zeros(num_channels),
+                                       'colors':[COLOR[1]]*num_channels} )
+if micGeo.num_mics > 0:
+    MicGeomCDS = ColumnDataSource(data={'x':micGeo.pos[0],'y':micGeo.pos[1],
+                                        'sizes':np.array([MICSIZE]*micGeo.num_mics),
+                                        'channels':[str(_) for _ in range(micGeo.num_mics)],
+                                        'colors':[COLOR[1]]*micGeo.num_mics}) 
+else:
+    MicGeomCDS = ColumnDataSource(data={'x': [],'sizes':[], 'channels':[],'colors':[]})                                                                                                        
+BeamfCDS = ColumnDataSource({'beamformer_data':[]})
+calibCDS = ColumnDataSource(data={"calibvalue":[],"caliblevel":[],"calibfactor":[], "channel":[]})
 
 # =============================================================================
-# spectacoular widgets
+# DEFINE WIDGETS
 # =============================================================================
 
 # get widgets of acoular objects
@@ -192,25 +181,8 @@ select_micgeom = Select(title="Select MicGeom:", value=str(micGeo.file),
 micGeo.set_widgets(**{'file':select_micgeom})
 mgWidgets = micGeo.get_widgets()
 mgWidgets['file'] = select_micgeom
-calWidgets = ch.get_widgets()
-calfiltWidgets = fo_cal.get_widgets()
-
-# =============================================================================
-# bokeh
-# =============================================================================
-# Columndatasources
-ChLevelsCDS = ColumnDataSource(data = {'channels':list(np.arange(1,num_channels+1)),
-                                       'level':np.zeros(num_channels),
-                                       'colors':[COLOR[1]]*num_channels} )
-if micGeo.num_mics > 0:
-    MicGeomCDS = ColumnDataSource(data={'x':micGeo.pos[0],'y':micGeo.pos[1],
-                                        'sizes':np.array([MICSIZE]*micGeo.num_mics),
-                                        'channels':[str(_) for _ in range(micGeo.num_mics)],
-                                        'colors':[COLOR[1]]*micGeo.num_mics}) 
-else:
-    MicGeomCDS = ColumnDataSource(data={'x': [],'sizes':[], 'channels':[],'colors':[]})                                                                                                        
-BeamfCDS = ColumnDataSource({'beamformer_data':[]})
-calibCDS = ColumnDataSource(data={"calibvalue":[],"caliblevel":[],"calibfactor":[], "channel":[]})
+calWidgets = control.calib.get_widgets()
+calfiltWidgets = control.calib.source.source.source.get_widgets()
 
 
 # Numeric Inputs
@@ -219,10 +191,6 @@ def update_cliplevel(attr,old,new):
     global CLIPVALUE
     CLIPVALUE = new
 cliplevel.on_change('value',update_cliplevel)
-
-# Text Inputs
-ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
-ti_savename = TextInput(value="", title="Filename:",disabled=True)
 
 # RadioGroup
 view_labels= ["Back View", "Front View"]
@@ -292,13 +260,13 @@ columns = [TableColumn(field='channel', title='channel'),
 calibTable = DataTable(source=calibCDS,columns=columns,width=600)
 
 def _calibtable_callback():
-    calibCDS.data = {"calibvalue":ch.calibdata[:,0],
-                     "caliblevel":ch.calibdata[:,1],
-                     "calibfactor":ch.calibfactor[:],
+    calibCDS.data = {"calibvalue":control.calib.calibdata[:,0],
+                     "caliblevel":control.calib.calibdata[:,1],
+                     "calibfactor":control.calib.calibfactor[:],
                      "channel":_get_channel_labels(labelSelect.value)}
 def calibtable_callback():
     return doc.add_next_tick_callback(_calibtable_callback)
-ch.on_trait_change(calibtable_callback,"calibdata")
+control.calib.on_trait_change(calibtable_callback,"calibdata")
 
 # save calib button
 savecal = Button(label="save to .xml",button_type="warning",width=200, height=60)
@@ -308,18 +276,18 @@ def save_calib_callback():
         calWidgets['name'].value = fname
     else:
         fname = calWidgets['name'].value
-    ch.save()
+    control.calib.save()
 savecal.on_click(save_calib_callback)
 
 freqSlider = Slider(start=50, end=10000, value=CFREQ, 
                     step=1, title="Frequency",disabled=False)
-#bfFilt.set_widgets(**{'band':freqSlider}) # 
-csm.set_widgets(**{'center_freq':freqSlider})
+control.beamf.source.source.source.set_widgets(**{'band':freqSlider}) # 
+#csm.set_widgets(**{'center_freq':freqSlider})
 
-wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
-                     step=0.0025, title="Time weighting (FAST: 0.125, SLOW: 1.0)",
-                     disabled=False)
-csm.set_widgets(**{'weight_time':wtimeSlider})
+# wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
+#                      step=0.0025, title="Time weighting (FAST: 0.125, SLOW: 1.0)",
+#                      disabled=False)
+# csm.set_widgets(**{'weight_time':wtimeSlider})
 
 micsizeSlider = Slider(start=1, end=50, value=MICSIZE, 
                     step=0.5, title="Circle Size",disabled=False)
@@ -338,14 +306,7 @@ checkbox_micgeom = CheckboxGroup(labels=ch_names,
 amp_bar = amp_fig.vbar(x='channels', width=0.5, bottom=0,top='level', color='colors', source=ChLevelsCDS)
 micgeom_fig.scatter(marker='circle', x='x',y='y', size='sizes', color='colors', source=MicGeomCDS)
 
-# make image
-dx = grid.x_max-grid.x_min
-dy = grid.y_max-grid.y_min
-width = 800
-height = int(width * dy/dx+0.5)
 
-beam_fig = figure(width=width, height=height,
-                   tools = 'pan,wheel_zoom,save,reset')
 if cam_enabled:
     beam_fig.image_rgba(image='image_data',
                         x=XCAM[0], y=XCAM[1], dw=XCAM[2], dh=XCAM[3],
@@ -354,7 +315,6 @@ bfImage = beam_fig.image(image='beamformer_data', x=grid.x_min, y=grid.y_min, dw
                 #global_alpha=0.45,
                 color_mapper=bfColorMapper,
                 source=BeamfCDS)
-beam_fig.toolbar.logo=None
 if cam_enabled: 
     set_alpha_callback(bfImage)
 # color_bar = ColorBar(color_mapper=bfColorMapper,label_standoff=12, 
@@ -364,43 +324,62 @@ if cam_enabled:
 
 
 # =============================================================================
-# # define bokeh widgets which should be disabled when display, recording or 
-# # calibration runs
+# DEFINE CALLBACKS
 # =============================================================================
-disable_obj_disp = [
-        selectPerCallPeriod,select_micgeom,select_all_channels_button,
-        checkbox_micgeom, *calfiltWidgets.values(), *calWidgets.values(),
-        ]
-disable_obj_rec = [
-        ti_msmtime,checkbox_use_current_time,display_toggle, calib_toggle, 
-        beamf_toggle
-        ]
-disable_obj_calib = [
-        msm_toggle
-        ]
-disable_obj_beamf = [
-        freqSlider,wtimeSlider,dynamicSlider,checkbox_autolevel_mode,
-        checkbox_paint_mode
-        ]
-if sinus_enabled: 
-    disable_obj_disp = append_disable_obj(disable_obj_disp)
 
-widgets_disable =   {'msm': disable_obj_rec,
-                     'display': disable_obj_disp,
-                     'calib' : disable_obj_calib,
-                     'beamf' : disable_obj_beamf}
+def update_app():  # only update figure when tab is active
+    if figureTabs.active == 0: 
+        update_amp_bar_plot()
+    if figureTabs.active == 1:
+        update_mic_geom_plot()
+    if figureTabs.active == 2 and control.beamf_toggle.active: 
+        update_beamforming_plot() 
+    if sinus_enabled:
+         update_buffer_bar_plot()
 
-widgets_enable =    {'msm': [],
-                     'display': [calib_toggle,msm_toggle,beamf_toggle],
-                     'calib' : [],
-                     'beamf' : [freqSlider,wtimeSlider,dynamicSlider,
-                                checkbox_autolevel_mode,checkbox_paint_mode]}
+def update_amp_bar_plot():
+    if control.disp.data.data['data'].size > 0:
+        levels = ac.L_p(control.disp.data.data['data'].T)
+        ChLevelsCDS.data['level'] =  levels
+        ChLevelsCDS.data['colors'] = [control.modecolor if val<CLIPVALUE else control.clipcolor for val in levels]
+#                                            'channel': inputSignalGen.inchannels_}
+def update_mic_geom_plot():
+    global MICSIZE, CLIPVALUE
+    if micGeo.num_mics > 0: 
+        p2 = np.array([control.disp.data.data['data'].T[i] for i in sorted(checkbox_micgeom.active)])
+        levels = ac.L_p(p2)
+        MicGeomCDS.data['sizes'] = 20*p2/p2.max() + MICSIZE
+        MicGeomCDS.data['colors'] = [control.modecolor if val<CLIPVALUE else control.clipcolor for val in levels]
+
+bfdata = {'data':np.array([])}
+def get_bf_data(num):
+    for temp in control.beamf.result(num):
+        bfdata['data'] = ac.L_p(temp.reshape(grid.shape)).T
+        if bfview.active == 1:
+            bfdata['data'] = bfdata['data'][::-1]
+        yield
+
+def update_beamforming_plot():
+    if bfdata['data'].size > 0:
+        BeamfCDS.data['beamformer_data'] = [bfdata['data']]
+        if checkbox_autolevel_mode.active:
+            dynamicValue = (dynamicSlider.value[1] - dynamicSlider.value[0])
+            maxValue = bfdata['data'].max()
+            bfColorMapper.high = max(ClipSlider.value+dynamicValue, maxValue)
+            bfColorMapper.low = max(ClipSlider.value, maxValue-dynamicValue)
+
+def update_view(arg):
+    global update_view_callback
+    if arg:
+        update_view_callback = doc.add_periodic_callback(
+            update_app, int(control.update_period.value))
+    if not arg:
+        [thread.join() for thread in control._disp_threads]
+        doc.remove_periodic_callback(update_view_callback)
+control.display_toggle.on_click(update_view)
+
+
 # =============================================================================
-# Callbacks
-# =============================================================================
-# small functions
-def current_time():
-    return datetime.now().isoformat('_').replace(':', '-').replace('.', '_') # for timestamp filename
 
 # non bokeh functions
 def get_active_channels():
@@ -410,12 +389,6 @@ def get_active_channels():
         ch = checkbox_micgeom.active   
     ch.sort() 
     return ch
-
-def get_numsamples():
-    if ti_msmtime.value == '-1' or  ti_msmtime.value == '':
-        return -1
-    else:
-        return int(float(ti_msmtime.value)*inputSignalGen.sample_freq)
 
 # callback functions
 def dynamic_slider_callback(attr, old, new):
@@ -453,192 +426,18 @@ def checkbox_micgeom_callback(attr, old, new):
         MicGeomCDS.data['channels'] = get_active_channels()
 checkbox_micgeom.on_change('active',checkbox_micgeom_callback)    
 
-def checkbox_use_current_time_callback(attr,old,new):
-    if new == []:
-        disable_obj_rec.append(ti_savename)
-        ti_savename.disabled = False
-    elif new == [0]:
-        if ti_savename in disable_obj_rec:
-            disable_obj_rec.remove(ti_savename)
-        ti_savename.disabled = True
-checkbox_use_current_time.on_change('active', checkbox_use_current_time_callback)
 
 def checkbox_autolevel_mode_callback(arg):
     if not arg:
         (bfColorMapper.low, bfColorMapper.high) = dynamicSlider.value
-        
-def savename_callback(attr,old,new):
-    wh5.name = TDPATH / f"{new}.h5"
-ti_savename.on_change("value", savename_callback)
-
-def widget_activation_callback(mode,isSet):
-    for widget in widgets_disable[mode]: widget.disabled = isSet
-    for widget in widgets_enable[mode]: widget.disabled = bool(1-isSet)
-    
-def change_mode(toggle,mode,isSet):    
-    global MODECOLOR, CLIPCOLOR
-    toggle.active = isSet
-    toggle.label = toggle_labels[(mode,isSet)]
-    widget_activation_callback(mode,isSet) 
-    if not mode == "beamf":
-        MODECOLOR, CLIPCOLOR = plot_colors[(mode,isSet)]
-
-def displaytoggle_handler(arg):
-    global periodic_plot_callback, disp_threads # need to be global
-    if arg:
-        logger.info("start display...")
-        inputSignalGen.collectsamples = True
-        dispEvent = Event()
-        dispEventThread = EventThread(
-                post_callback=partial(change_mode,display_toggle,'display',False),
-                pre_callback=partial(change_mode,display_toggle,'display',True),
-                doc = doc,
-                event=dispEvent)
-        amp_thread = SamplesThread(
-                    samplesGen=tioAvg.result(1),
-                    splitterObj= splitter,
-                    splitterDestination=timePow,
-                    event=dispEvent,
-                    buffer_size=BUFFERSIZE)
-        disp_threads = [amp_thread,dispEventThread]
-        [thread.start() for thread in disp_threads]
-        periodic_plot_callback = doc.add_periodic_callback(update_app,
-                                               int(selectPerCallPeriod.value))
-    if not arg:
-        inputSignalGen.collectsamples = False
-        [thread.join() for thread in disp_threads] # wait maximum 2 seconds until finished 
-        doc.remove_periodic_callback(periodic_plot_callback)
-        logger.info("stopped display")
-    
-display_toggle.on_click(displaytoggle_handler)
-    
-def beamftoggle_handler(arg):
-    global bf_thread,beamfEventThread # need to be global
-    if arg:
-        figureTabs.active = 2 # jump to beamformer window
-        beamfEvent = Event()
-        beamfEventThread = EventThread(
-                post_callback=partial(change_mode,beamf_toggle,'beamf',False),
-                pre_callback=partial(change_mode,beamf_toggle,'beamf',True),
-                doc = doc,
-                event=beamfEvent)
-        bf_thread = SamplesThread(
-                    samplesGen=get_bf_data(NBLOCKS),
-                    splitterObj= splitter,
-                    splitterDestination=csm,
-                    buffer_size=1,
-                    event=beamfEvent)        
-        bf_thread.start()
-        beamfEventThread.start()
-        logger.info("start beamforming...")
-    if not arg:
-        bf_thread.breakThread = True
-        bf_thread.join()
-        beamfEventThread.join()
-        logger.info("stopped beamforming")
-
-beamf_toggle.on_click(beamftoggle_handler)
-
-def msmtoggle_handler(arg):
-    global wh5_thread
-    if arg: # toggle button is pressed
-        wh5.numsamples_write = get_numsamples()
-        if checkbox_use_current_time.active == [0]: ti_savename.value = current_time()
-        if sinus_enabled: # gather important informations from SINUS Messtechnik devices
-            wh5.metadata = gather_metadata(devManager,devInputManager,inputSignalGen,iniManager,ch)
-        wh5_event = Event()
-        wh5_consumer = EventThread(
-                post_callback=partial(change_mode,msm_toggle,'msm',False),
-                pre_callback=partial(change_mode,msm_toggle,'msm',True),
-                doc = doc,
-                event=wh5_event)
-        wh5_thread = SamplesThread(
-                samplesGen=wh5.result(BLOCKSIZE),
-                splitterObj=splitter,
-                splitterDestination=wh5,
-                buffer_size=BUFFERSIZE,
-                event = wh5_event)
-        wh5_thread.start()
-        wh5_consumer.start()
-        logger.info("recording...")
-    if not arg:
-        wh5.writeflag = False
-        wh5_thread.join()
-        logger.info("finished recording")
-    
-msm_toggle.on_click(msmtoggle_handler)
-
-def calibtoggle_handler(arg):
-    global calib_thread,calibEventThread # need to be global
-    if arg:
-        calibEvent = Event()
-        calibEventThread = EventThread(
-                post_callback=partial(change_mode,calib_toggle,'calib',False),
-                pre_callback=partial(change_mode,calib_toggle,'calib',True),
-                doc = doc,
-                event=calibEvent)
-        calib_thread = SamplesThread(
-                samplesGen= ch.result(1),
-                splitterObj= splitter,
-                splitterDestination=fo_cal,
-                buffer_size=BUFFERSIZE,
-                event=calibEvent)
-        calib_thread.start()
-        calibEventThread.start()
-        logger.info("calibrating...")
-    if not arg:
-        calib_thread.breakThread = True
-        calib_thread.join()
-        calibEventThread.join()
-        logger.info("finished calibration...")
-
-calib_toggle.on_click(calibtoggle_handler)
+       
 
 # functions
-bfdata = {'data':np.array([])}
-def get_bf_data(num):
-    for temp in bf_used.result(num):
-        bfdata['data'] = ac.L_p(temp.reshape(grid.shape)).T
-        if bfview.active == 1:
-            bfdata['data'] = bfdata['data'][::-1]
-        yield
-
-def update_amp_bar_plot():
-    if tioAvg.data.data['data'].size > 0:
-        levels = ac.L_p(tioAvg.data.data['data'].T)
-        ChLevelsCDS.data['level'] =  levels
-        ChLevelsCDS.data['colors'] = [MODECOLOR if val<CLIPVALUE else CLIPCOLOR for val in levels]
-#                                            'channel': inputSignalGen.inchannels_}
-def update_mic_geom_plot():
-    global MICSIZE, CLIPVALUE
-    if micGeo.num_mics > 0: 
-        levels = np.array([ac.L_p(tioAvg.data.data['data'].T[i]) for i in sorted(checkbox_micgeom.active)]) # only take which are active
-        MicGeomCDS.data['sizes'] = levels/levels.max()*MICSIZE
-        MicGeomCDS.data['colors'] = [MODECOLOR if val<CLIPVALUE else CLIPCOLOR for val in levels]
-
-def update_beamforming_plot():
-    if bfdata['data'].size > 0:
-        BeamfCDS.data['beamformer_data'] = [bfdata['data']]
-        if checkbox_autolevel_mode.active:
-            dynamicValue = (dynamicSlider.value[1] - dynamicSlider.value[0])
-            maxValue = bfdata['data'].max()
-            bfColorMapper.high = max(ClipSlider.value+dynamicValue, maxValue)
-            bfColorMapper.low = max(ClipSlider.value, maxValue-dynamicValue)
 
 if sinus_enabled:
     update_buffer_bar_plot = get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
                   ChLevelsCDS,checkbox_micgeom,amp_fig,
-                  MicGeomCDS,micGeo,logger)
-
-def update_app():  # only update figure when tab is active
-    if figureTabs.active == 0: 
-        update_amp_bar_plot()
-    if figureTabs.active ==1:
-        update_mic_geom_plot()
-    if figureTabs.active == 2 and beamf_toggle.active: 
-        update_beamforming_plot() 
-    if sinus_enabled:
-         update_buffer_bar_plot()
+                  MicGeomCDS,micGeo,log.logger)
 
 
 # =============================================================================
@@ -677,7 +476,8 @@ micgeomTab = Panel(child=column(
     row(column(row(Spacer(width=25),cliplevel,Spacer(width=15),micsizeSlider,Spacer(width=15),geomview),micgeom_fig),Spacer(width=30, height=1000),mgWidgetCol)),title='Microphone Geometry')
 beamformTab = Panel(child=column(
                         row(beam_fig,Spacer(width=30, height=1000),gridCol,Spacer(width=20, height=1000),
-                        column(bfview, freqSlider, wtimeSlider, dynamicSlider,
+                        column(bfview, freqSlider, #wtimeSlider, 
+                        dynamicSlider,
                          ClipSlider,checkbox_autolevel_mode,*camWidgets,
                          width=200)
                          #checkbox_paint_mode
@@ -691,15 +491,11 @@ figureTabs = Tabs(tabs=[
     calibrationTab
     ],width=850)
 
-left_column = column(display_toggle,
-                     ti_savename,checkbox_use_current_time,
-                     ti_msmtime,msm_toggle,calib_toggle,
-                     beamf_toggle,selectPerCallPeriod,
-                     Spacer(width=250, height=10))
+left_column = control.get_widget_column()
 
 if sinus_enabled:
     # Additional Panel when SINUS Messtechnik API is used
-    teds_component = get_teds_component(devInputManager,logger)
+    teds_component = get_teds_component(devInputManager,log.logger)
     sinusTab = Panel(child=teds_component,title='SINUS Messtechnik')
     figureTabs.tabs.append(sinusTab)
     # add buttons

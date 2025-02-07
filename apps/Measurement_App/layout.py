@@ -7,7 +7,7 @@ Created on Wed May 15 17:23:01 2019
 """
 from bokeh.palettes import Spectral11, Viridis256
 from bokeh.models import LogColorMapper
-from bokeh.models.widgets import Toggle, Button, Select,RangeSlider,\
+from bokeh.models.widgets import Button, RangeSlider,\
 CheckboxGroup, Slider
 
 COLOR = Spectral11
@@ -39,15 +39,6 @@ bfColorMapper = LogColorMapper(palette=Viridis256, low=70, high=90,low_color=(1,
 # Buttons
 select_all_channels_button = Button(label="select all channels")
 
-# Toggle Buttons 
-msm_toggle = Toggle(label="START MEASUREMENT", active=False,disabled=True,button_type="danger")
-display_toggle = Toggle(label="start display", active=False,button_type="primary")
-calib_toggle = Toggle(label="start calibration", active=False,disabled=True,button_type="warning")
-beamf_toggle = Toggle(label="start beamforming", active=False,disabled=True,button_type="warning")
-
-# Select Widgets
-selectPerCallPeriod = Select(title="Select Update Period [ms]", value=str(50), options=["25","50","100", "200", "400","800"])
-
 
 # Range Slider 
 dynamicSlider = RangeSlider(start=30, end=110, 
@@ -57,6 +48,5 @@ dynamicSlider = RangeSlider(start=30, end=110,
 ClipSlider = Slider(start=0, end=120, value=0, step=.5, title="Clip Level (only in auto level mode)")
 
 # Checkboxes
-checkbox_use_current_time = CheckboxGroup(labels=["use current time"], active=[0])
 checkbox_paint_mode = CheckboxGroup(labels=["paint mode"], active=[])
 checkbox_autolevel_mode = CheckboxGroup(labels=["auto level mode"], active=[0])

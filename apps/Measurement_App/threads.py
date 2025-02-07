@@ -35,7 +35,8 @@ class SamplesThread(Thread):
         self.breakThread = False
         
     def run(self):
-        if self.event: self.event.clear()
+        if self.event: 
+            self.event.clear()
         self.splitterObj.register_object(self.splitterDestination)
         while not self.breakThread:
             try:
