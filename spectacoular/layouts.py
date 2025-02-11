@@ -80,7 +80,8 @@ class MicGeomComponent(BaseSpectacoular):
             self.figure.x_range.start, self.figure.x_range.end = current_end, current_start
 
     def update_mic_size(self, attr, old, new):
-        self.glyph.size = new
+        if type(self.glyph.size) is not str: # if size is a string, it is a reference to a column in the data source
+            self.glyph.size = new
         self.presenter.cdsource.data['sizes'] = np.ones(self.presenter.source.pos_total.shape[1]) * new
 
     @observe('figure')

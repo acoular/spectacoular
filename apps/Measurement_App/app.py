@@ -7,7 +7,7 @@ from threads import SamplesThread,EventThread
 from layout import toggle_labels, plot_colors
 from pathlib import Path
 
-from bokeh.layouts import column, Spacer
+from bokeh.layouts import column, Spacer, row
 from bokeh.models.widgets import Toggle, TextInput, CheckboxGroup, Select
 BUFFERSIZE = 400
 
@@ -23,7 +23,7 @@ BUFFERSIZE = 400
 #         msm_toggle
 #         ]
 # disable_obj_beamf = [
-#         freqSlider,wtimeSlider,dynamicSlider,checkbox_autolevel_mode,
+#         freqSlider,wtimeSlider,dynamicSlider,autolevel_toggle,
 #         checkbox_paint_mode
 #         ]
 # if sinus_enabled: 
@@ -38,7 +38,7 @@ BUFFERSIZE = 400
 #                      'display': [calib_toggle,msm_toggle,beamf_toggle],
 #                      'calib' : [],
 #                      'beamf' : [freqSlider,wtimeSlider,dynamicSlider,
-#                                 checkbox_autolevel_mode,checkbox_paint_mode]}
+#                                 autolevel_toggle,checkbox_paint_mode]}
 
 
 def current_time():
@@ -49,9 +49,10 @@ class MeasurementControl:
 
     def __init__(self, doc, source, logger, blocksize=1024, steer=None, cfreq=1000):
 
+        toggle_height = 50
         self.modecolor = None
         self.clipcolor = None
-
+        self.blocksize = blocksize
         self.doc = doc
         self.source = source
         self.splitter = ac.SampleSplitter(source = self.source)
@@ -59,14 +60,14 @@ class MeasurementControl:
         self.msm = ac.WriteH5(source=self.splitter)
         self.calib = sp.CalibHelper(source = ac.Average(source=ac.TimePower(source=sp.FiltOctave(source=self.splitter,band=1000.0)),num_per_average=blocksize))
         if steer is not None:
-            self.beamf = sp.TimeOutPresenter(source=ac.Average(source=ac.TimePower(source=sp.FiltOctaveLive(source=ac.BeamformerTime(source=self.splitter, steer=steer), band=cfreq)), num_per_average = blocksize))
+            self.beamf = sp.TimeOutPresenter(source=ac.Average(source=ac.TimePower(source=sp.FiltOctave(source=ac.BeamformerTime(source=ac.MaskedTimeOut(source=self.splitter), steer=steer), band=cfreq)), num_per_average = blocksize))
         self.logger = logger
 
         # create measurement toggle button
-        self.msm_toggle = Toggle(label="START MEASUREMENT", active=False, disabled=True, button_type="danger")
-        self.display_toggle = Toggle(label="start display", active=False,button_type="primary")
-        self.calib_toggle = Toggle(label="start calibration", active=False,disabled=True,button_type="warning")
-        self.beamf_toggle = Toggle(label="start beamforming", active=False,disabled=True,button_type="warning")
+        self.display_toggle = Toggle(label="Start Display", active=False,button_type="primary", sizing_mode="stretch_width", height=toggle_height)
+        self.msm_toggle = Toggle(label="START MEASUREMENT", active=False, disabled=True, button_type="danger", sizing_mode="stretch_width", height=toggle_height)
+        self.calib_toggle = Toggle(label="Start Calibration", active=False,disabled=True,button_type="warning", sizing_mode="stretch_width", height=toggle_height)
+        self.beamf_toggle = Toggle(label="Start Beamforming", active=False,disabled=True,button_type="warning", sizing_mode="stretch_width", height=toggle_height)
 
         # Text Inputs
         self.ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
@@ -77,8 +78,8 @@ class MeasurementControl:
         self.update_period = Select(title="Select Update Period [ms]", value=str(50), options=["25","50","100", "200", "400","800"])
 
         # threads
-        self._periodic_plot_callback = None
-        self.blocksize = blocksize
+        self._disp_threads = []
+        self._view_callback_id = None
 
         # callbacks
         self.msm_toggle.on_click(self.msmtoggle_handler)
@@ -107,18 +108,19 @@ class MeasurementControl:
         else:
             return int(float(self.ti_msmtime.value) * self.msm.sample_freq)
 
-    def _widget_activation_callback(self, mode,isSet):
+    def _change_mode(self, toggle, mode, active):
+        # activate / deactivate toggle button    
+        toggle.active = active
+        toggle.label = toggle_labels[(mode, active)]
+        # activate / deactivate associated widgets
+        disabled = active
         for widget in self.widgets_disable[mode]: 
-            widget.disabled = isSet
+            widget.disabled = disabled
         for widget in self.widgets_enable[mode]: 
-            widget.disabled = bool(1-isSet)
-
-    def _change_mode(self, toggle, mode, isset):    
-        toggle.active = isset
-        toggle.label = toggle_labels[(mode, isset)]
-        self._widget_activation_callback(mode, isset) 
+            widget.disabled = not disabled
+        # change colors
         if not mode == "beamf":
-            self.modecolor, self.clipcolor = plot_colors[(mode, isset)]
+            self.modecolor, self.clipcolor = plot_colors[(mode, active)]
 
     def checkbox_use_current_time_callback(self, attr,old,new):
         if new == []:
@@ -137,25 +139,32 @@ class MeasurementControl:
 
     def displaytoggle_handler(self, arg):
         if arg:
-            self.logger.info("start display...")
             self.source.collectsamples = True
             dispEvent = Event()
             dispEventThread = EventThread(
-                    post_callback=partial(self._change_mode,self.display_toggle,'display',False),
                     pre_callback=partial(self._change_mode,self.display_toggle,'display',True),
+                    post_callback=partial(self._change_mode,self.display_toggle,'display',False),
                     doc = self.doc,
                     event=dispEvent)
             amp_thread = SamplesThread(
-                        samplesGen=self.disp.result(1),
-                        splitterObj= self.splitter,
-                        splitterDestination=self.disp.source.source,
-                        event=dispEvent,
-                        buffer_size=BUFFERSIZE)
-            self._disp_threads = [amp_thread,dispEventThread]
-            [thread.start() for thread in self._disp_threads]
+                        gen=self.disp.result(1),
+                        splitter= self.splitter,
+                        register=self.disp.source.source,
+                        register_args={
+                            'buffer_size':BUFFERSIZE,
+                            'buffer_overflow_treatment': 'none'
+                        },
+                        event=dispEvent
+                    )
+            self._disp_threads = [amp_thread, dispEventThread]
+            for thread in self._disp_threads:
+                thread.start() 
+            self.logger.info("start display...")
         if not arg:
             self.source.collectsamples = False
-            [thread.join() for thread in self._disp_threads]
+            for thread in self._disp_threads:
+                thread.join()
+            self._disp_threads = []
             self.logger.info("stopped display")
 
     def msmtoggle_handler(self, arg):
@@ -172,11 +181,15 @@ class MeasurementControl:
                     doc=self.doc,
                     event=msm_event)
             self._msm_thread = SamplesThread(
-                    samplesGen=self.msm.result(self.blocksize),
-                    splitterObj=self.splitter,
-                    splitterDestination=self.msm,
-                    buffer_size=BUFFERSIZE,
-                    event=msm_event)
+                    gen=self.msm.result(self.blocksize),
+                    splitter=self.splitter,
+                    register=self.msm,
+                    register_args={
+                        'buffer_size': BUFFERSIZE,
+                        'buffer_overflow_treatment': 'error'
+                    },
+                    event=msm_event
+                )
             self._msm_thread.start()
             msm_consumer.start()
             self.logger.info("recording...")
@@ -194,10 +207,13 @@ class MeasurementControl:
                     doc = self.doc,
                     event=self._calibEvent)
             self._calib_thread = SamplesThread(
-                    samplesGen= self.calib.result(1),
-                    splitterObj= self.splitter,
-                    splitterDestination=self.calib.source.source.source,
-                    buffer_size=BUFFERSIZE,
+                    gen= self.calib.result(1),
+                    splitter= self.splitter,
+                    register=self.calib.source.source.source,
+                    register_args={
+                        'buffer_size':BUFFERSIZE,
+                        'buffer_overflow_treatment':'none'
+                    },
                     event=self._calibEvent)
             self._calib_thread.start()
             self._calibEventThread.start()
@@ -210,18 +226,20 @@ class MeasurementControl:
     
     def beamftoggle_handler(self, arg):
         if arg:
-            # figureTabs.active = 2 # jump to beamformer window (unify windows?)
             self._beamfEvent = Event()
             self._beamfEventThread = EventThread(
-                    post_callback=partial(self._change_mode,self.beamf_toggle,'beamf',False),
                     pre_callback=partial(self._change_mode,self.beamf_toggle,'beamf',True),
+                    post_callback=partial(self._change_mode,self.beamf_toggle,'beamf',False),
                     doc = self.doc,
                     event=self._beamfEvent)
             self._bf_thread = SamplesThread(
-                        samplesGen=self.beamf.result(1),
-                        splitterObj= self.splitter,
-                        splitterDestination=self.beamf.source.source.source,
-                        buffer_size=1,
+                        gen=self.beamf.result(1),
+                        splitter= self.splitter,
+                        register=self.beamf.source.source.source.source.source,
+                        register_args={
+                            'buffer_size':1,
+                            'buffer_overflow_treatment':'none'
+                        },
                         event=self._beamfEvent)        
             self._bf_thread.start()
             self._beamfEventThread.start()
@@ -232,14 +250,33 @@ class MeasurementControl:
             self._beamfEventThread.join()
             self.logger.info("stopped beamforming")
 
-    def get_widget_column(self):
-        return column([self.display_toggle,
+    def get_widgets(self):
+        return row(column([
+                Spacer(height=100),
                 self.ti_savename,
                 self.current_time_checkbox,  
                 self.ti_msmtime,
-                self.msm_toggle, 
+                self.display_toggle,
                 self.calib_toggle, 
                 self.beamf_toggle, 
+                self.msm_toggle, 
                 self.update_period,
-                Spacer(width=250, height=10)
-                ])
+                #Spacer(width=250, height=10)
+                ], sizing_mode="inherit", width=200), Spacer(width=50))
+
+
+
+# class Calibration:
+
+#     def get_widgets(self):
+#         calCol = column(Spacer(height=15),
+#                         row(savecal,calWidgets['name']),
+#                         Spacer(height=15),
+#                         row(calibTable,
+#                         column(
+#                         caldiv1,
+#                         *calfiltWidgets.values(),
+#                         caldiv2,
+#                         calWidgets['magnitude'],
+#                         calWidgets['delta'],
+#                         width=150)))        
