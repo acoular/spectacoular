@@ -34,12 +34,11 @@ except:
     camWidgets = []
 
 # local imports
-from app import MeasurementControl, current_time
+from app import MeasurementControl, Calibration
 from bokeh.layouts import column, row
 from bokeh.models import (
     ColumnDataSource,
     CustomJS,
-    Div,
     LogColorMapper,
     Spacer,
     Tabs,
@@ -48,7 +47,6 @@ from bokeh.models import TabPanel as Panel
 from bokeh.models.glyphs import Scatter
 from bokeh.models.widgets import (
     Button,
-    DataTable,
     NumberEditor,
     NumberFormatter,
     RangeSlider,
@@ -89,13 +87,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 DEVICE = args.device
-SYNCORDER = args.syncorder
 MGEOMPATH = Path(__file__).resolve().parent / "micgeom"
 MICSIZE = 10
-BANDWIDTH = 3
-CFREQ = 4000 
-NBLOCKS = 5 # number of blocks after which to do beamforming
-WTIME = 0.025
 XCAM = (-0.5,-0.375,1.,0.75)
 
 
@@ -107,13 +100,11 @@ sinus_enabled=False
 if DEVICE == 'sounddevice':
     import sounddevice as sd
     inputSignalGen = get_interface(DEVICE)
-    ch_names = [str(_) for _ in range(inputSignalGen.num_channels)]
     mics = sp.MicGeom()
     grid = sp.RectGrid()
 elif DEVICE == 'phantom':
     mics = sp.MicGeom(file = MGEOMPATH / 'array_64.xml')
     inputSignalGen = get_interface(DEVICE)
-    ch_names = [str(_) for _ in range(inputSignalGen.num_channels)]
     grid = sp.RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
 else: # otherwise it must be sinus
     try:
@@ -129,8 +120,7 @@ else: # otherwise it must be sinus
         get_teds_component,
     )
     mics = sp.MicGeom(file = MGEOMPATH / 'tub_vogel64.xml')
-    iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,SYNCORDER)
-    ch_names = inputSignalGen.inchannels_
+    iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,args.syncorder)
     grid = sp.RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
 num_channels = inputSignalGen.num_channels
 
@@ -146,6 +136,8 @@ control = MeasurementControl(
     blocksize=args.blocksize,
     steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
 )
+
+calibration = Calibration(doc=doc, control=control)
 
 mic_presenter = sp.MicGeomPresenter(source=mics, auto_update=True)
 mic_presenter.update(**{
@@ -183,7 +175,6 @@ mics_beamf_fig = figure(
 
 amp_cds = ColumnDataSource({'channels':list(np.arange(1,num_channels+1)), 'level':np.zeros(num_channels),'colors':[COLOR[1]]*num_channels} )
 beamf_cds = ColumnDataSource({'level':[]})
-calib_cds = ColumnDataSource({"calibvalue":[],"caliblevel":[],"calibfactor":[], "channel":[]})
 grid_data = ColumnDataSource(data={# x and y are the centers of the rectangle!
     'x': [(grid.x_max + grid.x_min)/2], 'y': [(grid.y_max + grid.y_min)/2],
     'width': [grid.x_max-grid.x_min], 'height': [grid.y_max-grid.y_min]
@@ -240,10 +231,6 @@ zSlider = Slider(start=0.01, end=10.0, value=grid.z, step=.02, title="z",disable
 grid.set_widgets(**{'z':zSlider})
 rgWidgets['z'] = zSlider # replace textfield with slider
 
-# set up widgets for Calibration
-calWidgets = control.calib.get_widgets()
-calfiltWidgets = control.calib.source.source.source.get_widgets()
-
 #Others:
 cliplevel = NumericInput(value=120, title="Clip Level/dB",width=100)
 
@@ -271,53 +258,13 @@ def update_channel_labels(attr,old,new):
     labels = _get_channel_labels(new)
     amp_fig.xaxis.ticker = ticker
     amp_fig.xaxis.major_label_overrides = {str(ticker[i]): label for i,label in enumerate(labels)}
-    calib_cds.data['channel'] = labels
+    # calib_cds.data['channel'] = labels
 labelSelect.on_change('value',update_channel_labels)
         
 
-# DataTable
-columns = [TableColumn(field='channel', title='channel'),
-            TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
-           TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor()),
-           TableColumn(field='calibfactor', title='calibfactor', editor=NumberEditor()),]
-calibTable = DataTable(source=calib_cds,columns=columns,width=600)
-
-def _calibtable_callback():
-    calib_cds.data = {"calibvalue":control.calib.calibdata[:,0],
-                     "caliblevel":control.calib.calibdata[:,1],
-                     "calibfactor":control.calib.calibfactor[:],
-                     "channel":_get_channel_labels(labelSelect.value)}
-def calibtable_callback():
-    return doc.add_next_tick_callback(_calibtable_callback)
-control.calib.on_trait_change(calibtable_callback,"calibdata")
-
-# save calib button
-savecal = Button(label="save to .xml",button_type="warning",width=200, height=60)
-def save_calib_callback():
-    if not calWidgets['name'].value:
-        fname = Path("Measurement_App") / "metadata" / f"calibdata_{current_time()}.xml"
-        calWidgets['name'].value = fname
-    else:
-        fname = calWidgets['name'].value
-    control.calib.save()
-savecal.on_click(save_calib_callback)
-
-freqSlider = Slider(start=50, end=10000, value=CFREQ, 
+freqSlider = Slider(start=50, end=10000, value=4000, 
                     step=1, title="Frequency",disabled=False)
 control.beamf.source.source.source.set_widgets(**{'band':freqSlider}) # 
-#csm.set_widgets(**{'center_freq':freqSlider})
-
-# wtimeSlider = Slider(start=0.0, end=0.25, value=WTIME, format="0[.]000",
-#                      step=0.0025, title="Time weighting (FAST: 0.125, SLOW: 1.0)",
-#                      disabled=False)
-# csm.set_widgets(**{'weight_time':wtimeSlider})
-
-
-# color_bar = ColorBar(color_mapper=beamf_color_mapper,label_standoff=12, 
-#                      background_fill_color = '#f6f6f6',
-#                      border_line_color=None, location=(0,0))
-#mics_beamf_fig.add_layout(color_bar, 'right')
-
 
 def update_grid(attr,old,new):
     """update grid data source when grid settings change"""
@@ -459,22 +406,6 @@ if sinus_enabled:
 #  Set Up Bokeh Document Layout
 # =============================================================================
 
-# Calibration Panel
-calWidgets['name'].width=500
-caldiv1 = Div(text=r"""<b>Calibration Filter Settings<b\>""")
-caldiv2 = Div(text=r"""<b>Basic Calibration Settings<b\>""")
-calCol = column(Spacer(height=15),
-                row(labelSelect,savecal,calWidgets['name']),
-                Spacer(height=15),
-                row(calibTable,
-                column(
-                caldiv1,
-                *calfiltWidgets.values(),
-                caldiv2,
-                calWidgets['magnitude'],
-                calWidgets['delta'],
-                width=150)))
-
 mgWidgetCol = column(
                 mics_widgets['file'],
                 mics_widgets['num_mics'],
@@ -496,17 +427,16 @@ micgeomTab = Panel(child=column(
 beamformTab = Panel(child=column(
                         row(Spacer(width=30, height=1000),gridCol,Spacer(width=20, height=1000),
                         column(
-                            freqSlider, dynamicSlider, #wtimeSlider, 
+                            freqSlider, dynamicSlider, 
                             ClipSlider,autolevel_toggle,*camWidgets,
                          width=200)
                          #checkbox_paint_mode
                          ),
                         ),title='Beamforming')
-calibrationTab = Panel(child=calCol, title="Calibration")
 figureTabs = Tabs(tabs=[
     amplitudesTab,
     micgeomTab,
-    calibrationTab
+    calibration.get_tab(),
     ],width=850)
 
 left_column = control.get_widgets()

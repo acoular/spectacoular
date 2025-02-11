@@ -4,13 +4,16 @@ from threading import Event
 from functools import partial
 from datetime import datetime
 from threads import SamplesThread,EventThread
-from layout import toggle_labels, plot_colors
+from layout import toggle_labels, plot_colors, button_height
 from pathlib import Path
+import numpy as np
 
+from bokeh.models import TabPanel as Panel
 from bokeh.layouts import column, Spacer, row
-from bokeh.models.widgets import Toggle, TextInput, CheckboxGroup, Select
-BUFFERSIZE = 400
+from bokeh.models.widgets import Toggle, TextInput, CheckboxGroup, Select, Button, Div,\
+    DataTable, TableColumn, NumberEditor
 
+BUFFERSIZE = 400
 # disable_obj_disp = [
 #         selectPerCallPeriod,select_micgeom,select_all_channels_button,
 #         checkbox_micgeom, *calfiltWidgets.values(), *calWidgets.values(),
@@ -48,8 +51,6 @@ def current_time():
 class MeasurementControl:
 
     def __init__(self, doc, source, logger, blocksize=1024, steer=None, cfreq=1000):
-
-        toggle_height = 50
         self.modecolor = None
         self.clipcolor = None
         self.blocksize = blocksize
@@ -64,10 +65,10 @@ class MeasurementControl:
         self.logger = logger
 
         # create measurement toggle button
-        self.display_toggle = Toggle(label="Start Display", active=False,button_type="primary", sizing_mode="stretch_width", height=toggle_height)
-        self.msm_toggle = Toggle(label="START MEASUREMENT", active=False, disabled=True, button_type="danger", sizing_mode="stretch_width", height=toggle_height)
-        self.calib_toggle = Toggle(label="Start Calibration", active=False,disabled=True,button_type="warning", sizing_mode="stretch_width", height=toggle_height)
-        self.beamf_toggle = Toggle(label="Start Beamforming", active=False,disabled=True,button_type="warning", sizing_mode="stretch_width", height=toggle_height)
+        self.display_toggle = Toggle(label="Start Display", active=False,button_type="primary", sizing_mode="stretch_width", height=button_height)
+        self.msm_toggle = Toggle(label="START MEASUREMENT", active=False, disabled=True, button_type="danger", sizing_mode="stretch_width", height=button_height)
+        self.calib_toggle = Toggle(label="Start Calibration", active=False,disabled=True,button_type="warning", sizing_mode="stretch_width", height=button_height)
+        self.beamf_toggle = Toggle(label="Start Beamforming", active=False,disabled=True,button_type="warning", sizing_mode="stretch_width", height=button_height)
 
         # Text Inputs
         self.ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
@@ -266,17 +267,59 @@ class MeasurementControl:
 
 
 
-# class Calibration:
+class Calibration:
 
-#     def get_widgets(self):
-#         calCol = column(Spacer(height=15),
-#                         row(savecal,calWidgets['name']),
-#                         Spacer(height=15),
-#                         row(calibTable,
-#                         column(
-#                         caldiv1,
-#                         *calfiltWidgets.values(),
-#                         caldiv2,
-#                         calWidgets['magnitude'],
-#                         calWidgets['delta'],
-#                         width=150)))        
+    def __init__(self, doc, control):
+        self.doc = doc
+        self.control = control
+        self.cal_widgets = control.calib.get_widgets()
+        self.cal_widgets['file'].width=500
+        self.cal_filter_widgets = self.control.calib.source.source.source.get_widgets()
+        # save button
+        self.savecal = Button(label="save to .xml",button_type="warning", height=button_height)
+        self.savecal.on_click(self._save_calib_callback)
+        # calibration table
+        columns = [
+            TableColumn(field='channel', title='channel'),
+            TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
+            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor()),
+            TableColumn(field='calibfactor', title='calibfactor', editor=NumberEditor()),]
+        self.cal_table = DataTable(columns=columns)
+        self._calibtable_callback()
+        self.control.calib.on_trait_change(self.calibtable_callback,"calibdata")
+
+    def _calibtable_callback(self):
+        cal_fac = self.control.calib.calibfactor
+        if cal_fac.size == 0:
+            cal_fac = np.ones(self.control.calib.calibdata.shape[0])
+        self.cal_table.source.data = {"calibvalue":self.control.calib.calibdata[:,0],
+                        "caliblevel":self.control.calib.calibdata[:,1],
+                        "calibfactor":cal_fac,
+                        "channel": np.arange(1, self.control.calib.calibdata.shape[0]+1)}
+
+    def calibtable_callback(self):
+        return self.doc.add_next_tick_callback(self._calibtable_callback)
+
+    def _save_calib_callback(self):
+        if not self.cal_widgets['file'].value:
+            fname = Path("Measurement_App") / "metadata" / f"calibdata_{current_time()}.xml"
+            self.cal_widgets['file'].value = fname
+        else:
+            fname = self.cal_widgets['file'].value
+        self.control.calib.save()
+
+    def get_widgets(self):
+        return column(Spacer(height=15),
+                        row(self.savecal,self.cal_widgets['file']),
+                        Spacer(height=15),
+                        row(self.cal_table,
+                        column(
+                        Div(text=r"""<b>Calibration Filter Settings<b\>"""),
+                        *self.cal_filter_widgets.values(),
+                        Div(text=r"""<b>Basic Calibration Settings<b\>"""),
+                        self.cal_widgets['magnitude'],
+                        self.cal_widgets['delta'],
+                        width=150)))        
+
+    def get_tab(self):
+        return Panel(child=self.get_widgets(), title="Calibration")

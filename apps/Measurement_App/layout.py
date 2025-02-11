@@ -13,6 +13,8 @@ COLOR = Spectral11
 MODE_COLORS = {'display':COLOR[1],'calib':COLOR[5],'msm':COLOR[8]}
 CLIP_COLORS = {'display':COLOR[8],'calib':COLOR[8],'msm':COLOR[8]}
 
+button_height = 50
+
 # status Definitions
 toggle_labels =     {('msm',False): "START MEASUREMENT",
                     ('msm',True): "STOP MEASUREMENT",

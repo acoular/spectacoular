@@ -13,9 +13,9 @@ classes might move to Acoular module in the future.
     TimeSamplesPlayback
 """
 import acoular as ac
+from acoular.deprecation import deprecated_alias
 
 import numpy as np
-from scipy.signal import butter
 from datetime import datetime
 from time import time, sleep
 from bokeh.models.widgets import TextInput, DataTable, TableColumn, \
@@ -143,10 +143,7 @@ class TimeOutPresenter(ac.TimeOut, BasePresenter):
             yield temp
 
 
-
-columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
-           TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
-
+@deprecated_alias({'name': 'file'})
 class CalibHelper(ac.TimeOut, BaseSpectacoular):
     """
     Class for calibration of individual source channels 
@@ -157,8 +154,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     
     #: Name of the file to be saved. If none is given, the name will be
     #: automatically generated from a time stamp.
-    name = File(filter=['*.xml'], 
-        desc="name of data file")    
+    file = File(filter=['*.xml'], desc="name of data file")
 
     #: calibration level (e. g. dB or Pa) of calibration device 
     magnitude = Float(114,
@@ -173,7 +169,6 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     #: array of floats with dimension (num_channels)
     calibfactor = CArray(dtype=float,
        desc="determined calibration factor")
-
 
     #: max elements/averaged blocks to calculate calibration value. 
     buffer_size = Int(100,
@@ -191,17 +186,15 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     # internal identifier
     digest = Property( depends_on = ['source.digest', '__class__'])
 
-    trait_widget_mapper = {'name': TextInput,
+    trait_widget_mapper = {'file': TextInput,
                            'magnitude': NumericInput,
-                            'calibdata' : DataTable,
                            'buffer_size' : NumericInput,
                            'calibstd': NumericInput,
                            'delta': NumericInput,
                        }
 
-    trait_widget_args = {'name': {'disabled': False},
+    trait_widget_args = {'file': {'disabled': False},
                          'magnitude': {'disabled': False, 'mode': 'float'},
-                           'calibdata':  {'editable': True, 'columns': columns},
                          'buffer_size':  {'disabled': False, 'mode': 'int'},
                          'calibstd':  {'disabled': False, 'mode': 'float'},
                          'delta': {'disabled': False, 'mode': 'float'},
