@@ -11,7 +11,8 @@ class LogWidget:
         self.loglength = loglength
 
         # Create Bokeh TextAreaInput widget for log display
-        self.log_text = TextAreaInput(title="App Log", value="", width=500, height=800, disabled=True, background=background)
+        self.log_text = TextAreaInput(title="App Log", value="", disabled=True, background=background,
+         sizing_mode="stretch_height", width=300)
 
         # Create logger
         self.logger = logging.getLogger(__name__)

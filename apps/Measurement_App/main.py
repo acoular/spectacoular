@@ -17,11 +17,39 @@ if sync order of pci cards should be specified use
 bokeh serve --show Measurement_App --args --device=typhoon --syncorder SerialNb1 SerialNb2 ...
 """
 import argparse
-import sys
 from pathlib import Path
 
 import acoular as ac
 import numpy as np
+from app import Calibration, _get_channel_labels
+from bokeh.layouts import column, layout, row
+from bokeh.models import (
+    ColumnDataSource,
+    FactorRange,
+    LogColorMapper,
+    Spacer,
+    Tabs,
+)
+from bokeh.models import TabPanel as Panel
+from bokeh.models.glyphs import Scatter
+from bokeh.models.widgets import (
+    Button,
+    Div,
+    MultiSelect,
+    NumberEditor,
+    NumberFormatter,
+    Select,
+    Slider,
+    TableColumn,
+    Toggle,
+)
+
+# bokeh imports
+from bokeh.models.widgets.inputs import NumericInput
+from bokeh.palettes import Viridis256
+from bokeh.plotting import curdoc, figure
+from layout import COLOR
+from log import LogWidget
 
 import spectacoular as sp
 
@@ -33,46 +61,13 @@ except:
     cam_enabled=False
     camWidgets = []
 
-# local imports
-from app import MeasurementControl, Calibration
-from bokeh.layouts import column, row
-from bokeh.models import (
-    ColumnDataSource,
-    CustomJS,
-    LogColorMapper,
-    Spacer,
-    Tabs,
-)
-from bokeh.models import TabPanel as Panel
-from bokeh.models.glyphs import Scatter
-from bokeh.models.widgets import (
-    Button,
-    NumberEditor,
-    NumberFormatter,
-    RangeSlider,
-    Select,
-    Slider,
-    TableColumn,
-)
-
-# bokeh imports
-from bokeh.models.widgets.inputs import NumericInput
-from bokeh.palettes import Viridis256
-from bokeh.plotting import curdoc, figure
-from interfaces import get_interface
-from layout import (
-    COLOR,
-    ClipSlider,
-    autolevel_toggle,
-)
-from log import LogWidget
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
   '--device',
   type=str,
   default="phantom",
-  choices=["sounddevice","tornado","typhoon","phantom","apollo"],
+  choices=["phantom","sounddevice","tornado","typhoon","apollo"],
   help='Connected device.')
 parser.add_argument(
   '--blocksize',
@@ -80,100 +75,113 @@ parser.add_argument(
   default=4096,
   help='Size of data blocks to be processed')
 parser.add_argument(
-  '--syncorder',
-  default=[],
-  nargs='+', # accepts more than one argument   
-  help='Synchronization order of PCI cards')
+    '--td_dir',
+    type=str,
+    default=None,
+    help='Directory for saving HDF5 files')
+parser.add_argument(
+    '--mics_dir',
+    type=str,
+    default=Path(__file__).resolve().parent / "micgeom",
+    help='Directory containing microphone geometry files')
+parser.add_argument(
+    '--config_dir',
+    default=Path(__file__).resolve().parent / "config_files",
+    help='Directory containing config files for setting up SINUS Messtechnik Devices'
+)
+parser.add_argument(
+    '--config_name',
+    default=None,
+    help='Name of config file for setting up SINUS Messtechnik Devices'
+)
+parser.add_argument(
+  '--inventory_no',
+  type=str,
+  default='TA181',
+  help='Inventory number of the Apollo device. (Not required for other devices)')
 
 args = parser.parse_args()
+
 DEVICE = args.device
-MGEOMPATH = Path(__file__).resolve().parent / "micgeom"
-MICSIZE = 10
+MICSIZE = 20
 XCAM = (-0.5,-0.375,1.,0.75)
 
-
-
-# =============================================================================
-# load device
-# =============================================================================
-sinus_enabled=False
-if DEVICE == 'sounddevice':
-    import sounddevice as sd
-    inputSignalGen = get_interface(DEVICE)
-    mics = sp.MicGeom()
-    grid = sp.RectGrid()
-elif DEVICE == 'phantom':
-    mics = sp.MicGeom(file = MGEOMPATH / 'array_64.xml')
-    inputSignalGen = get_interface(DEVICE)
-    grid = sp.RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
-else: # otherwise it must be sinus
-    try:
-        import sinus
-        sinus_enabled=True
-    except ImportError:
-        raise NotImplementedError("sinus module cannot be imported!")
-    from sinus_dev import (
-        append_left_column,
-        close_device_callback,
-        get_callbacks,
-        get_interface,
-        get_teds_component,
-    )
-    mics = sp.MicGeom(file = MGEOMPATH / 'tub_vogel64.xml')
-    iniManager, devManager, devInputManager,inputSignalGen = get_interface(DEVICE,args.syncorder)
-    grid = sp.RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
-num_channels = inputSignalGen.num_channels
-
+# set up logging
 doc = curdoc()
 log = LogWidget(doc=doc)
 if cam_enabled: 
     set_camera_callback(doc)
 
-control = MeasurementControl(
-    doc=doc,
-    source=inputSignalGen,
-    logger=log.logger,
-    blocksize=args.blocksize,
-    steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
-)
+# directory containing microphone geometry files
+mics_dir = args.mics_dir
+log.logger.debug(f"mics_dir: {mics_dir}")
 
-calibration = Calibration(doc=doc, control=control)
+# set up directory for saving td files
+td = args.td_dir
+if td is None:
+    td = Path(__file__).resolve().parent / "td"
+    if not td.exists():
+        td.mkdir()
+ac.config.td_dir = td
+log.logger.debug(f"td_dir: {td}")
 
-mic_presenter = sp.MicGeomPresenter(source=mics, auto_update=True)
-mic_presenter.update(**{
-     'sizes':np.array([MICSIZE]*mics.num_mics),'colors':[COLOR[1]]*mics.num_mics})
+# =============================================================================
+# load device
+# =============================================================================
+use_sinus = False
+if DEVICE == 'sounddevice':
+    import sounddevice as sd
+    from app import SoundDeviceControl
+    mics = sp.MicGeom()
+    grid = sp.RectGrid()
+    control = SoundDeviceControl(
+        doc=doc, logger=log.logger, blocksize=args.blocksize,
+        steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
+    )    
+elif DEVICE == 'phantom':
+    from app import PhantomControl
+    mics = sp.MicGeom(file = mics_dir / 'array_64.xml')
+    grid = sp.RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
+    control = PhantomControl(
+        doc=doc, logger=log.logger, blocksize=args.blocksize,
+        steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
+    )   
+else: 
+    from app import SinusControl
+    mics = sp.MicGeom(file = mics_dir / 'tub_vogel64.xml')
+    grid = sp.RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
+    control = SinusControl(
+        doc=doc, logger=log.logger, blocksize=args.blocksize,
+        steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
+        device=DEVICE, config_dir=args.config_dir, config_name=args.config_name, inventory_no=args.inventory_no)
+    use_sinus = True
+
 
 # =============================================================================
 # DEFINE FIGURES
 # =============================================================================
 
-fig_height = 750
-fig_width = 1000
-
 # Amplitude Figure
 amp_fig = figure(
     title='SPL/dB',tooltips=[("Lp/dB", "@level"), ("Channel", "@channels"),], tools="",
-    y_range=(105,110), width=1500, height=fig_height)
+    x_range=FactorRange(*_get_channel_labels(control.source)), 
+    y_range=(0,120), width=1400, height=750)
 amp_fig.xgrid.visible = False
 amp_fig.xaxis.major_label_orientation = np.pi/2
 amp_fig.toolbar.logo=None
 
 # MicGeom / Sourcemap Figure
-dx = grid.x_max-grid.x_min
-dy = grid.y_max-grid.y_min
-height = int(fig_width * dy/dx+0.5)
 mics_beamf_fig = figure(
-        title='Array Geometry', tooltips=[("Lp/dB", "@level"), ("Channel Index", "@channels"),("(x,y)", "(@x, @y)"),],
+        tooltips=[("Lp/dB", "@level"), ("Channel Index", "@channels"),("(x,y)", "(@x, @y)"),],
         tools = 'pan,wheel_zoom,reset',
-         match_aspect=True, aspect_ratio=1, frame_width=fig_width, frame_height=height,
-        **{'width':fig_width,  'height':height}
+         match_aspect=True, aspect_ratio=1, width=1000,
         )
 
 # =============================================================================
 # DEFINE COLUMN DATA SOURCES
 # =============================================================================
 
-amp_cds = ColumnDataSource({'channels':list(np.arange(1,num_channels+1)), 'level':np.zeros(num_channels),'colors':[COLOR[1]]*num_channels} )
+amp_cds = ColumnDataSource({'channels':[], 'level':[],'colors':[]})#[COLOR[1]]*num_channels} )
 beamf_cds = ColumnDataSource({'level':[]})
 grid_data = ColumnDataSource(data={# x and y are the centers of the rectangle!
     'x': [(grid.x_max + grid.x_min)/2], 'y': [(grid.y_max + grid.y_min)/2],
@@ -184,25 +192,34 @@ grid_data = ColumnDataSource(data={# x and y are the centers of the rectangle!
 # DEFINE GLYPHS
 # =============================================================================
 
+mic_presenter = sp.MicGeomPresenter(source=mics, auto_update=True)
+calibration = Calibration(doc=doc, control=control)
+
 # Amplitude Bar Plot
-amp_bar = amp_fig.vbar(x='channels', width=0.5, bottom=0,top='level', color='colors', source=amp_cds)
+amp_bar = amp_fig.vbar(
+    x='channels', width=0.5, bottom=0,top='level', color='colors', source=amp_cds)
 
 if cam_enabled:
     mics_beamf_fig.image_rgba(image='image_data',
                         x=XCAM[0], y=XCAM[1], dw=XCAM[2], dh=XCAM[3],
                         source=cameraCDS)
 beamf_color_mapper = LogColorMapper(palette=Viridis256, low=70, high=90,low_color=(1,1,1,0))
-bfImage = mics_beamf_fig.image(image='level', x=grid.x_min, y=grid.y_min, dw=dx, dh=dy,
+bfImage = mics_beamf_fig.image(image='level', x=grid.x_min, y=grid.y_min, 
+        dw=grid.x_max-grid.x_min, dh=grid.y_max-grid.y_min,
                 color_mapper=beamf_color_mapper,
                 source=beamf_cds)
 if cam_enabled: 
     set_alpha_callback(bfImage)
 
 # Microphone Geometry Plot
-mic_layout = sp.layouts.MicGeomComponent(
-    glyph=Scatter(marker='circle_cross', x='xi', y='yi', fill_color='colors', size='sizes', fill_alpha=0.2),
+mic_layout = sp.layouts.MicGeomComponent(mic_alpha=0.4,
+    glyph=Scatter(marker='circle_cross', x='x', y='y', fill_color='colors', size='sizes', 
+    fill_alpha='alpha', line_alpha='alpha'),
     figure=mics_beamf_fig, presenter=mic_presenter, allow_point_draw=True,
     )
+mic_presenter.update(**{
+     'sizes':np.array([MICSIZE]*mics.mpos_tot.shape[1]),'colors':[COLOR[1]]*mics.mpos_tot.shape[1]})
+
 mics_beamf_fig.rect( # draw rect grid bounds (dotted)
     alpha=1.,color='black',fill_alpha=0,line_width=2, source=grid_data)#line_color="#213447")
 
@@ -211,109 +228,81 @@ mics_beamf_fig.rect( # draw rect grid bounds (dotted)
 # DEFINE WIDGETS
 # =============================================================================
 
+
 # set up widgets for Microphone Geometry
 editor = NumberEditor()
 formatter = NumberFormatter(format="0.00")
 mpos_columns = [TableColumn(field='x', title='x/m', editor=editor, formatter=formatter),
-                TableColumn(field='y', title='x/m', editor=editor, formatter=formatter),
-                TableColumn(field='z', title='x/m', editor=editor, formatter=formatter)]
+                TableColumn(field='y', title='y/m', editor=editor, formatter=formatter),
+                TableColumn(field='z', title='z/m', editor=editor, formatter=formatter)]
 mic_layout.mics_trait_widget_args.update(
-    {'pos_total':  {'height' : 280, 'editable':True, 'transposed':True, 'columns':mpos_columns,}})
+    {'pos_total':  {'height': 200, 'editable':True, 'transposed':True, 'columns':mpos_columns,}})
 mics_widgets = mic_layout.widgets
+# disable widgets on display tab
+[control.widgets_disable['display'].append(w) for w in mics_widgets.values()]
+all_mics_valid = Button(label="All Valid", button_type="success",sizing_mode="stretch_width")
+def _all_mics_valid(event): 
+    mics.invalid_channels = []
+all_mics_valid.on_click(_all_mics_valid)
 
 # set up widgets for Beamforming
-dynamicSlider = RangeSlider(start=30, end=110, 
-                            value=(beamf_color_mapper.low,beamf_color_mapper.high), 
-                            step=.5, title="Level",disabled=True)
+invalid_input_channels = MultiSelect(
+    title="Not-Array Channels", height=150, 
+    description="Select which input channels should not be used for beamforming",
+    value=[], options=_get_channel_labels(control.source, 'Index'))
+control.beamf.source.source.source.source.source.set_widgets(**{'invalid_channels':invalid_input_channels})
+auto_level_toggle = Toggle(label="Auto Level", button_type="success",active=True)
+dynamic_range = NumericInput(value=20, title="Dynamic Range/dB")
+bf_max_level = Slider(start=0, end=140, value=100, step=1, title="Peak Level/dB")
 
 rgWidgets = grid.get_widgets()
 zSlider = Slider(start=0.01, end=10.0, value=grid.z, step=.02, title="z",disabled=False)
 grid.set_widgets(**{'z':zSlider})
 rgWidgets['z'] = zSlider # replace textfield with slider
-
-#Others:
-cliplevel = NumericInput(value=120, title="Clip Level/dB",width=100)
-
-# Select
-if sinus_enabled:
-    label_options = ["Index","Number","Physical"]
-else:
-    label_options = ["Index","Number"]
-
-labelSelect = Select(title="Select Channel Labeling:", value="Index",
-                                options=label_options,
-                                width=200)
-
-def _get_channel_labels(ltype):
-    if ltype == 'Index':
-        labels = [str(i) for i in range(inputSignalGen.num_channels)]
-    elif ltype == 'Number':
-        labels = [str(i+1) for i in range(inputSignalGen.num_channels)]
-    elif ltype == 'Physical':
-        labels = [inputSignalGen.inchannels_[i] for i in range(inputSignalGen.num_channels)]
-    return labels
-
-def update_channel_labels(attr,old,new):
-    ticker = list(range(1,inputSignalGen.num_channels+1))
-    labels = _get_channel_labels(new)
-    amp_fig.xaxis.ticker = ticker
-    amp_fig.xaxis.major_label_overrides = {str(ticker[i]): label for i,label in enumerate(labels)}
-    # calib_cds.data['channel'] = labels
-labelSelect.on_change('value',update_channel_labels)
-        
-
-freqSlider = Slider(start=50, end=10000, value=4000, 
-                    step=1, title="Frequency",disabled=False)
+freqSlider = Slider(start=50, end=10000, value=4000, step=1, title="Frequency",disabled=False)
 control.beamf.source.source.source.set_widgets(**{'band':freqSlider}) # 
+all_bf_valid = Button(label="All Valid", button_type="success",sizing_mode="stretch_width")
+def _all_valid(event):
+    control.beamf.source.source.source.source.source.invalid_channels = []
+all_bf_valid.on_click(_all_valid)
 
-def update_grid(attr,old,new):
-    """update grid data source when grid settings change"""
-    grid_data.data = {
-    # x and y are the centers of the rectangle! 
-    'x': [(grid.x_max + grid.x_min)/2], 'y': [(grid.y_max + grid.y_min)/2],
-    'width': [grid.x_max-grid.x_min], 'height': [grid.y_max-grid.y_min]
-    }
-rgWidgets['x_min'].on_change('value',update_grid)
-rgWidgets['x_max'].on_change('value',update_grid)
-rgWidgets['y_min'].on_change('value',update_grid)
-rgWidgets['y_max'].on_change('value',update_grid)
+# set up widgets for Amplitude Bar
+clip_level = NumericInput(value=120, title="Clip Level/dB",width=100)
+label_options = ["Index","Number"]
+if use_sinus:
+    label_options.insert(0, "Physical")
+labelSelect = Select(title="Select Channel Labeling:", value='Index', options=label_options)
 
+for w in rgWidgets.values():
+    control.widgets_disable['beamf'].append(w)
 
-# button to stop the server
-exit_button = Button(label="Exit", button_type="danger",sizing_mode="stretch_width",width=100)
-def exit_callback(arg):
-    from time import sleep
-    sleep(1)
-    if sinus_enabled:
-        close_device_callback()
-    sys.exit()
-exit_button.on_click(exit_callback)
-exit_button.js_on_click(CustomJS( code='''
-    setTimeout(function(){
-        window.location.href = "about:blank";
-    }, 500);
-    '''))
+control.widgets_disable['beamf'].append(auto_level_toggle)
+control.widgets_enable['beamf'].append(auto_level_toggle)
+control.widgets_disable['beamf'].append(bf_max_level)
+control.widgets_enable['beamf'].append(bf_max_level)
+control.widgets_disable['beamf'].append(dynamic_range)
+control.widgets_enable['beamf'].append(dynamic_range)
+
 # =============================================================================
 # DEFINE CALLBACKS
 # =============================================================================
 
 def update_app():  # only update figure when tab is active
-    if figureTabs.active == 0: 
+    if tabs.active == 0: 
         update_amp_bar_plot()
-    if figureTabs.active == 1:
+    if tabs.active == 1:
         if control.beamf_toggle.active:
             update_beamforming_plot()
         else:
             update_mic_geom_plot()
-    if sinus_enabled:
-        pass #TODO fix!
-        #update_buffer_bar_plot()
+    if use_sinus:
+        control.update_buffer_bar()
 
 def update_amp_bar_plot():
     if control.disp.cdsource.data['data'].size > 0:
         levels = ac.L_p(control.disp.cdsource.data['data'][0])
         amp_cds.data['level'] =  levels
-        amp_cds.data['colors'] = np.where(levels < cliplevel.value, control.modecolor, control.clipcolor)
+        amp_cds.data['colors'] = np.where(levels < clip_level.value, control.modecolor, control.clipcolor)
 
 def update_mic_geom_plot():
     log.logger.debug("update_mic_geom_plot")
@@ -324,17 +313,16 @@ def update_mic_geom_plot():
             mic_presenter.cdsource.data['sizes'] = 20*p2/p2.max() + mics_widgets['mic_size'].value
         else:
             mic_presenter.cdsource.data['sizes'] = np.zeros(p2.shape[0])
-        mic_presenter.cdsource.data['colors'] = np.where(levels < cliplevel.value, control.modecolor, control.clipcolor)
+        mic_presenter.cdsource.data['colors'] = np.where(levels < clip_level.value, control.modecolor, control.clipcolor)
 
 def update_beamforming_plot():
     if control.beamf.cdsource.data['data'].size > 0:
         beamf_cds.data['level'] = [
             ac.L_p(control.beamf.cdsource.data['data'].reshape(grid.shape)).T]
-        if autolevel_toggle.active:
-            dynamicValue = (dynamicSlider.value[1] - dynamicSlider.value[0])
+        if auto_level_toggle.active:
             maxValue = beamf_cds.data['level'][0].max()
-            beamf_color_mapper.high = max(ClipSlider.value+dynamicValue, maxValue)
-            beamf_color_mapper.low = max(ClipSlider.value, maxValue-dynamicValue)
+            beamf_color_mapper.high = maxValue
+            beamf_color_mapper.low = maxValue - dynamic_range.value
 
 def update_view(arg):
     if arg:
@@ -345,15 +333,33 @@ def update_view(arg):
         doc.remove_periodic_callback(control._view_callback_id)
 control.display_toggle.on_click(update_view)
 
-# =============================================================================
+def update_channel_labels(attr,old,new):
+    log.logger.debug("update_channel_labels")
+    labels = _get_channel_labels(control.source, labelSelect.value)
+    # update amp bar 
+    amp_cds.data.update({
+        'channels': labels,
+        'colors' : [COLOR[1]]*control.source.num_channels,
+        'level' : np.zeros(control.source.num_channels)
+    })
+    amp_fig.x_range.factors = labels  # Set x_range as categorical
+    amp_fig.xaxis.major_label_overrides = {label: label for label in labels}
+    # update calibration table
+    if labelSelect.value in ['Physical','Number']:
+        calibration.cal_table.source.data['channel'] = labels
 
-# callback functions
+update_channel_labels(None,None,None)
+labelSelect.on_change('value',update_channel_labels)
+control.source.on_trait_change(lambda: update_channel_labels(None,None,None), 'num_channels')
+
 def dynamic_slider_callback(attr, old, new):
-    if not autolevel_toggle.active:
-        (beamf_color_mapper.low, beamf_color_mapper.high) = new
-dynamicSlider.on_change('value', dynamic_slider_callback)    
+    if not auto_level_toggle.active:
+        beamf_color_mapper.high = bf_max_level.value
+        beamf_color_mapper.low = bf_max_level.value - dynamic_range.value
+dynamic_range.on_change('value', dynamic_slider_callback)    
+bf_max_level.on_change('value', dynamic_slider_callback)
 
-def update_bfImage_axis(attr,old,new):
+def update_bfImage_axis():
     dx = grid.x_max-grid.x_min
     dy = grid.y_max-grid.y_min
     bfImage.glyph.x = grid.x_min
@@ -362,92 +368,81 @@ def update_bfImage_axis(attr,old,new):
     bfImage.glyph.dh = dy
     bfImage.glyph.update()
 
-rgWidgets['x_min'].on_change('value',update_bfImage_axis)
-rgWidgets['x_max'].on_change('value',update_bfImage_axis)
-rgWidgets['y_min'].on_change('value',update_bfImage_axis)
-rgWidgets['y_max'].on_change('value',update_bfImage_axis)
-  
+def update_grid():
+    """update grid data source when grid settings change"""
+    grid_data.data = {
+        'x': [(grid.x_max + grid.x_min) / 2],
+        'y': [(grid.y_max + grid.y_min) / 2],
+        'width': [grid.x_max - grid.x_min],
+        'height': [grid.y_max - grid.y_min]
+    }
 
-# # non bokeh functions
-# def get_active_channels():
-#     if DEVICE == 'typhoon' or DEVICE == 'tornado':
-#         ch = [inputSignalGen.inchannels_[i] for i in checkbox_micgeom.active]
-#     else:
-#         ch = checkbox_micgeom.active   
-#     ch.sort() 
-#     return ch
-
-# def select_micgeom_callback(attr, old, new):
-#     mic_presenter.cdsource.data = {'x':mics.pos[0,:],'y':mics.pos[1,:],
-#                        'sizes':np.array([MICSIZE]*mics.num_mics),
-#                        'channels':get_active_channels(),
-#                        'colors': [COLOR[1]]*mics.num_mics}
-# select_micgeom.on_change('value',select_micgeom_callback)
+def update_bf_plot(attr, old, new):
+    update_bfImage_axis()
+    update_grid()
 
 
-# def checkbox_micgeom_callback(attr, old, new):
-#     if mics.num_mics > 0:
-#         mic_presenter.cdsource.data['channels'] = get_active_channels()
-# checkbox_micgeom.on_change('active',checkbox_micgeom_callback)    
-
-
-def autolevel_toggle_callback(arg):
+def clear_beamforming_image(arg):
     if not arg:
-        (beamf_color_mapper.low, beamf_color_mapper.high) = dynamicSlider.value
-      
-# functions
+        beamf_cds.data['level'] = []
+        control.beamf.cdsource.data['data'] = np.array([])
+control.beamf_toggle.on_click(clear_beamforming_image)
 
-if sinus_enabled:
-    pass #TODO fix!
-    # update_buffer_bar_plot = get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
-    #               amp_cds,checkbox_micgeom,amp_fig,mic_presenter.cdsource,mics,log.logger)
+
+rgWidgets['x_min'].on_change('value', update_bf_plot)
+rgWidgets['x_max'].on_change('value', update_bf_plot)
+rgWidgets['y_min'].on_change('value', update_bf_plot)
+rgWidgets['y_max'].on_change('value', update_bf_plot)
 
 # =============================================================================
 #  Set Up Bokeh Document Layout
 # =============================================================================
 
-mgWidgetCol = column(
-                mics_widgets['file'],
-                mics_widgets['num_mics'],
-                mics_widgets['invalid_channels'],
-                mics_widgets['pos_total'],
-                width=250,
-                )
-
-gridCol = column(*rgWidgets.values(),width=200)
-
 # Tabs
-amplitudesTab = Panel(child=column(row(Spacer(width=25),cliplevel,Spacer(width=25),labelSelect),row(amp_fig, log.log_text)),title='Channel Levels')
-micgeomTab = Panel(child=column(
-    row(column(
-        row(Spacer(width=25),cliplevel,Spacer(width=15),mics_widgets['mic_size'], mics_widgets['mirror_view'], Spacer(width=15)),
-        mics_beamf_fig
-        ),
-        Spacer(width=30, height=1000),mgWidgetCol)),title='Microphone Geometry')
-beamformTab = Panel(child=column(
-                        row(Spacer(width=30, height=1000),gridCol,Spacer(width=20, height=1000),
-                        column(
-                            freqSlider, dynamicSlider, 
-                            ClipSlider,autolevel_toggle,*camWidgets,
-                         width=200)
-                         #checkbox_paint_mode
-                         ),
-                        ),title='Beamforming')
-figureTabs = Tabs(tabs=[
+amplitudesTab = Panel(child=column(
+    row(Spacer(width=25),clip_level,Spacer(width=25),labelSelect),
+    row(amp_fig, log.log_text), sizing_mode='stretch_both'),title='Channel Levels')
+
+
+mics_widgets['invalid_channels'].title = "Invalid Mics"
+mics_widgets['invalid_channels'].height = 150
+mics_widgets['invalid_channels'].description = "Select which input channel indices are not part of the array"
+mic_control = layout([
+    [Div(text=r"""<b style="font-size:15px;">Microphone Setup</b>""")],
+    [mics_widgets['file'], mics_widgets['mic_size'],mics_widgets['num_mics']],
+    [column(all_mics_valid, mics_widgets['invalid_channels']), column(all_bf_valid, invalid_input_channels)],
+    [mics_widgets['pos_total']],
+], sizing_mode='stretch_width')
+
+bf_control = layout([
+    [Div(text=r"""<b style="font-size:15px;">Beamforming Setup</b>""")],
+    [freqSlider],
+    [auto_level_toggle, dynamic_range, bf_max_level],
+    [rgWidgets['x_min'], rgWidgets['x_max'], rgWidgets['y_min'], rgWidgets['y_max']],
+    [rgWidgets['increment'], rgWidgets['z']],
+    [rgWidgets['size']]
+], sizing_mode='stretch_width')
+
+mic_bf_control = column(mic_control, Spacer(height=25),bf_control, sizing_mode='stretch_width')
+
+mics_bf_tab = Panel(
+    child=row(mics_beamf_fig, mic_bf_control),
+    title='Microphone Geometry / Beamforming')
+
+tabs = Tabs(tabs=[
     amplitudesTab,
-    micgeomTab,
+    mics_bf_tab,
     calibration.get_tab(),
-    ],width=850)
+    ], sizing_mode='inherit', width=1700, height=800)
 
-left_column = control.get_widgets()
+control_column = control.get_widgets()
 
-if sinus_enabled:
-    # Additional Panel when SINUS Messtechnik API is used
-    teds_component = get_teds_component(devInputManager,log.logger)
-    sinusTab = Panel(child=teds_component,title='SINUS Messtechnik')
-    figureTabs.tabs.append(sinusTab)
-    # add buttons
-    append_left_column(left_column)
+# if sinus_enabled:
+#     # Additional Panel when SINUS Messtechnik API is used
+#     teds_component = get_teds_component(devInputManager,log.logger)
+#     sinusTab = Panel(child=teds_component,title='SINUS Messtechnik')
+#     tabs.tabs.append(sinusTab)
+
 if DEVICE == 'sounddevice':
     # set up devices choice
     devices = {}
@@ -456,32 +451,25 @@ if DEVICE == 'sounddevice':
             devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
     device_select = Select(title="Choose input device:", 
         value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
-    inputSignalGen.device=int(device_select.value)
-    inputSignalGen.set_widgets(device=device_select)
-    left_column.children.insert(1,device_select)
-    sdwidgets = list(inputSignalGen.get_widgets().values())
-    left_column.children.insert(2,sdwidgets[2]) # num_channels
+    control.source.device=int(device_select.value)
+    control.source.set_widgets(device=device_select)
+    control_column.children.insert(1,device_select)
+    # sdwidgets = list(control.source.get_widgets().values())
+    # control_column.children.insert(2,sdwidgets[2]) # num_channels
 
     def device_update(attr,old,new):
-        inputSignalGen.num_channels = sd.query_devices(inputSignalGen.device)['max_input_channels']
-        ticker = list(np.arange(1,inputSignalGen.num_channels+1))
-        amp_cds.data = {'channels':ticker,'level': np.zeros(inputSignalGen.num_channels)}
-        amp_fig.xaxis.ticker = ticker
-        # checkbox_micgeom.labels = [str(_) for _ in range(inputSignalGen.num_channels)]
-        # checkbox_micgeom.active = [_ for _ in range(inputSignalGen.num_channels)]
-        # if mics.num_mics > 0:
-            # mic_presenter.cdsource.data = {'x':mics.pos[0,:],'y':mics.pos[1,:],
-            #         'sizes':np.array([7]*mics.num_mics),
-            #         'channels':[str(_) for _ in checkbox_micgeom.active]} 
+        control.source.num_channels = sd.query_devices(control.source.device)['max_input_channels']
+        update_channel_labels(None,None,None)
     device_select.on_change('value',device_update)
 
-right_column = column(figureTabs, width=1000, sizing_mode='inherit')
 
-layout = column(row(Spacer(width=1400),exit_button),row(Spacer(width=20),
-    left_column,
-    Spacer(width=20),
-    right_column,
+root = column(
+    row(
+        Spacer(width=10),
+        control_column,
+        Spacer(width=20),
+        tabs,
     ),
 )
-doc.add_root(layout)
+doc.add_root(root)
 doc.title = "Measurement App"

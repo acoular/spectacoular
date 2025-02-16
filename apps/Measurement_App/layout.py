@@ -6,24 +6,23 @@ Created on Wed May 15 17:23:01 2019
 @author: kujawski
 """
 from bokeh.palettes import Spectral11
-from bokeh.models.widgets import CheckboxGroup, Slider, Toggle
 
 
 COLOR = Spectral11
 MODE_COLORS = {'display':COLOR[1],'calib':COLOR[5],'msm':COLOR[8]}
 CLIP_COLORS = {'display':COLOR[8],'calib':COLOR[8],'msm':COLOR[8]}
 
-button_height = 50
+button_height = 80
 
 # status Definitions
-toggle_labels =     {('msm',False): "START MEASUREMENT",
+toggle_labels =     {('msm',False): "MEASURE",
                     ('msm',True): "STOP MEASUREMENT",
-                    ('display',False): "Start Display",
+                    ('display',False): "Display",
                     ('display',True): "Stop Display",
                     ('calib',True): "Stop Calibration",
-                    ('calib',False): "Start Calibration",
+                    ('calib',False): "Calibration",
                     ('beamf',True): "Stop Beamforming",
-                    ('beamf',False): "Start Beamforming"}
+                    ('beamf',False): "Beamforming"}
 
 plot_colors =       {('msm',True): [MODE_COLORS['msm'],CLIP_COLORS['msm']],
                     ('msm',False): [MODE_COLORS['display'],CLIP_COLORS['display']],
@@ -34,9 +33,3 @@ plot_colors =       {('msm',True): [MODE_COLORS['msm'],CLIP_COLORS['msm']],
                     ('beamf',True): [],
                     ('beamf',False): []}
 
-
-ClipSlider = Slider(start=0, end=120, value=0, step=.5, title="Clip Level (only in auto level mode)")
-
-# Checkboxes
-checkbox_paint_mode = CheckboxGroup(labels=["paint mode"], active=[])
-autolevel_toggle = Toggle(label="Auto Level", button_type="success",active=True)

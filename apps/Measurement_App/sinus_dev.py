@@ -92,9 +92,6 @@ close_device_button.on_click(close_device_callback)
 select_setting = Select(title="Select Settings:", value="None")
 reload_settings_options = Button(label="↻",disabled=False,width=40)
 select_setting.options=["None"]+os.listdir(CONFPATH)
-def update_select_settings_options_callback():
-    select_setting.options=["None"]+os.listdir(CONFPATH)
-reload_settings_options.on_click(update_select_settings_options_callback)
 select_settings_row = row(column(Spacer(height=15),reload_settings_options),select_setting)
 
 # Buffer Bar
@@ -125,8 +122,6 @@ def get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
                     'sizes':array([7]*micGeo.num_mics),
                     'channels':[inputSignalGen.inchannels_[i] for i in checkbox_micgeom.active]} 
 
-    def update_buffer_bar_plot():
-        BufferBarCDS.data['filling'] = array([inputSignalGen._pdiff_in])
     #
     def settings_callback():
         logger.info("load settings ...")
@@ -147,7 +142,7 @@ def get_callbacks(inputSignalGen,iniManager,devManager,devInputManager,
     select_setting.on_change('value',select_setting_callback)    
     return update_buffer_bar_plot
 
-def get_interface(device,syncorder=[]):
+def get_interface(device, syncorder=[]):
     if syncorder: 
         devManager = SINUSDeviceManager(orderdevices = syncorder)
     elif not syncorder:

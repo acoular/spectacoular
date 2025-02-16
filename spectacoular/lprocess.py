@@ -47,7 +47,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
     collectsamples = Bool(True,
         desc="Indicates if result function is running")
 
-    trait_widget_mapper = {'name': TextInput,
+    trait_widget_mapper = {'file': TextInput,
                         'basename': TextInput,
                         'start' : NumericInput,
                         'stop' : NumericInput,
@@ -57,7 +57,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
                         'num_channels' : NumericInput,
                         'time_delay': NumericInput,
                         }
-    trait_widget_args = {'name': {'disabled': False},
+    trait_widget_args = {'file': {'disabled': False},
                         'basename': {'disabled': True},
                         'start':  {'disabled': False, 'mode': 'int'},
                         'stop':  {'disabled': False, 'mode': 'int'},

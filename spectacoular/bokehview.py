@@ -718,3 +718,24 @@ trait_widget_args = {'device': {'disabled':False,'mode':'int'},
                      'sample_freq':  {'disabled':True,'mode':'float'},
                      }
 add_bokeh_attr(SoundDeviceSamplesGenerator,trait_widget_mapper,trait_widget_args)
+
+
+from acoular import MaskedTimeOut
+
+trait_widget_mapper = {'start': NumericInput,
+                          'stop': NumericInput,
+                          'invalid_channels': DataTable,
+                          'num_channels': NumericInput,
+                          'num_samples': NumericInput,
+                          'sample_freq': NumericInput,
+                          } 
+
+trait_widget_args = {'start': {'disabled':False,'mode':'int'},
+                        'stop': {'disabled':False,'mode':'int'},
+                        'invalid_channels': {'disabled':False,'editable':True, 'columns':invch_columns},
+                        'num_channels': {'disabled':True,'mode':'int'},
+                        'num_samples': {'disabled':True,'mode':'int'},
+                        'sample_freq': {'disabled':True,'mode':'float'},
+                        }
+
+add_bokeh_attr(MaskedTimeOut,trait_widget_mapper,trait_widget_args)                          
