@@ -13,40 +13,15 @@ from time import sleep
 from bokeh.models import TabPanel as Panel, CustomJS, ColumnDataSource
 from bokeh.layouts import column, Spacer, row
 from bokeh.models.widgets import Toggle, TextInput, CheckboxGroup, Select, Button, Div,\
-    DataTable, TableColumn, NumberEditor
+    DataTable, TableColumn, NumberEditor, NumericInput
 from bokeh.plotting import figure
 from bokeh.models.ranges import Range1d
+try:
+    import sounddevice as sd
+except:
+    pass
 
 BUFFERSIZE = 400
-# disable_obj_disp = [
-#         selectPerCallPeriod,select_micgeom,select_all_channels_button,
-#         checkbox_micgeom, *calfiltWidgets.values(), *calWidgets.values(),
-#         ]
-# disable_obj_rec = [
-#         ti_msmtime,checkbox_use_current_time,display_toggle, calib_toggle, 
-#         beamf_toggle
-#         ]
-# disable_obj_calib = [
-#         msm_toggle
-#         ]
-# disable_obj_beamf = [
-#         freqSlider,wtimeSlider,dynamicSlider,autolevel_toggle,
-#         checkbox_paint_mode
-#         ]
-# if sinus_enabled: 
-#     disable_obj_disp = append_disable_obj(disable_obj_disp)
-
-# widgets_disable =   {'msm': disable_obj_rec,
-#                      'display': disable_obj_disp,
-#                      'calib' : disable_obj_calib,
-#                      'beamf' : disable_obj_beamf}
-
-# widgets_enable =    {'msm': [],
-#                      'display': [calib_toggle,msm_toggle,beamf_toggle],
-#                      'calib' : [],
-#                      'beamf' : [freqSlider,wtimeSlider,dynamicSlider,
-#                                 autolevel_toggle,checkbox_paint_mode]}
-
 
 def current_time():
     return datetime.now().isoformat('_').replace(':', '-').replace('.', '_') # for timestamp filename
@@ -108,7 +83,7 @@ class MeasurementControl:
                                          }
         self.set_callbacks()
 
-    def get_numsamples(self):
+    def get_num_samples(self):
         if self.ti_msmtime.value == '-1' or  self.ti_msmtime.value == '':
             return -1
         else:
@@ -176,7 +151,7 @@ class MeasurementControl:
 
     def msmtoggle_handler(self, arg):
         if arg: # toggle button is pressed
-            self.msm.numsamples_write = self.get_numsamples()
+            self.msm.num_samples_write = self.get_num_samples()
             if self.current_time_checkbox.active == [0]: 
                 self.ti_savename.value = current_time()
             # if sinus_enabled: # gather important informations from SINUS Messtechnik devices
@@ -289,50 +264,128 @@ class MeasurementControl:
 
 class PhantomControl(MeasurementControl):
 
-    def __init__(self, 
-        h5path=Path(__file__).parent  / "data",
-        h5name="two_sources_one_moving_10s.h5", 
-        **kwargs):
+    def __init__(self, h5path=Path(__file__).parent  / "data", **kwargs):
+        self.sfreq = 25600
+        self.duration = 10
+        self.num_samples=self.duration*self.sfreq
+        self.mics = ac.MicGeom(file=Path(ac.__file__).parent / 'xml' / 'tub_vogel64.xml')
         if not h5path.exists():
             h5path.mkdir()
-        h5f = h5path / h5name
-        if not h5f.exists():
-            self.create_three_sources_moving(h5f)
-        kwargs['source'] = sp.TimeSamplesPhantom(file=h5f)
+        self.h5path = h5path
+        kwargs['source'] = sp.TimeSamplesPhantom()
         super().__init__(**kwargs)
-        
+
+        self.select_file = Select(
+            title="Select Source Case", value="", options=[
+                ("rotating.h5","Rotating Source"), ("calib.h5", "Calibration Signal")]
+        )
+        self.select_file.on_change('value', self.change_file)
+
+    def change_file(self, attr, old, new):
+        h5f = self.h5path / self.select_file.value
+        if not h5f.exists():
+            self.logger.info("file does not exist.")
+            if self.select_file.value == "rotating.h5":
+                self.create_three_sources_moving(h5f)
+            elif self.select_file.value == "calib.h5":
+                self.create_calibration_signal(h5f)
+        self.source.file = Path(h5f)
+
     def create_three_sources_moving(self, h5f):
-        sfreq = 25600 
-        duration = 10
-        nsamples = duration*sfreq
-        micgeofile = "Measurement_App/micgeom/array_64.xml"
-        mg = ac.MicGeom( file=micgeofile )
-        n1 = ac.WNoiseGenerator( sample_freq=sfreq, numsamples=nsamples, seed=100 )
-        n2 = ac.WNoiseGenerator( sample_freq=sfreq, numsamples=nsamples, seed=200, rms=0.7 )
-        n3 = ac.WNoiseGenerator( sample_freq=sfreq, numsamples=nsamples, seed=300, rms=0.5 )
+        n1 = ac.WNoiseGenerator( sample_freq=self.sfreq, num_samples=self.num_samples, seed=100 )
+        n2 = ac.WNoiseGenerator( sample_freq=self.sfreq, num_samples=self.num_samples, seed=200, rms=0.7 )
+        n3 = ac.WNoiseGenerator( sample_freq=self.sfreq, num_samples=self.num_samples, seed=300, rms=0.5 )
         # trajectory of source
         tr = ac.Trajectory()
         rps = 0.2 # revs pre second
         delta_t = 1./abs(rps)/16.0 # ca. 16 spline nodes per revolution 
-        r1 = 0.141
-        for t in np.arange(0, duration*1.001, delta_t):
+        r1 = self.mics.aperture/2
+        for t in np.arange(0, self.duration*1.001, delta_t):
             phi = t * rps * 2 * np.pi #angle
             # define points for trajectory spline
-            tr.points[t] = (r1 * np.cos(phi), r1 * np.sin(phi), 0.3)
+            tr.points[t] = (r1 * np.cos(phi), r1 * np.sin(phi), r1)
         # point sources
-        p1 = ac.MovingPointSource(signal=n1, mics=mg, trajectory=tr)
-        p2 = ac.PointSource(signal=n2, mics=mg, loc=(0.15, 0, 0.3))
-        p3 = ac.PointSource(signal=n3, mics=mg, loc=(0, 0.1, 0.3))
+        p1 = ac.MovingPointSource(signal=n1, mics=self.mics, trajectory=tr)
+        p2 = ac.PointSource(signal=n2, mics=self.mics, loc=(0.15, 0, r1))
+        p3 = ac.PointSource(signal=n3, mics=self.mics, loc=(0, 0.1, r1))
         pa = ac.Mixer(source=p1, sources=[p2, p3])
-        wh5 = ac.WriteH5(source=pa, name=h5f)
+        wh5 = ac.WriteH5(source=pa, file=h5f)
         wh5.save()
+
+    def create_calibration_signal(self, h5f):
+        n1 = ac.SineGenerator( sample_freq=self.sfreq, num_samples=self.num_samples, freq=1000,amplitude=20.0 )
+        n2 = ac.WNoiseGenerator( sample_freq=self.sfreq, num_samples=self.num_samples, seed=1, rms=.0001 )
+        noise = ac.UncorrelatedNoiseSource(signal=n2,mics=self.mics)
+        d = np.zeros((n1.num_samples, self.mics.num_mics))
+        d[:,0] = n1.signal()
+        sine = ac.TimeSamples(data=d, sample_freq=self.sfreq)
+        mix = ac.SourceMixer(sources=[sine, noise])
+        wh5 = ac.WriteH5( source=mix, file=h5f )
+        wh5.save()
+
+    def get_widgets(self):
+        return column([
+                self.exit_button,
+                Spacer(height=100),
+                self.select_file,
+                self.ti_savename,
+                self.current_time_checkbox,  
+                self.ti_msmtime,
+                self.display_toggle,
+                self.calib_toggle, 
+                self.beamf_toggle, 
+                self.msm_toggle, 
+                self.update_period,
+                ], width=150)
+        
 
 class SoundDeviceControl(MeasurementControl):
 
     def __init__(self, **kwargs):
-        kwargs['source'] = sp.SoundDeviceSamplesGenerator()
+        devices = self._get_devices()
+        self.device_select = Select(title="Choose input device:", 
+            value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
+        kwargs['source'] = sp.SoundDeviceSamplesGenerator(
+            device=int(self.device_select.value), 
+            num_channels=sd.query_devices(int(self.device_select.value))['max_input_channels']
+            )
+        widgets = kwargs['source'].get_widgets(
+            trait_widget_mapper={'device': Select, 'num_channels': NumericInput},
+            trait_widget_args={
+                'device': {'value': "{}".format(list(devices.keys())[0]), 
+                            'options' : list(devices.items())},
+                'num_channels' : {'title' : 'Number of Input Channels', 'value': kwargs['source'].num_channels},
+            })
+        self.device_select = widgets['device']
+        self.num_channels_text = widgets['num_channels']
+        self.device_select.on_change('value', self.device_update)
         super().__init__(**kwargs)
 
+    def _get_devices(self):
+        devices = {}
+        for i,dev in enumerate(sd.query_devices()):
+            if dev['max_input_channels']>0:
+                devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
+        return devices
+
+    def device_update(self, attr, old, new):
+        self.source.num_channels = sd.query_devices(self.source.device)['max_input_channels']
+
+    def get_widgets(self):
+        return column([
+                self.exit_button,
+                Spacer(height=100),
+                self.device_select,
+                self.num_channels_text,
+                self.ti_savename,
+                self.current_time_checkbox,  
+                self.ti_msmtime,
+                self.display_toggle,
+                self.calib_toggle, 
+                self.beamf_toggle, 
+                self.msm_toggle, 
+                self.update_period,
+                ], width=150)
 
 
 class SinusControl(MeasurementControl):
@@ -340,10 +393,12 @@ class SinusControl(MeasurementControl):
     def __init__(self, device, config_dir, config_name, inventory_no='TA132', **kwargs):
         try:
             from tapy.devices.sinus import Tornado, Typhoon, Apollo
-            from tapy.bindings.acoular import SINUSSamplesGenerator
+            from tapy.bindings.acoular import SinusSamplesGenerator
+            from tapy.drivers.sinus import SINUS_STREAM
         except ImportError:
             raise ImportError("tapy is not installed. Please install it first.")
 
+        self.stream = SINUS_STREAM
         self.config_dir = Path(config_dir)
         config = None
         if config_name is not None:
@@ -354,7 +409,7 @@ class SinusControl(MeasurementControl):
             self.device = Typhoon(config=config)
         elif device == 'apollo':
             self.device = Apollo(inventory_no=inventory_no, config=config)
-        kwargs['source'] = SINUSSamplesGenerator(device=self.device)
+        kwargs['source'] = SinusSamplesGenerator(device=self.device)
         super().__init__(**kwargs)
 
         # Widgets
@@ -384,7 +439,7 @@ class SinusControl(MeasurementControl):
                                 source=self.buffer_cds)
 
     def update_buffer_bar(self):
-        self.buffer_cds.data['filling'] = np.array([self.source._pdiff_in])
+        self.buffer_cds.data['filling'] = np.array([self.stream._pdiff_in])
 
     def update_select_settings_options_callback(self):
         self.select_setting.options=["None"]+ [
@@ -395,12 +450,12 @@ class SinusControl(MeasurementControl):
         try:
             self.device.ini_import(self.config_dir/self.select_setting.value,
                     level=self.level_select.value)
+            self.device.set_config_settings()
         except Exception as e_text: 
             self.logger.error("{}".format(e_text))
             return
         self.logger.info("set settings ok!")
         self.update_widgets_and_glyphs()
-        #status_text.text = f"Device Status: {get_dev_state()}"        
 
     def update_widgets_and_glyphs(self):
         # ticker = list(arange(1,inputSignalGen.num_channels+1))
@@ -411,11 +466,6 @@ class SinusControl(MeasurementControl):
         # checkbox_micgeom.active = [_ for _ in range(inputSignalGen.num_channels)]
         block_count = self.device.BlockCount[0]
         self.buffer_bar.x_range=Range1d(0,int(block_count))
-        # if micGeo.num_mics > 0:
-        #     MicGeomCDS.data = {'x':micGeo.mpos[0,:],'y':micGeo.mpos[1,:],
-        #             'sizes':array([7]*micGeo.num_mics),
-        #             'channels':[inputSignalGen.inchannels_[i] for i in checkbox_micgeom.active]} 
-
 
     def get_widgets(self):
         return column([
@@ -433,11 +483,9 @@ class SinusControl(MeasurementControl):
                 self.update_period,
                 ], width=150)
 
-
     def set_sinus_callbacks(self):
         self.reload_settings_options.on_click(self.update_select_settings_options_callback)
         self.settings_button.on_click(self.settings_callback)  
-
 
 
 class Calibration:

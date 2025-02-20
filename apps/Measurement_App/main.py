@@ -130,7 +130,6 @@ log.logger.debug(f"td_dir: {td}")
 # =============================================================================
 use_sinus = False
 if DEVICE == 'sounddevice':
-    import sounddevice as sd
     from app import SoundDeviceControl
     mics = sp.MicGeom()
     grid = sp.RectGrid()
@@ -140,8 +139,8 @@ if DEVICE == 'sounddevice':
     )    
 elif DEVICE == 'phantom':
     from app import PhantomControl
-    mics = sp.MicGeom(file = mics_dir / 'array_64.xml')
-    grid = sp.RectGrid( x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=.3, increment=0.01)
+    mics = sp.MicGeom(file = mics_dir / 'tub_vogel64.xml')
+    grid = sp.RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.75, y_max=0.75, z=0.75, increment=0.05)
     control = PhantomControl(
         doc=doc, logger=log.logger, blocksize=args.blocksize,
         steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
@@ -228,7 +227,6 @@ mics_beamf_fig.rect( # draw rect grid bounds (dotted)
 # DEFINE WIDGETS
 # =============================================================================
 
-
 # set up widgets for Microphone Geometry
 editor = NumberEditor()
 formatter = NumberFormatter(format="0.00")
@@ -305,7 +303,6 @@ def update_amp_bar_plot():
         amp_cds.data['colors'] = np.where(levels < clip_level.value, control.modecolor, control.clipcolor)
 
 def update_mic_geom_plot():
-    log.logger.debug("update_mic_geom_plot")
     if mics.num_mics > 0: 
         p2 = control.disp.cdsource.data['data'][0]
         levels = ac.L_p(p2)
@@ -381,13 +378,11 @@ def update_bf_plot(attr, old, new):
     update_bfImage_axis()
     update_grid()
 
-
 def clear_beamforming_image(arg):
     if not arg:
         beamf_cds.data['level'] = []
         control.beamf.cdsource.data['data'] = np.array([])
 control.beamf_toggle.on_click(clear_beamforming_image)
-
 
 rgWidgets['x_min'].on_change('value', update_bf_plot)
 rgWidgets['x_max'].on_change('value', update_bf_plot)
@@ -437,32 +432,6 @@ tabs = Tabs(tabs=[
 
 control_column = control.get_widgets()
 
-# if sinus_enabled:
-#     # Additional Panel when SINUS Messtechnik API is used
-#     teds_component = get_teds_component(devInputManager,log.logger)
-#     sinusTab = Panel(child=teds_component,title='SINUS Messtechnik')
-#     tabs.tabs.append(sinusTab)
-
-if DEVICE == 'sounddevice':
-    # set up devices choice
-    devices = {}
-    for i,dev in enumerate(sd.query_devices()):
-        if dev['max_input_channels']>0:
-            devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
-    device_select = Select(title="Choose input device:", 
-        value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
-    control.source.device=int(device_select.value)
-    control.source.set_widgets(device=device_select)
-    control_column.children.insert(1,device_select)
-    # sdwidgets = list(control.source.get_widgets().values())
-    # control_column.children.insert(2,sdwidgets[2]) # num_channels
-
-    def device_update(attr,old,new):
-        control.source.num_channels = sd.query_devices(control.source.device)['max_input_channels']
-        update_channel_labels(None,None,None)
-    device_select.on_change('value',device_update)
-
-
 root = column(
     row(
         Spacer(width=10),
@@ -473,3 +442,9 @@ root = column(
 )
 doc.add_root(root)
 doc.title = "Measurement App"
+
+# if sinus_enabled:
+#     # Additional Panel when SINUS Messtechnik API is used
+#     teds_component = get_teds_component(devInputManager,log.logger)
+#     sinusTab = Panel(child=teds_component,title='SINUS Messtechnik')
+#     tabs.tabs.append(sinusTab)

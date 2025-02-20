@@ -9,7 +9,7 @@ from bokeh.plotting import figure
 from bokeh.models.ranges import Range1d
 from bokeh.layouts import column,row
 from sinus import SINUSDeviceManager, SINUSAnalogInputManager, \
-SINUSSamplesGenerator, ini_import, get_dev_state, change_device_status, SINUS
+SinusSamplesGenerator, ini_import, get_dev_state, change_device_status, SINUS
 from datetime import datetime
 
 current_time = lambda: datetime.now().isoformat('_').replace(':','-').replace('.','_') # for timestamp filename
@@ -149,7 +149,7 @@ def get_interface(device, syncorder=[]):
         devManager = SINUSDeviceManager(orderdevices = DEV_SERIAL_NUMBERS[device])
         
     devInputManager = SINUSAnalogInputManager()
-    inputSignalGen = SINUSSamplesGenerator(manager=devInputManager,
+    inputSignalGen = SinusSamplesGenerator(manager=devInputManager,
                                            inchannels=devInputManager.namechannels)
     iniManager = ini_import()
     return iniManager, devManager,devInputManager,inputSignalGen
