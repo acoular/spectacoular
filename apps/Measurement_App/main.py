@@ -26,11 +26,12 @@ from bokeh.layouts import column, layout, row
 from bokeh.models import (
     ColumnDataSource,
     FactorRange,
-    LogColorMapper,
+    LinearColorMapper,
+    ColorBar,
     Spacer,
     Tabs,
 )
-from bokeh.models import TabPanel as Panel
+from bokeh.models import TabPanel as Panel 
 from bokeh.models.glyphs import Scatter
 from bokeh.models.widgets import (
     Button,
@@ -43,24 +44,14 @@ from bokeh.models.widgets import (
     TableColumn,
     Toggle,
 )
-
-# bokeh imports
 from bokeh.models.widgets.inputs import NumericInput
 from bokeh.palettes import Viridis256
 from bokeh.plotting import curdoc, figure
+from cam import CameraComponent
 from layout import COLOR
 from log import LogWidget
 
 import spectacoular as sp
-
-try:
-    import cv2
-    cam_enabled=True
-    from cam import cameraCDS, camWidgets, set_alpha_callback, set_camera_callback
-except:
-    cam_enabled=False
-    camWidgets = []
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -104,13 +95,10 @@ args = parser.parse_args()
 
 DEVICE = args.device
 MICSIZE = 20
-XCAM = (-0.5,-0.375,1.,0.75)
 
 # set up logging
 doc = curdoc()
 log = LogWidget(doc=doc)
-if cam_enabled: 
-    set_camera_callback(doc)
 
 # directory containing microphone geometry files
 mics_dir = args.mics_dir
@@ -173,7 +161,7 @@ amp_fig.toolbar.logo=None
 mics_beamf_fig = figure(
         tooltips=[("Lp/dB", "@level"), ("Channel Index", "@channels"),("(x,y)", "(@x, @y)"),],
         tools = 'pan,wheel_zoom,reset',
-         match_aspect=True, aspect_ratio=1, width=1000,
+         match_aspect=True, aspect_ratio=1, width=1400,
         )
 
 # =============================================================================
@@ -187,28 +175,29 @@ grid_data = ColumnDataSource(data={# x and y are the centers of the rectangle!
     'width': [grid.x_max-grid.x_min], 'height': [grid.y_max-grid.y_min]
 })
 
+
 # =============================================================================
 # DEFINE GLYPHS
 # =============================================================================
 
 mic_presenter = sp.MicGeomPresenter(source=mics, auto_update=True)
 calibration = Calibration(doc=doc, control=control)
+camera = CameraComponent(doc=doc, figure=mics_beamf_fig)
 
 # Amplitude Bar Plot
 amp_bar = amp_fig.vbar(
     x='channels', width=0.5, bottom=0,top='level', color='colors', source=amp_cds)
 
-if cam_enabled:
-    mics_beamf_fig.image_rgba(image='image_data',
-                        x=XCAM[0], y=XCAM[1], dw=XCAM[2], dh=XCAM[3],
-                        source=cameraCDS)
-beamf_color_mapper = LogColorMapper(palette=Viridis256, low=70, high=90,low_color=(1,1,1,0))
-bfImage = mics_beamf_fig.image(image='level', x=grid.x_min, y=grid.y_min, 
+beamf_color_mapper = LinearColorMapper(palette=Viridis256, low=70, high=90,low_color=(1,1,1,0))
+bf_image = mics_beamf_fig.image(image='level', x=grid.x_min, y=grid.y_min, 
         dw=grid.x_max-grid.x_min, dh=grid.y_max-grid.y_min,
                 color_mapper=beamf_color_mapper,
                 source=beamf_cds)
-if cam_enabled: 
-    set_alpha_callback(bfImage)
+mics_beamf_fig.add_layout(ColorBar(color_mapper=beamf_color_mapper,location=(0,0),
+                           title="dB",
+                           title_standoff=10),'right')
+
+
 
 # Microphone Geometry Plot
 mic_layout = sp.layouts.MicGeomComponent(mic_alpha=0.4,
@@ -252,6 +241,7 @@ control.beamf.source.source.source.source.source.set_widgets(**{'invalid_channel
 auto_level_toggle = Toggle(label="Auto Level", button_type="success",active=True)
 dynamic_range = NumericInput(value=20, title="Dynamic Range/dB")
 bf_max_level = Slider(start=0, end=140, value=100, step=1, title="Peak Level/dB")
+bf_alpha = Slider(start=0, end=1, step=0.05, value=1, title="Sourcemap Alpha")
 
 rgWidgets = grid.get_widgets()
 zSlider = Slider(start=0.01, end=10.0, value=grid.z, step=.02, title="z",disabled=False)
@@ -356,14 +346,14 @@ def dynamic_slider_callback(attr, old, new):
 dynamic_range.on_change('value', dynamic_slider_callback)    
 bf_max_level.on_change('value', dynamic_slider_callback)
 
-def update_bfImage_axis():
+def update_bf_image_axis():
     dx = grid.x_max-grid.x_min
     dy = grid.y_max-grid.y_min
-    bfImage.glyph.x = grid.x_min
-    bfImage.glyph.y = grid.y_min
-    bfImage.glyph.dw = dx
-    bfImage.glyph.dh = dy
-    bfImage.glyph.update()
+    bf_image.glyph.x = grid.x_min
+    bf_image.glyph.y = grid.y_min
+    bf_image.glyph.dw = dx
+    bf_image.glyph.dh = dy
+    bf_image.glyph.update()
 
 def update_grid():
     """update grid data source when grid settings change"""
@@ -375,7 +365,7 @@ def update_grid():
     }
 
 def update_bf_plot(attr, old, new):
-    update_bfImage_axis()
+    update_bf_image_axis()
     update_grid()
 
 def clear_beamforming_image(arg):
@@ -383,6 +373,11 @@ def clear_beamforming_image(arg):
         beamf_cds.data['level'] = []
         control.beamf.cdsource.data['data'] = np.array([])
 control.beamf_toggle.on_click(clear_beamforming_image)
+
+def bf_alpha_callback(attr, old, new):
+    bf_image.glyph.global_alpha = new
+bf_alpha.on_change("value", bf_alpha_callback)
+
 
 rgWidgets['x_min'].on_change('value', update_bf_plot)
 rgWidgets['x_max'].on_change('value', update_bf_plot)
@@ -412,16 +407,23 @@ mic_control = layout([
 bf_control = layout([
     [Div(text=r"""<b style="font-size:15px;">Beamforming Setup</b>""")],
     [freqSlider],
+    [bf_alpha],
     [auto_level_toggle, dynamic_range, bf_max_level],
     [rgWidgets['x_min'], rgWidgets['x_max'], rgWidgets['y_min'], rgWidgets['y_max']],
     [rgWidgets['increment'], rgWidgets['z']],
     [rgWidgets['size']]
 ], sizing_mode='stretch_width')
 
+camera_control = layout([
+    [Div(text=r"""<b style="font-size:15px;">Camera Setup</b>""")],
+    [Spacer(width=10)] + [*camera.widgets.values()][:6] + [Spacer(width=10)],
+    [Spacer(width=10)] + [*camera.widgets.values()][6:] + [Spacer(width=10)],
+], sizing_mode='stretch_width')
+
 mic_bf_control = column(mic_control, Spacer(height=25),bf_control, sizing_mode='stretch_width')
 
 mics_bf_tab = Panel(
-    child=row(mics_beamf_fig, mic_bf_control),
+    child=row(column(camera_control,mics_beamf_fig), mic_bf_control),
     title='Microphone Geometry / Beamforming')
 
 tabs = Tabs(tabs=[

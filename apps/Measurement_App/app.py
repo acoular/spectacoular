@@ -276,9 +276,10 @@ class PhantomControl(MeasurementControl):
         super().__init__(**kwargs)
 
         self.select_file = Select(
-            title="Select Source Case", value="", options=[
+            title="Select Source Case", value="rotating.h5", options=[
                 ("rotating.h5","Rotating Source"), ("calib.h5", "Calibration Signal")]
         )
+        self.change_file(None, None, None)
         self.select_file.on_change('value', self.change_file)
 
     def change_file(self, attr, old, new):
