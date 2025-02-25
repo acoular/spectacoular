@@ -268,9 +268,7 @@ class BaseSpectacoular(HasPrivateTraits):
     #: function to assign widget instances to class trait attributes
     set_widgets = set_widgets
 
-
-
-class TraitWidgetMapper(object):
+class TraitWidgetMapper:
     """
     Widget Factory which depending on the trait and widget type returns the 
     corresponding mapper class to instantiate the widget.
@@ -279,34 +277,36 @@ class TraitWidgetMapper(object):
     of the desired widget.
     Further, they implement dependencies between a class trait attribute and
     the corresponding widget.
+
+    Attributes
+    ----------
+    obj : class object 
+        the class object that the trait attribute belongs to.
+    traitname : str
+        name of the class trait attribute to be mapped.
+    traittype : TraitType
+        type of the class trait attribute.
+    traitvalue : any
+        value of the class trait attribute.
+    traitvaluetype : type
+        type of the value of the class trait attribute.
+    traitdescription : str
+        description of the class trait attribute.
+    widget : Widget
+        instance of the widget.
     """
 
-    #: name of the class trait attribute to be mapped (type: str)
-    traitname = object()
-    
-    #: value of the class trait attribute. Can be of arbitrary type
-    traitvalue = object()
-    
-    #: type of the class trait attribute
-    traittype = object()
-    
-    #: the class object that the trait attribute belongs to
-    obj = None 
-
-    #: instance of a Bokeh widget that is created by the :class:`TraitWidgetMapper`
-    widget = object()
-    
-    traitvaluetype = object() 
-    
-    def __init__(self,obj,traitname):
+    def __init__(self, obj, traitname):
         self.obj = obj
         self.traitname = traitname
         self.traittype = obj.trait(traitname).trait_type
         try:
-            self.traitvalue = getattr(obj,traitname)
-        except AttributeError: # in case of Delegate
+            self.traitvalue = getattr(obj, traitname)
+        except AttributeError:  # in case of Delegate
             self.traitvalue = None
-        self.traitvaluetype = type(getattr(obj,traitname))
+        self.traitvaluetype = type(getattr(obj, traitname))
+        self.traitdescription = obj.trait(traitname).desc
+        self.widget = None
 
     def _set_traitvalue(self,widgetvalue):
         """
@@ -341,7 +341,8 @@ class TraitWidgetMapper(object):
         None.
         
         """
-        #print(f"trait value: {traitvalue}")
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
         setattr(self.widget,widgetproperty,traitvalue)
 
     def create_trait_setter_func(self):
@@ -413,6 +414,7 @@ class NumericInputMapper(TraitWidgetMapper):
         self.obj = obj
         self.traitname = traitname
         self.traittype = obj.trait(traitname).trait_type
+        self.traitdescription = obj.trait(traitname).desc
         try:
             self.traitvalue = getattr(obj,traitname)
         except AttributeError: # in case of Delegate
@@ -535,7 +537,8 @@ class ToggleMapper(NumericInputMapper):
         None.
 
         """
-        #print(f"trait value: {traitvalue}")
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
         self.widget.active = traitvalue
         setattr(self.widget,widgetproperty,traitvalue)
 
@@ -648,6 +651,8 @@ class SelectMapper(TraitWidgetMapper):
         None.
         
         """
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
         if not isinstance(traitvalue,str):
             traitvalue = str(traitvalue)
         setattr(self.widget,widgetproperty,traitvalue)
@@ -842,6 +847,8 @@ class SliderMapper(TraitWidgetMapper):
         None.
         
         """
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
         if not isinstance(traitvalue,float):
             traitvalue = float(traitvalue)
         setattr(self.widget,widgetproperty,traitvalue)
@@ -994,6 +1001,9 @@ class DataTableMapper(TraitWidgetMapper):
         None.
         
         """
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
+
         num_columns = len(self.widget.columns)
         if isinstance(self.traittype,(List,Tuple)):
             new_data = {self.widget.columns[0].field:traitvalue}
@@ -1132,6 +1142,7 @@ class MultiSelectMapper(TraitWidgetMapper):
         self.traitname = traitname
         self.traittype = obj.trait(traitname).trait_type
         self.item_dtype = obj.trait(traitname).trait_type.item_trait.trait_type.fast_validate[1]
+        self.traitdescription = obj.trait(traitname).desc
         try:
             self.traitvalue = getattr(obj,traitname)
         except AttributeError: # in case of Delegate
@@ -1207,6 +1218,8 @@ class MultiSelectMapper(TraitWidgetMapper):
         None.
         
         """
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
         setattr(self.widget,widgetproperty,[str(v) for v in traitvalue])
 
     def _set_traitvalue(self,widgetvalue):

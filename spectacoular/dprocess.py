@@ -82,7 +82,8 @@ class MicGeomPresenter(BasePresenter):
     source = Instance(MicGeom)
     
     #: ColumnDataSource that holds data that can be consumed by plots and glyphs
-    cdsource = Instance(ColumnDataSource, kw={'data':{'x':[],'y':[],'z':[],'xi':[],'yi':[],'zi':[], 'channels':[]}})
+    cdsource = Instance(ColumnDataSource, kw={'data':{
+        'x':[],'y':[],'z':[],'xi':[],'yi':[],'zi':[], 'channels':[], 'alpha':[]}})
 
     @observe("source.digest")
     def _update(self, event):
@@ -90,19 +91,21 @@ class MicGeomPresenter(BasePresenter):
             self.update()
     
     def update(self, **optional_items):
+        nmics_total = self.source.pos_total.shape[1]
         if self.source.num_mics > 0:
             pos = self.source.pos_total.copy()
             pos[:,self.source.invalid_channels] = np.nan
-            self.cdsource.data = {
-                    'x' : self.source.pos_total[0,:].tolist(), 
-                    'y' : self.source.pos_total[1,:].tolist(),
-                    'z' : self.source.pos_total[2,:].tolist(),
-                    'xi' : pos[0,:].tolist(), # invalid channels are set to np.nan
-                    'yi' : pos[1,:].tolist(), # invalid channels are set to np.nan
-                    'zi' : pos[2,:].tolist(), # invalid channels are set to np.nan
-                    'channels' : [str(_) for _ in range(self.source.pos_total.shape[1])],
+            self.cdsource.data.update({
+                    'x' : self.source.pos_total[0,:], 
+                    'y' : self.source.pos_total[1,:],
+                    'z' : self.source.pos_total[2,:],
+                    'xi' : pos[0,:], # invalid channels are set to np.nan
+                    'yi' : pos[1,:], # invalid channels are set to np.nan
+                    'zi' : pos[2,:], # invalid channels are set to np.nan
+                    'channels' : [str(_) for _ in range(nmics_total)],
+                    'alpha' : np.ones(nmics_total),
                     **optional_items
-                    }        
+                    })        
         else:
             self.cdsource.data = {
                 'x':[],'y':[], 'z':[], 'xi' : [], 'yi' : [], 'zi' : [],'channels':[], **optional_items}   

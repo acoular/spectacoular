@@ -10,28 +10,25 @@ classes might move to Acoular module in the future.
     TimeSamplesPhantom
     TimeOutPresenter
     CalibHelper
-    FiltOctaveLive
     TimeSamplesPlayback
 """
 import acoular as ac
+from acoular.deprecation import deprecated_alias
 
-from numpy import logical_and,mean,array,newaxis, zeros,\
- arange
-
-from scipy.signal import lfilter
+import numpy as np
 from datetime import datetime
-from time import time,sleep
-from bokeh.models.widgets import TextInput,DataTable,TableColumn,\
+from time import time, sleep
+from bokeh.models.widgets import TextInput, DataTable, TableColumn, \
     NumberEditor, NumericInput
 from bokeh.models import ColumnDataSource
-from traits.api import Property, File, CArray,Int, cached_property, on_trait_change, Float,Bool, Instance, ListInt
+from traits.api import Property, File, CArray, Int, cached_property, on_trait_change, Float, Bool, Instance, ListInt
 
 from .dprocess import BasePresenter
 from .factory import BaseSpectacoular
 
 invch_columns = [TableColumn(field='invalid_channels', title='invalid_channels', editor=NumberEditor()),]
 
-class TimeSamplesPhantom(ac.MaskedTimeSamples,BaseSpectacoular):
+class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
     """
     TimeSamples derived class for propagating signal processing blocks with
     user-defined time delay.
@@ -50,25 +47,25 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples,BaseSpectacoular):
     collectsamples = Bool(True,
         desc="Indicates if result function is running")
 
-    trait_widget_mapper = {'name': TextInput,
+    trait_widget_mapper = {'file': TextInput,
                         'basename': TextInput,
                         'start' : NumericInput,
                         'stop' : NumericInput,
                         'num_samples': NumericInput,
                         'sample_freq': NumericInput,
-                        'invalid_channels':DataTable,
+                        'invalid_channels': DataTable,
                         'num_channels' : NumericInput,
                         'time_delay': NumericInput,
                         }
-    trait_widget_args = {'name': {'disabled':False},
-                        'basename': {'disabled':True},
-                        'start':  {'disabled':False, 'mode':'int'},
-                        'stop':  {'disabled':False, 'mode':'int'},
-                        'num_samples':  {'disabled':True, 'mode':'int'},
-                        'sample_freq':  {'disabled':True, 'mode':'float'},
-                        'invalid_channels': {'disabled':False,'editable':True, 'columns':invch_columns},
-                        'num_channels': {'disabled':True,'mode':'int'},
-                        'time_delay': {'disabled':False, 'mode':'float'},
+    trait_widget_args = {'file': {'disabled': False},
+                        'basename': {'disabled': True},
+                        'start':  {'disabled': False, 'mode': 'int'},
+                        'stop':  {'disabled': False, 'mode': 'int'},
+                        'num_samples':  {'disabled': True, 'mode': 'int'},
+                        'sample_freq':  {'disabled': True, 'mode': 'float'},
+                        'invalid_channels': {'disabled': False, 'editable': True, 'columns': invch_columns},
+                        'num_channels': {'disabled': True, 'mode': 'int'},
+                        'time_delay': {'disabled': False, 'mode': 'float'},
                         }
 
     def result(self, num=128):
@@ -97,7 +94,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples,BaseSpectacoular):
         i = 0
         if self.calib:
             if self.calib.num_mics == self.num_channels:
-                cal_factor = self.calib.data[newaxis]
+                cal_factor = self.calib.data[np.newaxis]
             else:
                 raise ValueError("calibration data not compatible: %i, %i" % \
                             (self.calib.num_mics, self.num_channels))
@@ -113,7 +110,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples,BaseSpectacoular):
                 
                 
                 
-class TimeOutPresenter(ac.TimeOut,BasePresenter):
+class TimeOutPresenter(ac.TimeOut, BasePresenter):
     """
     :class:`TimeOut` derived class for building an interface from Acoular's generator 
     pipelines to Bokeh's ColumnDataSource model that serves as a source for
@@ -124,9 +121,9 @@ class TimeOutPresenter(ac.TimeOut,BasePresenter):
     """       
 
     #: Bokeh's ColumnDataSource, updated from result loop
-    data = ColumnDataSource(data={'data':array([])}) 
+    cdsource = Instance(ColumnDataSource, kw={'data': {'data': np.array([])}}) 
 
-    def result(self,num):
+    def result(self, num):
         """
         Python generator that yields the output block-wise.
                 
@@ -142,14 +139,11 @@ class TimeOutPresenter(ac.TimeOut,BasePresenter):
             The last block may be shorter than num.
         """
         for temp in self.source.result(num):
-            self.data.data['data'] = temp
+            self.cdsource.data['data'] = temp
             yield temp
 
 
-
-columns = [TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
-           TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor())]
-
+@deprecated_alias({'name': 'file'})
 class CalibHelper(ac.TimeOut, BaseSpectacoular):
     """
     Class for calibration of individual source channels 
@@ -160,8 +154,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     
     #: Name of the file to be saved. If none is given, the name will be
     #: automatically generated from a time stamp.
-    name = File(filter=['*.xml'], 
-        desc="name of data file")    
+    file = File(filter=['*.xml'], desc="name of data file")
 
     #: calibration level (e. g. dB or Pa) of calibration device 
     magnitude = Float(114,
@@ -176,7 +169,6 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     #: array of floats with dimension (num_channels)
     calibfactor = CArray(dtype=float,
        desc="determined calibration factor")
-
 
     #: max elements/averaged blocks to calculate calibration value. 
     buffer_size = Int(100,
@@ -194,47 +186,45 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     # internal identifier
     digest = Property( depends_on = ['source.digest', '__class__'])
 
-    trait_widget_mapper = {'name': TextInput,
+    trait_widget_mapper = {'file': TextInput,
                            'magnitude': NumericInput,
-                            'calibdata' : DataTable,
                            'buffer_size' : NumericInput,
                            'calibstd': NumericInput,
                            'delta': NumericInput,
                        }
 
-    trait_widget_args = {'name': {'disabled':False},
-                         'magnitude': {'disabled':False, 'mode': 'float'},
-                           'calibdata':  {'editable':True,'columns':columns},
-                         'buffer_size':  {'disabled':False,'mode': 'int'},
-                         'calibstd':  {'disabled':False, 'mode': 'float'},
-                         'delta': {'disabled':False, 'mode': 'float'},
+    trait_widget_args = {'file': {'disabled': False},
+                         'magnitude': {'disabled': False, 'mode': 'float'},
+                         'buffer_size':  {'disabled': False, 'mode': 'int'},
+                         'calibstd':  {'disabled': False, 'mode': 'float'},
+                         'delta': {'disabled': False, 'mode': 'float'},
                          }
     
-    def to_pa(self,level):
+    def to_pa(self, level):
         return (10**(level/10))*(4e-10)
 
     @cached_property
-    def _get_digest( self ):
+    def _get_digest(self):
         return ac.internal.digest(self)
 
     @on_trait_change('source, source.num_channels')
     def adjust_calib_values(self):
-        diff = self.num_channels-self.calibdata.shape[0]
+        diff = self.num_channels - self.calibdata.shape[0]
         if self.calibdata.size == 0 or diff != 0:
-            self.calibdata = zeros((self.num_channels,2))
+            self.calibdata = np.zeros((self.num_channels, 2))
 
     def create_filename(self):
         if self.name == '':
             stamp = datetime.fromtimestamp(time()).strftime('%H:%M:%S')
-            self.name = 'calib_file_'+stamp.replace(':','')+'.xml'
+            self.name = 'calib_file_' + stamp.replace(':', '') + '.xml'
 
     def save(self):
         self.create_filename()
 
-        with open(self.name,'w') as f:
+        with open(self.name, 'w') as f:
             f.write(f'<?xml version="1.0" encoding="utf-8"?>\n<Calib name="{self.name}">\n')
             for i in range(self.num_channels):
-                channel_string = str(i+1)
+                channel_string = str(i + 1)
                 fac = self.calibfactor[i]
                 f.write(f'	<pos Name="Point {channel_string}" factor="{fac}"/>\n')
             f.write('</Calib>')
@@ -257,15 +247,15 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
         """
         self.adjust_calib_values()
         nc = self.num_channels
-        self.calibfactor = zeros(self.num_channels)
-        buffer = zeros((self.buffer_size,nc))
+        self.calibfactor = np.zeros(self.num_channels)
+        buffer = np.zeros((self.buffer_size, nc))
         for temp in self.source.result(num):
             ns = temp.shape[0]
-            bufferidx = self.buffer_size-ns
+            bufferidx = self.buffer_size - ns
             buffer[0:bufferidx] = buffer[-bufferidx:]  # copy remaining samples in front of next block
-            buffer[-ns:,:] = ac.L_p(temp)
-            calibmask = logical_and(buffer > (self.magnitude-self.delta),
-                                  buffer < (self.magnitude+self.delta)
+            buffer[-ns:, :] = ac.L_p(temp)
+            calibmask = np.logical_and(buffer > (self.magnitude - self.delta),
+                                  buffer < (self.magnitude + self.delta)
                                   ).sum(0) 
             # print(calibmask)
             if (calibmask.max() == self.buffer_size) and (calibmask.sum() == self.buffer_size):
@@ -273,60 +263,21 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
                 # print(buffer[:,idx].std())
                 if buffer[:,idx].std() < self.calibstd:
                     calibdata = self.calibdata.copy()
-                    calibdata[idx,:] = [mean(buffer[:,idx]), self.magnitude]
+                    calibdata[idx, :] = [np.mean(buffer[:, idx]), self.magnitude]
                     # self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
                     self.calibdata = calibdata
-                    print(self.calibdata[idx,:])
+                    print(self.calibdata[idx, :])
                         
-            for i in arange(self.num_channels):
-                self.calibfactor[i] = self.to_pa(self.magnitude)/self.to_pa(float(self.calibdata[i,0]))
+            for i in np.arange(self.num_channels):
+                self.calibfactor[i] = self.to_pa(self.magnitude) / self.to_pa(float(self.calibdata[i, 0]))
             yield temp
             
-
-class FiltOctaveLive( ac.FiltFiltOctave, BaseSpectacoular ):
-    """
-    Octave or third-octave filter (not zero-phase).
-    
-    This class is similar to Acoular's :class:`~acoular.tprocess.FiltFiltOctave`.
-    The only difference is that the filter coefficients can be changed while 
-    the result function is executed. 
-    """
-
-    trait_widget_mapper = {'band': NumericInput,
-                       }
-
-    trait_widget_args = {'band': {'disabled':False, 'mode': 'float'},
-                         }
-
-    def result(self, num):
-        """ 
-        Python generator that yields the output block-wise.
-
-        
-        Parameters
-        ----------
-        num : integer
-            This parameter defines the size of the blocks to be yielded
-            (i.e. the number of samples per block).
-        
-        Returns
-        -------
-        Samples in blocks of shape (num, num_channels). 
-            Delivers the bandpass filtered output of source.
-            The last block may be shorter than num.
-        """
-        
-        for block in self.source.result(num):
-            b, a = self.ba(3) # filter order = 3
-            zi = zeros((max(len(a), len(b))-1, self.source.num_channels))
-            block, zi = lfilter(b, a, block, axis=0, zi=zi)
-            yield block
 
 if ac.config.have_sounddevice:                
     import sounddevice as sd
     columns = [TableColumn(field='channels', title='channels', editor=NumberEditor()),]
 
-    class TimeSamplesPlayback(ac.TimeOut,BaseSpectacoular):
+    class TimeSamplesPlayback(ac.TimeOut, BaseSpectacoular):
         """
         Naive class implementation to allow audio playback of .h5 file contents. 
         
@@ -357,39 +308,38 @@ if ac.config.have_sounddevice:
         trait_widget_mapper = {'channels': DataTable,
                            }
     
-        trait_widget_args = {'channels': {'disabled':False, 'columns':columns},
+        trait_widget_args = {'channels': {'disabled': False, 'columns': columns},
                          }
     
         @cached_property
-        def _get_digest( self ):
+        def _get_digest(self):
             return ac.internal.digest(self)
         
-        def _get_device( self ):
+        def _get_device(self):
             return list(sd.default.device)
         
-        def _set_device( self, device ):
+        def _set_device(self, device):
             sd.default.device = device
         
-        def play( self ):
+        def play(self):
             """
             normalized playback of source channels given by :attr:`channels` trait
             """
             if self.channels:
-                if isinstance(self.source,ac.MaskedTimeSamples):
+                if isinstance(self.source, ac.MaskedTimeSamples):
                     sig = self.source.data[
-                        self.source.start:self.source.stop,self.channels].sum(1)
+                        self.source.start:self.source.stop, self.channels].sum(1)
                 else:
-                    sig = self.source.data[:,self.channels].sum(1)
+                    sig = self.source.data[:, self.channels].sum(1)
                 norm = abs(sig).max()
-                sd.play(sig/norm,
+                sd.play(sig / norm,
                         samplerate=self.sample_freq,
                         blocking=False)
             
-        def stop( self ):
+        def stop(self):
             """method stops audio playback of file content"""
             sd.stop()
 
         def result(self, num):
             """simple generator that yields the output block-wise."""
             yield from self.source.result(num)
-

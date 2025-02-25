@@ -103,6 +103,7 @@ def server_doc(doc):
         child=layout([
             [mic_layout.widgets['file']],
             [mic_layout.widgets['num_mics']],
+            [mic_layout.widgets['invalid_channels']],
             [Spacer(width=400, height=10)],
             [mic_layout.widgets['pos_total']],
         ], width=TAB_WIDTH),
