@@ -1,21 +1,6 @@
 #------------------------------------------------------------------------------
 # Copyright (c) 2007-2020, Acoular Development Team.
 #------------------------------------------------------------------------------
-"""
-app can be started with:
-bokeh serve --show Measurement_App --args --argName=argValue
-
-# Processing / Acoular
-#
-#                                    |-> TimePower -> Average -> Amplitude Bar
-#                                    |-> FiltOctave ->  TimePower -> Average -> Calibration    
-# SamplesGenerator -> SampleSplitter |-> BeamformerTime -> FiltOctave -> TimePower -> Average -> Beamforming
-#                                    |-> WriteH5   
-
-In case of SINUS Devices:
-if sync order of pci cards should be specified use
-bokeh serve --show Measurement_App --args --device=typhoon --syncorder SerialNb1 SerialNb2 ...
-"""
 import argparse
 from pathlib import Path
 
@@ -256,10 +241,10 @@ all_bf_valid.on_click(_all_valid)
 
 # set up widgets for Amplitude Bar
 clip_level = NumericInput(value=120, title="Clip Level/dB",width=100)
-label_options = ["Index","Number"]
+label_options = ["Number","Index"]
 if use_sinus:
     label_options.insert(0, "Physical")
-labelSelect = Select(title="Select Channel Labeling:", value='Index', options=label_options)
+labelSelect = Select(title="Select Channel Labeling:", value=label_options[0], options=label_options)
 
 for w in rgWidgets.values():
     control.widgets_disable['beamf'].append(w)
@@ -426,11 +411,16 @@ mics_bf_tab = Panel(
     child=row(column(camera_control,mics_beamf_fig), mic_bf_control),
     title='Microphone Geometry / Beamforming')
 
-tabs = Tabs(tabs=[
+control_tabs = [
     amplitudesTab,
     mics_bf_tab,
     calibration.get_tab(),
-    ], sizing_mode='inherit', width=1700, height=800)
+    ]
+if use_sinus:
+    for t in control.get_tab():
+        control_tabs.append(t)
+
+tabs = Tabs(tabs=control_tabs, sizing_mode='inherit', width=1700, height=800)
 
 control_column = control.get_widgets()
 
@@ -444,9 +434,3 @@ root = column(
 )
 doc.add_root(root)
 doc.title = "Measurement App"
-
-# if sinus_enabled:
-#     # Additional Panel when SINUS Messtechnik API is used
-#     teds_component = get_teds_component(devInputManager,log.logger)
-#     sinusTab = Panel(child=teds_component,title='SINUS Messtechnik')
-#     tabs.tabs.append(sinusTab)

@@ -6,14 +6,15 @@ from functools import partial
 from datetime import datetime
 from threads import SamplesThread,EventThread
 from layout import toggle_labels, plot_colors, button_height
+from acoular_future.tprocess import MaskedChannels
 from pathlib import Path
 import numpy as np
 from time import sleep
 
 from bokeh.models import TabPanel as Panel, CustomJS, ColumnDataSource
-from bokeh.layouts import column, Spacer, row
+from bokeh.layouts import column, Spacer, row, layout
 from bokeh.models.widgets import Toggle, TextInput, CheckboxGroup, Select, Button, Div,\
-    DataTable, TableColumn, NumberEditor, NumericInput
+    DataTable, TableColumn, NumberEditor, NumericInput, Slider
 from bokeh.plotting import figure
 from bokeh.models.ranges import Range1d
 try:
@@ -32,7 +33,7 @@ def _get_channel_labels(source, ltype='Number'):
     elif ltype == 'Number':
         labels = [str(i+1) for i in range(source.num_channels)]
     elif ltype == 'Physical':
-        labels = [source.inchannels_[i] for i in range(source.num_channels)]
+        labels = [ch.name for ch in source._enabled_analog_inputs]
     return labels
 
 
@@ -49,7 +50,7 @@ class MeasurementControl:
         self.msm = ac.WriteH5(source=self.splitter)
         self.calib = sp.CalibHelper(source = ac.Average(source=ac.TimePower(source=sp.FiltOctave(source=self.splitter,band=1000.0)),num_per_average=blocksize))
         if steer is not None:
-            self.beamf = sp.TimeOutPresenter(source=ac.Average(source=ac.TimePower(source=sp.FiltOctave(source=ac.BeamformerTime(source=sp.MaskedTimeOut(source=self.splitter), steer=steer), band=cfreq)), num_per_average = blocksize))
+            self.beamf = sp.TimeOutPresenter(source=ac.Average(source=ac.TimePower(source=sp.FiltOctave(source=ac.BeamformerTime(source=MaskedChannels(source=self.splitter), steer=steer), band=cfreq)), num_per_average = blocksize))
         self.logger = logger
 
         # create measurement toggle button
@@ -413,31 +414,36 @@ class SinusControl(MeasurementControl):
         kwargs['source'] = SinusSamplesGenerator(device=self.device)
         super().__init__(**kwargs)
 
+        # cds
+        self.teds_cds = ColumnDataSource(data={})
         # Widgets
         value = "None"
         if config_name is not None:
             value = config_name
         config_options = ["None"] + [f.name for f in Path(config_dir).iterdir() if f.is_file()]
 
-        self.select_setting = Select(title="Select Settings:", value=value, options=config_options)
-        self.reload_settings_options = Button(label="↻",disabled=False,width=40)
-        self.settings_button = Button(label="Load Setting",disabled=False)
-        self.level_select = Select(title="Select which level to load:", value="AnalogInput", options=[
+        self.select_setting = Select(title="Select Settings:", value=value, options=config_options, width=100)
+        self.reload_settings_options = Button(label="↻", disabled=False, width=30)
+        self.settings_button = Button(label="Load Setting", disabled=False, button_type="warning")
+        self.level_select = Select(title="Select Level to load:", value="AnalogInput", options=[
             (None, "All"), ("AnalogInput", "AnalogInput"), ("Device", "Device")])
-        self.buffer_cds = ColumnDataSource(data=dict(filling=[0]))
+        self.buffer_cds = ColumnDataSource(data=dict(filling=[0], y=['buffer']))
+        self.set_sinus_callbacks()
+        self.buffer_bar = self.create_buffer_bar()
 
     def create_buffer_bar(self):
-        block_count = self.device.BlockCount[0]
-        buffer_bar = figure(
-            title="Buffer",y_range=['buffer'], height=50, x_range=(0,block_count))
-        buffer_bar.xgrid.visible = False
-        buffer_bar.ygrid.visible = False
-        buffer_bar.toolbar.logo = None
-        buffer_bar.toolbar_location = None
-        buffer_bar.axis.visible = False
-        buffer_bar.grid.visible = False
-        return buffer_bar.hbar(y='y', height=0.9, left=0, right='filling',
+        block_count = int(self.device.pci[0].BlockCount)
+        self.buffer_bar = figure(
+            title="Buffer", y_range=['buffer'], height=50, x_range=(0, block_count))
+        self.buffer_bar.xgrid.visible = False
+        self.buffer_bar.ygrid.visible = False
+        self.buffer_bar.toolbar.logo = None
+        self.buffer_bar.toolbar_location = None
+        self.buffer_bar.axis.visible = False
+        self.buffer_bar.grid.visible = False
+        self.buffer_bar.hbar(y='y', height=0.9, left=0, right='filling',
                                 source=self.buffer_cds)
+        return self.buffer_bar
 
     def update_buffer_bar(self):
         self.buffer_cds.data['filling'] = np.array([self.stream._pdiff_in])
@@ -456,16 +462,11 @@ class SinusControl(MeasurementControl):
             self.logger.error("{}".format(e_text))
             return
         self.logger.info("set settings ok!")
-        self.update_widgets_and_glyphs()
+        self.update_widgets_and_glyphs(None)
 
-    def update_widgets_and_glyphs(self):
-        # ticker = list(arange(1,inputSignalGen.num_channels+1))
-        # ChLevelsCDS.data = {'channels':ticker,'level': zeros(inputSignalGen.num_channels)}
-        # amp_fig.xaxis.ticker = ticker
-        # amp_fig.xaxis.major_label_overrides = {str(ticker[i]): inputSignalGen.inchannels_[i] for i in range(inputSignalGen.num_channels)}
-        # checkbox_micgeom.labels = inputSignalGen.inchannels_
-        # checkbox_micgeom.active = [_ for _ in range(inputSignalGen.num_channels)]
-        block_count = self.device.BlockCount[0]
+    def update_widgets_and_glyphs(self, event):
+        block_count = int(self.device.pci[0].BlockCount)
+        self.logger.debug(f"update buffer bar, new block count: {block_count}")
         self.buffer_bar.x_range=Range1d(0,int(block_count))
 
     def get_widgets(self):
@@ -473,7 +474,8 @@ class SinusControl(MeasurementControl):
                 self.exit_button,
                 Spacer(height=100),
                 row(column(Spacer(height=15),self.reload_settings_options),self.select_setting),
-                row(self.settings_button, self.level_select),
+                self.level_select,
+                self.settings_button,
                 self.ti_savename,
                 self.current_time_checkbox,  
                 self.ti_msmtime,
@@ -481,12 +483,142 @@ class SinusControl(MeasurementControl):
                 self.calib_toggle, 
                 self.beamf_toggle, 
                 self.msm_toggle, 
+                self.buffer_bar,
                 self.update_period,
                 ], width=150)
 
     def set_sinus_callbacks(self):
         self.reload_settings_options.on_click(self.update_select_settings_options_callback)
         self.settings_button.on_click(self.settings_callback)  
+
+    def get_analog_input_tab(self):
+        set_settings_button = Button(label="Set Analog Input Settings", button_type="warning")
+        def _callback(event):
+            for aio in self.device.analog_inputs:
+                aio.set_settings()
+        set_settings_button.on_click(_callback)
+        set_settings_button.on_click(self._update_teds_data)
+        # create widgets
+        analog_input_widgets = []
+        for aio in self.device.analog_inputs:
+            trait_widget_mapper = {'name': TextInput, 'sensitivity': NumericInput}
+            trait_widget_mapper.update({k: Select for k in aio._settable_attr})
+            trait_widget_args = {'sensitivity': {'mode': 'float'}, 'name': {'disabled': True}}
+            analog_input_widgets.append(
+                list(sp.get_widgets(aio, trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args)
+                .values()))
+        return Panel(child=layout([[set_settings_button],[analog_input_widgets]]), title="Analog Input Settings")
+
+    def get_analog_output_tab(self):
+        set_settings_button = Button(label="Set Analog Output Settings", button_type="warning")
+        def _callback(event):
+            for aio in self.device.analog_outputs:
+                aio.set_settings()
+        set_settings_button.on_click(_callback)
+        # create widgets
+        analog_output_widgets = []
+        for aio in self.device.analog_outputs:
+            trait_widget_mapper = {'name': TextInput}
+            trait_widget_mapper.update({k: Select for k in aio._settable_attr})
+            trait_widget_args = {'name': {'disabled': True}}
+            analog_output_widgets.append(
+                list(sp.get_widgets(aio, trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args)
+                .values()))
+        return Panel(child=layout([[set_settings_button],[analog_output_widgets]]), title="Analog Output Settings")
+
+    def get_device_tab(self):
+        set_settings_button = Button(label="Set PCI Device Settings", button_type="warning")
+        def _callback(event):
+            for pci in self.device.pci:
+                pci.set_settings()
+        set_settings_button.on_click(_callback)
+        set_settings_button.on_click(self.update_widgets_and_glyphs)
+        # create widgets
+        devices_widgets = []
+        for pci in self.device.pci:
+            trait_widget_mapper = {'serial': TextInput, 'BlockCount': Slider}
+            trait_widget_mapper.update({k: Select for k in pci._settable_attr if k != 'BlockCount'})
+            mics_trait_widget_args = {'serial': {'disabled': True}}
+            devices_widgets.append(
+                list(sp.get_widgets(pci, trait_widget_mapper=trait_widget_mapper, trait_widget_args=mics_trait_widget_args)
+            .values()))
+        return Panel(child=layout([[set_settings_button],[devices_widgets]]), title="PCI Device Settings")
+
+    def get_adc_to_dac_tab(self):
+        set_settings_button = Button(label="Set ADC to DAC Settings", button_type="warning")
+        def _callback(event):
+            for adc in self.device.adc_to_dac:
+                adc.set_settings()
+        set_settings_button.on_click(_callback)
+        # create widgets
+        adc_to_dac_widgets = []
+        for adc in self.device.adc_to_dac:
+            trait_widget_mapper = {'name': TextInput}
+            trait_widget_mapper.update({k: Select for k in adc._settable_attr})
+            trait_widget_args = {'name': {'disabled': True}}
+            adc_to_dac_widgets.append(
+                list(sp.get_widgets(adc, trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args)
+                .values()))
+        return Panel(child=layout([[set_settings_button],[adc_to_dac_widgets]]), title="ADC to DAC Settings")
+
+    def _update_teds_data(self, event):
+        self.teds_cds.data = {
+            'channel' : [c.name for c in self.device.analog_inputs],
+            'serial' : [c.TEDSData.get('SensorSerNo', "") if hasattr(c, 'TEDSData') else "" for c in self.device.analog_inputs],
+            'sensitivity': [c.TEDSData.get('SensorSensitivity', "") if hasattr(c, 'TEDSData') else "" for c in self.device.analog_inputs],
+            'wiredata': [c.TEDSData.get('1_Wire_Data', "") if hasattr(c, 'TEDSData') else "" for c in self.device.analog_inputs],
+            'calibdate': [c.TEDSData.get('CalibDate', "") if hasattr(c, 'TEDSData') else "" for c in self.device.analog_inputs],
+            'calibperiod': [c.TEDSData.get('CalibPeriod', "") if hasattr(c, 'TEDSData') else "" for c in self.device.analog_inputs],
+            'chipserial': [c.TEDSData.get('ChipSerNo', "") if hasattr(c, 'TEDSData') else "" for c in self.device.analog_inputs],
+            'manufacturer': [c.TEDSData.get('Manufacturer', "") if hasattr(c, 'TEDSData') else "" for c in self.device.analog_inputs],
+            'sensorversion': [c.TEDSData.get('SensorVersion', "") if hasattr(c, 'TEDSData') else "" for c in self.device.analog_inputs],
+            'tedstemp': [c.TEDSData.get('TEDS_Template', "") if hasattr(c, 'TEDSData') else "" for c in self.device.analog_inputs],
+        }
+
+    def get_teds_tab(self):
+        tedscolumns = [
+            TableColumn(field='channel', title='Channel'),
+            TableColumn(field='serial', title='SensorSerNo'),
+            TableColumn(field='sensitivity', title='SensorSensitivity'),
+            TableColumn(field='wiredata', title='1_Wire_Data'),
+            TableColumn(field='calibdate', title='CalibDate'),
+            TableColumn(field='calibperiod', title='CalibPeriod'),
+            TableColumn(field='chipserial', title='ChipSerNo'),
+            TableColumn(field='manufacturer', title='Manufacturer'),
+            TableColumn(field='sensorversion', title='SensorVersion'),
+            TableColumn(field='tedstemp', title='TEDS_Template'),
+            ]
+        self._update_teds_data(None)
+        teds_table = DataTable(source=self.teds_cds, columns=tedscolumns, sizing_mode='stretch_width')  
+        download_button = Button(label="📥", button_type="warning", sizing_mode='fixed', width=30, height=30)
+        download_js = CustomJS(args=dict(source=self.teds_cds), code="""
+            var data = source.data;
+            var filetext = '';
+            var columns = Object.keys(data);
+            
+            // Add header row
+            filetext += columns.join(',') + '\\n';
+            
+            // Add rows
+            var nrows = data[columns[0]].length;
+            for (var i = 0; i < nrows; i++) {
+                var row = columns.map(col => data[col][i]);
+                filetext += row.join(',') + '\\n';
+            }
+            
+            // Create a Blob and trigger download
+            var blob = new Blob([filetext], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'teds_data.csv';
+            link.click();
+        """)
+        
+        download_button.js_on_click(download_js)
+        return Panel(child=layout([[download_button, teds_table]], sizing_mode='stretch_both'), title="TEDS Data")
+
+    def get_tab(self):
+        return self.get_device_tab(), self.get_analog_input_tab(), self.get_analog_output_tab(), self.get_adc_to_dac_tab(), self.get_teds_tab()
 
 
 class Calibration:

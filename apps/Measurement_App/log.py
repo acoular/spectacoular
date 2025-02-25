@@ -1,12 +1,16 @@
 import logging
+import importlib
 from bokeh.models.widgets import TextAreaInput
 from layout import COLOR
 from collections import deque
+from tapy.core.logger import getLogger
+
+
 
 class LogWidget:
     """A class providing a Bokeh TextAreaInput widget for logging and simultaneously writing logs to a file."""
 
-    def __init__(self, doc, logname="MeasurementApp.log", loglength=50, loglevel=logging.INFO, background=COLOR[1]):
+    def __init__(self, doc, logname="MeasurementApp.log", loglength=50, loglevel=logging.DEBUG, background=COLOR[1]):
         self.doc = doc
         self.loglength = loglength
 
@@ -14,8 +18,11 @@ class LogWidget:
         self.log_text = TextAreaInput(title="App Log", value="", disabled=True, background=background,
          sizing_mode="stretch_height", width=300)
 
-        # Create logger
-        self.logger = logging.getLogger(__name__)
+        spec = importlib.util.find_spec('tapy')
+        if spec is None:
+            self.logger = logging.getLogger(__name__)
+        else:
+            self.logger = getLogger('tapy')
         self.logger.setLevel(loglevel)
 
         # Create file handler for logging to a file
@@ -29,11 +36,6 @@ class LogWidget:
         # Add handlers to logger
         self.logger.addHandler(file_handler)
         self.logger.addHandler(widget_handler)
-
-        # Ensure root logger does not propagate logs to default handlers (to avoid duplication)
-        self.logger.propagate = False
-
-        self.logger.info("Measurement App started...")
 
 class LogWidgetHandler(logging.Handler):
     """ Custom logging handler that updates a Bokeh TextAreaInput widget. """
