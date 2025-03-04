@@ -1,9 +1,13 @@
 name: Build conda package
 
 on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
   workflow_dispatch:
-    branches: [ "*" ] 
-  
+    branches: [ "*" ]
+    
 jobs:
   conda_build_and_install:
     name: Test conda deployment of package with Python 3.12
