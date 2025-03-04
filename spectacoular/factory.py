@@ -20,15 +20,13 @@ from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
 TableColumn, NumberEditor, StringEditor, NumericInput, Toggle, MultiSelect
 from bokeh.core.property.descriptors import UnsetValueError
 from traits.api import Enum, Map, TraitEnum, TraitMap, Array, CArray, Any, \
-List, Float, CFloat, Int, CInt, Range, Long, Dict,\
-CLong, HasPrivateTraits, TraitCompound,\
+List, Float, CFloat, Int, CInt, Range, Dict, HasPrivateTraits, TraitCompound, \
 BaseStr, BaseFile, Delegate, Bool, Tuple, Str, Union
 from numpy import array, newaxis, array_equal,\
     concatenate, stack
 from warnings import warn
 
-NUMERIC_TYPES = (Int,Long,CLong,int, 
-                 Float,float, )
+NUMERIC_TYPES = (Int,int, Float,float, )
                  #Complex, complex) # Complex Numbers Missing at the Moment
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
@@ -44,8 +42,6 @@ ALLOWED_WIDGET_TRAIT_MAPPINGS = {
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
     Int : NumericInput,
     CInt : NumericInput,
-    Long: NumericInput,
-    CLong : NumericInput,
     Float : NumericInput,
     CFloat : NumericInput,
     Bool : Toggle,
