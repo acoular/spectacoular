@@ -29,7 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-      'acoular>=24.05',
+      'acoular>=25.01',
       'bokeh >=3.0',
       'sounddevice',
 ]
