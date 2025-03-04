@@ -19,8 +19,8 @@ requirements:
     - hatchling
     - wheel
   run:
-    - python >=3.8
-    - acoular >=24.05
+    - python >=3.10
+    - acoular >=25.01
     - bokeh >=3.0
     - python-sounddevice
 
