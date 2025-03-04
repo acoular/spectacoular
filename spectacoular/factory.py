@@ -26,7 +26,7 @@ from numpy import array, newaxis, array_equal,\
     concatenate, stack
 from warnings import warn
 
-NUMERIC_TYPES = (Int,int, Float,float, )
+NUMERIC_TYPES = (Int,int, Float,float, CInt, CFloat)
                  #Complex, complex) # Complex Numbers Missing at the Moment
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
