@@ -153,7 +153,7 @@ mics_beamf_fig = figure(
 # DEFINE COLUMN DATA SOURCES
 # =============================================================================
 
-amp_cds = ColumnDataSource({'channels':[], 'level':[],'colors':[]})#[COLOR[1]]*num_channels} )
+amp_cds = ColumnDataSource({'channels':[], 'level':[],'colors':[]})
 beamf_cds = ColumnDataSource({'level':[]})
 grid_data = ColumnDataSource(data={# x and y are the centers of the rectangle!
     'x': [(grid.x_max + grid.x_min)/2], 'y': [(grid.y_max + grid.y_min)/2],
@@ -221,7 +221,7 @@ all_mics_valid.on_click(_all_mics_valid)
 invalid_input_channels = MultiSelect(
     title="Not-Array Channels", height=150, 
     description="Select which input channels should not be used for beamforming",
-    value=[], options=_get_channel_labels(control.source, 'Index'))
+    value=[])
 control.beamf.source.source.source.source.source.set_widgets(**{'invalid_channels':invalid_input_channels})
 auto_level_toggle = Toggle(label="Auto Level", button_type="success",active=True)
 dynamic_range = NumericInput(value=20, title="Dynamic Range/dB")
@@ -319,6 +319,9 @@ def update_channel_labels(attr,old,new):
     # update calibration table
     if labelSelect.value in ['Physical','Number']:
         calibration.cal_table.source.data['channel'] = labels
+    # update invalid channels
+    invalid_input_channels.options = [
+        (i,j) for i,j in zip(_get_channel_labels(control.source, 'Index'), labels)]
 
 update_channel_labels(None,None,None)
 labelSelect.on_change('value',update_channel_labels)

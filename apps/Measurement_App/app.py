@@ -462,6 +462,7 @@ class SinusControl(MeasurementControl):
             self.logger.error("{}".format(e_text))
             return
         self.logger.info("set settings ok!")
+        self.source._enabled_analog_inputs # trigger update of fs and num_channels  
         self.update_widgets_and_glyphs(None)
 
     def update_widgets_and_glyphs(self, event):
@@ -496,6 +497,7 @@ class SinusControl(MeasurementControl):
         def _callback(event):
             for aio in self.device.analog_inputs:
                 aio.set_settings()
+            self.source._enabled_analog_inputs # trigger update of fs and num_channels
         set_settings_button.on_click(_callback)
         set_settings_button.on_click(self._update_teds_data)
         # create widgets
