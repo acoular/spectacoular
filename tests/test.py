@@ -2,7 +2,7 @@
 # Copyright (c) Acoular Development Team.
 #------------------------------------------------------------------------------
 from traits.api import HasPrivateTraits, Str, CArray, Range, Int, Float,\
-File, Property, Trait, List, ListStr, ListInt, ListFloat, \
+File, Property, Trait, List, ListStr, ListFloat, \
 Bool,Tuple, Any
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import TextInput, Slider,DataTable, Select,TableColumn
@@ -382,7 +382,7 @@ class ListWidgetMapping(Test):
     testListStr2 = ListStr(['1','2']) 
 
     testListInt = List(Int()) 
-    testListInt2 = ListInt([1,2,3,4,5]) 
+    testListInt2 = List(int, [1,2,3,4,5]) 
 
     testListFloat = List(Float()) 
     testListFloat2 = ListFloat([1.,2.,3.,4.,5.]) 

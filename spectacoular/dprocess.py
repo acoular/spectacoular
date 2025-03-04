@@ -14,7 +14,7 @@
 """
 from bokeh.models.widgets import NumericInput, DataTable
 from bokeh.models import ColumnDataSource
-from traits.api import Trait, Int, Float, Instance, ListInt, Bool, observe
+from traits.api import Trait, Int, Float, Instance, Bool, observe, List
 import numpy as np
 from acoular import TimeSamples,BeamformerBase, L_p, MicGeom,\
 PointSpreadFunction, MaskedTimeSamples
@@ -232,7 +232,7 @@ class TimeSamplesPresenter(BasePresenter):
         'xs':[],'ys':[],'ch':[]}})
     
     #: Indices of channel to be considered for updating of ColumnDataSource 
-    channels = ListInt([])
+    channels = List(int)
     
     # Number of samples to appear in the plot, best practice is to use the width of the plot
     _numsubsamples = Int(-1)

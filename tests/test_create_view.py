@@ -24,7 +24,6 @@ from traits.api import (
     Int,
     List,
     ListFloat,
-    ListInt,
     ListStr,
     Map,
     Range,
@@ -360,7 +359,7 @@ class DataTableTest(BaseMapperTest):
     test_traits = [Array(value=np.random.random((5,5)).astype('float'),dtype=str),CArray(value=np.random.random((5,5)).astype('float'),dtype=str),
                     Array(value=np.random.random((5,5)).astype('int'),dtype=int),CArray(value=np.random.random((5,5)).astype('int'),dtype=int),
                     Array(value=np.random.random((5,5)).astype('str'),dtype=str),CArray(value=np.random.random((5,5)).astype('str'),dtype=str),
-                    List([1,2]),ListInt([1,2]),ListFloat([1.,2.]),ListStr(['1','2']),
+                    List([1,2]),List(int,[1,2]),ListFloat([1.,2.]),ListStr(['1','2']),
                     Tuple((1,2,)),Tuple((1.,2.,)),Tuple(('1','2',)),
                     ] 
 

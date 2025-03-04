@@ -21,7 +21,7 @@ from time import time, sleep
 from bokeh.models.widgets import TextInput, DataTable, TableColumn, \
     NumberEditor, NumericInput
 from bokeh.models import ColumnDataSource
-from traits.api import Property, File, CArray, Int, cached_property, on_trait_change, Float, Bool, Instance, ListInt
+from traits.api import Property, File, CArray, Int, cached_property, on_trait_change, Float, Bool, Instance, List
 
 from .dprocess import BasePresenter
 from .factory import BaseSpectacoular
@@ -295,7 +295,7 @@ if ac.config.have_sounddevice:
         digest = Property( depends_on = ['source.digest', '__class__'])
     
         #: list containing indices of the channels to be played back.
-        channels = ListInt(
+        channels = List(int,
             desc="channel indices to be played back")
         
         #: two-element list containing indices of input and output device to 
