@@ -1,81 +1,22 @@
 #------------------------------------------------------------------------------
 # Copyright (c) Acoular Development Team.
 #------------------------------------------------------------------------------
-from six.moves import xrange  # solves the xrange/range issue for python2/3: in py3 'xrange' is now treated as 'range' and in py2 nothing changes
-
-from numpy import array, ones, hanning, hamming, bartlett, blackman, \
-dot, newaxis, zeros,  fft, fill_diagonal, arange
-
+import acoular as ac
+import numpy as np
+from spectacoular import BaseSpectacoular
 from traits.api import  Int, Property, Trait, \
-Range, Bool, cached_property, property_depends_on, Delegate, CArray, Float
-
-
+Range, Bool, cached_property, property_depends_on, CArray, Float
 from .fastFuncs import calcCSMmav
 
-from acoular.internal import digest
-from acoular.sources import SamplesGenerator
-from acoular.spectra import PowerSpectra, synthetic
-from acoular.tprocess import TimeInOut
-from spectacoular import BaseSpectacoular
 
-class SpectraInOut( TimeInOut ):
-    """Provides the spectra of multichannel time data.   
-        Returns Spectra per block over a Generator.
-    
-    """
-    
-    #: Data source; :class:`~acoular.sources.SamplesGenerator` or derived object.
-    source = Trait(SamplesGenerator)
-
-    #: Sampling frequency of output signal, as given by :attr:`source`.
-    sample_freq = Delegate('source')
-    
-    #:the Windows function for the fft
-    window = Trait('Rectangular', 
-        {'Rectangular':ones, 
-        'Hanning':hanning, 
-        'Hamming':hamming, 
-        'Bartlett':bartlett, 
-        'Blackman':blackman}, 
-        desc="type of window for FFT")
-    
-    #: The floating-number-precision of entries of csm, eigenvalues and 
-    #: eigenvectors, corresponding to numpy dtypes. Default is 64 bit.
-    precision = Trait('complex128', 'complex64', 
-                      desc="precision csm, eva, eve")
-    
-    #generator that yields the fft for every channel
-    def result(self, num=128):
-        """ 
-        Python generator that yields the output block-wise.
-        
-        Parameters
-        ----------
-        num : integer
-            This parameter defines the size of the blocks to be yielded
-            (i.e. the number of samples per block).
-        
-        Returns
-        -------
-        Samples in blocks of shape (numfreq, :attr:`numchannels`). 
-            The last block may be shorter than num.
-            """
-        for temp in self.source.result(num):    
-            wind = self.window_(num)
-            wind = wind[:, newaxis]
-            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)
-            yield ft
-    
-    
-
-class CSMInOut( SpectraInOut,BaseSpectacoular ):
+class CSMInOut( ac.SpectraOut,BaseSpectacoular ):
     """Provides the CSM of multichannel Spectra data.  
-        Returns CSM for every block over a Generator.
     
+    Returns CSM for every block over a Generator.
     """
 
-    #: Source of SpectraInOut
-    source = Trait(SamplesGenerator)
+    #: time data source
+    source = Trait(ac.SamplesGenerator)
 
     #: FFT block size, one of: 128, 256, 512, 1024, 2048 ... 16384,
     #: defaults to 1024.
@@ -114,14 +55,14 @@ class CSMInOut( SpectraInOut,BaseSpectacoular ):
     def _get_indices ( self ):
         try:
             if self.band_width == 0:
-                return arange(self.block_size/2+1,dtype=int)[ self.ind_low: self.ind_high ]
+                return np.arange(self.block_size/2+1,dtype=int)[ self.ind_low: self.ind_high ]
             else:
-                return array([0])
+                return np.array([0])
         except IndexError:
             return range(0)
     
     def fftfreq_fine ( self ):
-        return abs(fft.fftfreq(self.block_size, 1./self.sample_freq)\
+        return abs(np.fft.fftfreq(self.block_size, 1./self.sample_freq)\
                        [:int(self.block_size/2+1)])
     
     def fftfreq ( self ):
@@ -136,7 +77,7 @@ class CSMInOut( SpectraInOut,BaseSpectacoular ):
         if self.band_width == 0:
             return self.fftfreq_fine()
         else:
-            return array([self.center_freq])
+            return np.array([self.center_freq])
     
     def result(self, num=1):
         """ 
@@ -151,27 +92,27 @@ class CSMInOut( SpectraInOut,BaseSpectacoular ):
         
         Returns
         -------
-        Samples in blocks of shape (numfreq, :attr:`numchannels`,:attr:`numchannels`). 
+        Samples in blocks of shape (numfreq, :attr:`num_channels`,:attr:`num_channels`). 
             The last block may be shorter than num.
             """
         bs = self.block_size
         block_sample_freq = self.sample_freq/bs
         #init csm
         numfreq = bs//2 + 1
-        csm_shape = (numfreq, self.source.numchannels, self.source.numchannels)
-        csmBlock = zeros(csm_shape, dtype=self.precision)
+        csm_shape = (numfreq, self.source.num_channels, self.source.num_channels)
+        csmBlock = np.zeros(csm_shape, dtype=self.precision)
         #calc the weight function
         wind = self.window_( bs )
-        block_weight = dot( wind, wind )
-        wind = wind[:,newaxis]
+        block_weight = np.dot( wind, wind )
+        wind = wind[:,np.newaxis]
         #upper diagonal
-        csmUpper = zeros(csm_shape, dtype=self.precision)
+        csmUpper = np.zeros(csm_shape, dtype=self.precision)
         # dsm dummy needed for single band workaround
         block=0
         alpha = 1.0 # initial value
         numblocks = 1 # num
         for temp in self.source.result(bs):
-            ft = fft.rfft(temp*wind, None, 0).astype(self.precision)
+            ft = np.fft.rfft(temp*wind, None, 0).astype(self.precision)
             #calc csm 
             calcCSMmav(csmUpper, ft, alpha) #calcCSM(csmUpper, ft)
 
@@ -180,13 +121,13 @@ class CSMInOut( SpectraInOut,BaseSpectacoular ):
             if block % num == 0:
                 #put together
                 csmLower = csmUpper.conj().transpose(0,2,1)
-                [fill_diagonal(csmLower[cntFreq, :, :], 0) for cntFreq in xrange(csmLower.shape[0])]
+                [np.fill_diagonal(csmLower[cntFreq, :, :], 0) for cntFreq in range(csmLower.shape[0])]
                 #fill csm 
                 csmBlock = csmLower + csmUpper
                 if self.band_width == 0:
                     yield csmBlock*(2.0/bs/block_weight)
                 else:
-                    yield synthetic(csmBlock*(2.0/bs/block_weight),
+                    yield ac.synthetic(csmBlock*(2.0/bs/block_weight),
                                     self.fftfreq_fine(),
                                     self.center_freq,
                                     self.band_width)
@@ -201,7 +142,7 @@ class CSMInOut( SpectraInOut,BaseSpectacoular ):
                
 
         
-class PowerSpectraSetCSM( PowerSpectra ):
+class PowerSpectraSetCSM( ac.PowerSpectra ):
     """
     currently only helper class for BeamformerFreqTime
     """
@@ -218,7 +159,7 @@ class PowerSpectraSetCSM( PowerSpectra ):
     sample_freq = Float(1.0, 
         desc="sampling frequency")
     
-    numchannels = Property()
+    num_channels = Property()
     
     cached = False
     
@@ -230,13 +171,13 @@ class PowerSpectraSetCSM( PowerSpectra ):
         depends_on = ['csm', 'sample_freq'], 
         )
     
-    def _get_numchannels ( self ):
+    def _get_num_channels ( self ):
         return self.csm.shape[1]
     
     
     @cached_property
     def _get_digest( self ):
-        return digest( self )
+        return ac.internal.digest( self )
     
     def fftfreq ( self ):
         """

@@ -17,34 +17,31 @@
 """
 
 from bokeh.models.widgets import TextInput, Select, Slider, DataTable, \
-TableColumn, NumberEditor, StringEditor, NumericInput, Toggle
+TableColumn, NumberEditor, StringEditor, NumericInput, Toggle, MultiSelect
 from bokeh.core.property.descriptors import UnsetValueError
 from traits.api import Enum, Map, TraitEnum, TraitMap, Array, CArray, Any, \
-List, Float, CFloat, Int, CInt, Range, Long, Dict,\
-CLong, HasPrivateTraits, TraitCompound,\
-BaseStr, BaseFile, Delegate, Bool, Tuple, Str
+List, Float, CFloat, Int, CInt, Range, Dict, HasPrivateTraits, TraitCompound, \
+BaseStr, BaseFile, Delegate, Bool, Tuple, Str, Union
 from numpy import array, newaxis, array_equal,\
     concatenate, stack
 from warnings import warn
 
-NUMERIC_TYPES = (Int,Long,CLong,int, 
-                 Float,float, )
+NUMERIC_TYPES = (Int,int, Float,float, CInt, CFloat)
                  #Complex, complex) # Complex Numbers Missing at the Moment
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
-    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate), # (Trait,Property,Delegate)
-    Toggle : (Bool,) + (TraitCompound,Any,Delegate), 
+    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate,Union), # (Trait,Property,Delegate)
+    Toggle : (Bool,) + (TraitCompound,Any,Delegate,Union), 
     Select : (Enum, TraitEnum, Map, TraitMap, BaseStr, BaseFile, ) + NUMERIC_TYPES, # Numeric types and Str types should also be allowed here, to further use the set_widgets method with predefined options
     Slider : (Range, ) + NUMERIC_TYPES,
     DataTable : (Array,CArray,List,Tuple, ),
-    TextInput : (BaseStr, Str, BaseFile, ) + (TraitCompound,Any,Delegate),
+    TextInput : (BaseStr, Str, BaseFile, ) + (TraitCompound,Any,Delegate,Union),
+    MultiSelect : (List, )
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
     Int : NumericInput,
     CInt : NumericInput,
-    Long: NumericInput,
-    CLong : NumericInput,
     Float : NumericInput,
     CFloat : NumericInput,
     Bool : Toggle,
@@ -115,6 +112,7 @@ def widget_mapper_factory(obj,traitname,widgetType):
     elif widgetType is Select: return SelectMapper(obj,traitname)
     elif widgetType is Slider: return SliderMapper(obj,traitname) 
     elif widgetType is DataTable: return DataTableMapper(obj,traitname) 
+    elif widgetType is MultiSelect: return MultiSelectMapper(obj,traitname)
     else: raise NotImplementedError(
         "mapping for widget type {} does not exist!".format(widgetType))
 
@@ -266,9 +264,7 @@ class BaseSpectacoular(HasPrivateTraits):
     #: function to assign widget instances to class trait attributes
     set_widgets = set_widgets
 
-
-
-class TraitWidgetMapper(object):
+class TraitWidgetMapper:
     """
     Widget Factory which depending on the trait and widget type returns the 
     corresponding mapper class to instantiate the widget.
@@ -277,34 +273,36 @@ class TraitWidgetMapper(object):
     of the desired widget.
     Further, they implement dependencies between a class trait attribute and
     the corresponding widget.
+
+    Attributes
+    ----------
+    obj : class object 
+        the class object that the trait attribute belongs to.
+    traitname : str
+        name of the class trait attribute to be mapped.
+    traittype : TraitType
+        type of the class trait attribute.
+    traitvalue : any
+        value of the class trait attribute.
+    traitvaluetype : type
+        type of the value of the class trait attribute.
+    traitdescription : str
+        description of the class trait attribute.
+    widget : Widget
+        instance of the widget.
     """
 
-    #: name of the class trait attribute to be mapped (type: str)
-    traitname = object()
-    
-    #: value of the class trait attribute. Can be of arbitrary type
-    traitvalue = object()
-    
-    #: type of the class trait attribute
-    traittype = object()
-    
-    #: the class object that the trait attribute belongs to
-    obj = None 
-
-    #: instance of a Bokeh widget that is created by the :class:`TraitWidgetMapper`
-    widget = object()
-    
-    traitvaluetype = object() 
-    
-    def __init__(self,obj,traitname):
+    def __init__(self, obj, traitname):
         self.obj = obj
         self.traitname = traitname
         self.traittype = obj.trait(traitname).trait_type
         try:
-            self.traitvalue = getattr(obj,traitname)
-        except AttributeError: # in case of Delegate
+            self.traitvalue = getattr(obj, traitname)
+        except AttributeError:  # in case of Delegate
             self.traitvalue = None
-        self.traitvaluetype = type(getattr(obj,traitname))
+        self.traitvaluetype = type(getattr(obj, traitname))
+        self.traitdescription = obj.trait(traitname).desc
+        self.widget = None
 
     def _set_traitvalue(self,widgetvalue):
         """
@@ -339,7 +337,8 @@ class TraitWidgetMapper(object):
         None.
         
         """
-        #print(f"trait value: {traitvalue}")
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
         setattr(self.widget,widgetproperty,traitvalue)
 
     def create_trait_setter_func(self):
@@ -411,6 +410,7 @@ class NumericInputMapper(TraitWidgetMapper):
         self.obj = obj
         self.traitname = traitname
         self.traittype = obj.trait(traitname).trait_type
+        self.traitdescription = obj.trait(traitname).desc
         try:
             self.traitvalue = getattr(obj,traitname)
         except AttributeError: # in case of Delegate
@@ -430,7 +430,8 @@ class NumericInputMapper(TraitWidgetMapper):
         instance(NumericInput).
 
         """
-        self.widget = NumericInput(title=self.traitname,**kwargs)
+        kwargs.setdefault('title',self.traitname)
+        self.widget = NumericInput(**kwargs)
         self._set_widgetvalue(self.traitvalue)
         self._set_callbacks()
         return self.widget
@@ -490,7 +491,8 @@ class ToggleMapper(NumericInputMapper):
         instance(Toggle).
 
         """
-        self.widget = Toggle(label=self.traitname,**kwargs)
+        kwargs.setdefault('label',self.traitname)
+        self.widget = Toggle(**kwargs)
         self._set_widgetvalue(self.traitvalue,widgetproperty="active")
         self._set_callbacks(widgetproperty="active")
         return self.widget
@@ -531,7 +533,8 @@ class ToggleMapper(NumericInputMapper):
         None.
 
         """
-        #print(f"trait value: {traitvalue}")
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
         self.widget.active = traitvalue
         setattr(self.widget,widgetproperty,traitvalue)
 
@@ -556,7 +559,8 @@ class TextInputMapper(TraitWidgetMapper):
         instance(TextInput).
 
         """
-        self.widget = TextInput(title=self.traitname,**kwargs)
+        kwargs.setdefault('title',self.traitname)
+        self.widget = TextInput(**kwargs)
         self._set_widgetvalue(self.traitvalue)
         self._set_callbacks()
         return self.widget
@@ -599,7 +603,8 @@ class SelectMapper(TraitWidgetMapper):
         instance(Select).
 
         """
-        self.widget = Select(title=self.traitname,**kwargs)
+        kwargs.setdefault('title',self.traitname)
+        self.widget = Select(**kwargs)
         self._set_widgetvalue(self.traitvalue)
         self._set_options()
         self._set_callbacks()
@@ -642,6 +647,8 @@ class SelectMapper(TraitWidgetMapper):
         None.
         
         """
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
         if not isinstance(traitvalue,str):
             traitvalue = str(traitvalue)
         setattr(self.widget,widgetproperty,traitvalue)
@@ -769,7 +776,8 @@ class SliderMapper(TraitWidgetMapper):
         instance(Slider).
 
         """
-        self.widget = Slider(title=self.traitname,**kwargs)
+        kwargs.setdefault('title',self.traitname)
+        self.widget = Slider(**kwargs)
         self._set_widgetvalue(self.traitvalue, widgetproperty="value")
         self._set_range()
         self._set_callbacks()
@@ -835,6 +843,8 @@ class SliderMapper(TraitWidgetMapper):
         None.
         
         """
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
         if not isinstance(traitvalue,float):
             traitvalue = float(traitvalue)
         setattr(self.widget,widgetproperty,traitvalue)
@@ -987,6 +997,9 @@ class DataTableMapper(TraitWidgetMapper):
         None.
         
         """
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
+
         num_columns = len(self.widget.columns)
         if isinstance(self.traittype,(List,Tuple)):
             new_data = {self.widget.columns[0].field:traitvalue}
@@ -1001,8 +1014,7 @@ class DataTableMapper(TraitWidgetMapper):
                 new_data = {self.widget.columns[i].field: traitvalue[:,i][:,newaxis] for i in range(traitvalue.shape[1])}
             else:
                 new_data = {self.widget.columns[0].field: traitvalue}
-        #if new_data != self.widget.source.data:
-        self.widget.source.data = new_data
+        self.widget.source.data.update(new_data)
 
     def _set_callbacks( self ):
         """
@@ -1084,7 +1096,7 @@ class DataTableMapper(TraitWidgetMapper):
             the new trait value based on the column values
         """
 
-        if type(column_values) == list: # cast to array if is list type
+        if type(column_values) is list: # cast to array if is list type
             column_values = array(column_values)
         if column_values[0].ndim == 1 and len(column_values) == 1: # mapps to arrays with -> (n,) shapes
             new_traitvalue = column_values[0] 
@@ -1116,3 +1128,109 @@ class DataTableMapper(TraitWidgetMapper):
             setattr(self.obj,self.traitname,widgetvalue)
 
 
+class MultiSelectMapper(TraitWidgetMapper):
+    """
+    Factory that creates :class:`MultiSelect` widget from a class trait attribute of type Int.
+    """
+
+    def __init__(self,obj,traitname):
+        self.obj = obj
+        self.traitname = traitname
+        self.traittype = obj.trait(traitname).trait_type
+        self.item_dtype = obj.trait(traitname).trait_type.item_trait.trait_type.fast_validate[1]
+        self.traitdescription = obj.trait(traitname).desc
+        try:
+            self.traitvalue = getattr(obj,traitname)
+        except AttributeError: # in case of Delegate
+            self.traitvalue = None
+            
+    def create_widget(self,**kwargs):
+        """
+        creates a Bokeh MultiSelect instance 
+
+        Parameters
+        ----------
+        **kwargs : args of MultiSelect
+            additional arguments of MultiSelect widget.
+
+        Returns
+        -------
+        instance(MultiSelect).
+
+        """
+        kwargs.setdefault('title',self.traitname)
+        self.widget = MultiSelect(**kwargs)
+        self._set_widgetvalue(self.traitvalue)
+        self._set_callbacks()
+        return self.widget
+
+    def set_widget(self, widget):
+        """
+        connects a Bokeh MultiSelect widget instance to a class trait attribute 
+
+        Parameters
+        ----------
+        widget : instance(MultiSelect)
+            instance of a MultiSelect widget.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.widget = widget
+        self._set_traitvalue(self.widget.value) # set traitvalue to widgetvalue
+        self._set_callbacks()
+
+    def create_trait_setter_func(self):
+        """
+        creates a function that sets the value of a trait on the widget value.
+        
+        The function is evoked every time the widget value changes. No casting 
+        necessary for MultiSelect widgets
+
+        Returns
+        -------
+        callable.
+
+        """
+        def callback(attr, old, new):
+            self._set_traitvalue(new)
+        return callback
+
+    def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
+        """
+        Sets the value of a widget to the class traits attribute value.
+        In case, the widget value and the trait value are of different type, 
+        a cast function is used.        
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
+        setattr(self.widget,widgetproperty,[str(v) for v in traitvalue])
+
+    def _set_traitvalue(self,widgetvalue):
+        """
+        Sets the value of a class trait attribute to the widgets value.       
+
+        Parameters
+        ----------
+        widgetvalue : str
+            value of the widget.
+
+        Returns
+        -------
+        None.
+        
+        """
+#        print("set traitvalue for trait {}".format(self.traitname))
+        setattr(self.obj,self.traitname,[self.item_dtype(v) for v in widgetvalue])

@@ -1,16 +1,40 @@
-from traits.api import HasTraits, Int, Long, CLong, Float, Complex,\
-    BaseBool,Bool,CBool, Enum, Trait, Map, Range, CTrait, Array, CArray,\
-        List, ListInt, ListFloat, ListStr, Tuple, Str, File
-from bokeh.models.widgets import NumericInput, Toggle, Select, Slider, TextInput,\
-    DataTable, TableColumn 
 import unittest
-from spectacoular import BaseSpectacoular, get_widgets, set_widgets
-from spectacoular.factory import DEFAULT_TRAIT_WIDGET_MAPPINGS
-from hypothesis.strategies import integers, floats, text, tuples,\
-    nothing,booleans, lists
+
+import numpy as np
+from bokeh.models.widgets import (
+    DataTable,
+    NumericInput,
+    Select,
+    Slider,
+    TableColumn,
+    TextInput,
+    Toggle,
+)
 from hypothesis import given
 from hypothesis.extra import numpy
-import numpy as np
+from hypothesis.strategies import floats, integers, lists, text, tuples
+from traits.api import (
+    Array,
+    Bool,
+    CArray,
+    CTrait,
+    Enum,
+    Float,
+    HasTraits,
+    Int,
+    List,
+    ListFloat,
+    ListStr,
+    Map,
+    Range,
+    Str,
+    Trait,
+    Tuple,
+)
+
+from spectacoular import BaseSpectacoular, get_widgets, set_widgets
+from spectacoular.factory import DEFAULT_TRAIT_WIDGET_MAPPINGS
+
 
 class HasTraitsTestClass(HasTraits):
     """ class that is used for widget mapping tests that has
@@ -156,9 +180,9 @@ class NumericInputTest(BaseMapperTest):
     widget = NumericInput
 
     # allowed numeric trait types that can be mapped to NumericInput widget
-    test_traits = [Int(),Float(),CLong(),Long(),] # Complex] # complex types are not supported at the moment (only mode int or float)
+    test_traits = [Int(),Float()] # Complex] # complex types are not supported at the moment (only mode int or float)
 
-    int_types = [Int(),CLong(),Long()]
+    int_types = [Int()]
 
     float_types = [Float()]
 
@@ -335,7 +359,7 @@ class DataTableTest(BaseMapperTest):
     test_traits = [Array(value=np.random.random((5,5)).astype('float'),dtype=str),CArray(value=np.random.random((5,5)).astype('float'),dtype=str),
                     Array(value=np.random.random((5,5)).astype('int'),dtype=int),CArray(value=np.random.random((5,5)).astype('int'),dtype=int),
                     Array(value=np.random.random((5,5)).astype('str'),dtype=str),CArray(value=np.random.random((5,5)).astype('str'),dtype=str),
-                    List([1,2]),ListInt([1,2]),ListFloat([1.,2.]),ListStr(['1','2']),
+                    List([1,2]),List(int,[1,2]),ListFloat([1.,2.]),ListStr(['1','2']),
                     Tuple((1,2,)),Tuple((1.,2.,)),Tuple(('1','2',)),
                     ] 
 

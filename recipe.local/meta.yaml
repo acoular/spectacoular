@@ -1,9 +1,6 @@
-{% set pyproject = load_file_data('../pyproject.toml',from_recipe_dir=True) %}
-{% set version = pyproject['project']['version'] %}
-
 package:
   name: spectacoular
-  version: {{ version }}
+  version: "{{ os.popen('hatch version').read().strip() }}"
 
 source:
   path: ..
@@ -19,8 +16,8 @@ requirements:
     - hatchling
     - wheel
   run:
-    - python >=3.8
-    - acoular >=24.05
+    - python >=3.10
+    - acoular >=25.01
     - bokeh >=3.0
     - python-sounddevice
 

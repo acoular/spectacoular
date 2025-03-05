@@ -4,9 +4,9 @@
 
 [project]
 name = "spectacoular"
-version = "24.06"
+dynamic = ["version"]
 description = "Library for SpectAcoular interactive applications with Acoular"
-requires-python = ">=3.8,<=12"
+requires-python = ">=3.10,<3.13"
 authors = [
     {name = "Acoular Development Team", email = "info@acoular.org"},
 ]
@@ -24,14 +24,12 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Physics",
     "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-      'acoular>=24.05',
+      'acoular>=25.01',
       'bokeh >=3.0',
       'sounddevice',
 ]
@@ -53,6 +51,9 @@ repository = "https://github.com/acoular/spectacoular"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "spectacoular/version.py"
 
 # [tool.hatch.envs.hatch-static-analysis]
 # dependencies = ["ruff==0.4.1"]
@@ -76,14 +77,15 @@ build = ["cd docs && make html"]
 [tool.hatch.envs.tests]
 dependencies = [
     "pytest",
+    "hypothesis",
 ]
 
 [[tool.hatch.envs.tests.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.tests.scripts]
 import = ["python -c \"import spectacoular\""]
-test = ["python -m pytest -v tests"]
+test = ["python -m pytest -v --durations=10 tests"]
 
 [tool.hatch.envs.tests.overrides]
 platform.linux.pre-install-commands = ['cat /proc/cpuinfo']

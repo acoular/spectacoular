@@ -1,2 +1,2 @@
 #!/bin/bash
-bokeh serve --show Measurement_App --args --device=phantom --blocksize=256
+bokeh serve --port 5008 --show Measurement_App --args --device=phantom --blocksize=256

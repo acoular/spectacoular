@@ -22,3 +22,5 @@ copy_html.sh
 
 *.SEC
 tests/.hypothesis/*
+.vscode/launch.json
+.vscode/settings.json

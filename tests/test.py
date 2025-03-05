@@ -2,7 +2,7 @@
 # Copyright (c) Acoular Development Team.
 #------------------------------------------------------------------------------
 from traits.api import HasPrivateTraits, Str, CArray, Range, Int, Float,\
-File, CLong, Long, Property, Trait, List, ListStr, ListInt, ListFloat, \
+File, Property, Trait, List, ListStr, ListFloat, \
 Bool,Tuple, Any
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import TextInput, Slider,DataTable, Select,TableColumn
@@ -140,21 +140,13 @@ class IntWidgetMapping(Test):
     
     testTrait = Int(1)
     
-    testCLongTrait = CLong(1)
-    
-    testLong = Long
-    
     trait_widget_mapper = {
                 'testTrait': TextInput,
-                'testCLongTrait': TextInput,
-                'testLong': TextInput,
 
                 }
     
     trait_widget_args = {
                 'testTrait' : {'disabled':False},
-                'testCLongTrait' : {'disabled':False},
-                'testLong' : {'disabled':False},
                 }    
 
     test_widget_values = {'10':10,'10.0':10}
@@ -166,12 +158,8 @@ class IntWidgetMapping(Test):
                 # assign value to widget
                 widget.value = value
             assert self.testTrait == 10
-            assert self.testCLongTrait == 10
-            assert self.testLong == 10
         # assign value to trait
         self.testTrait = 1
-        self.testCLongTrait = 1.0
-        self.testLong = 1
         # prove correct change of widget value
         for widget in widgets.values():
             assert widget.value == '1'
@@ -394,7 +382,7 @@ class ListWidgetMapping(Test):
     testListStr2 = ListStr(['1','2']) 
 
     testListInt = List(Int()) 
-    testListInt2 = ListInt([1,2,3,4,5]) 
+    testListInt2 = List(int, [1,2,3,4,5]) 
 
     testListFloat = List(Float()) 
     testListFloat2 = ListFloat([1.,2.,3.,4.,5.]) 
