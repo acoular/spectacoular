@@ -32,6 +32,7 @@ dependencies = [
       'acoular>=25.01',
       'bokeh >=3.0',
       'sounddevice',
+      "tapy>=1.10.0",
 ]
 
 maintainers = [
@@ -41,6 +42,17 @@ maintainers = [
     {name = "Gert Herold", email = "gert.herold@tu-berlin.de"},
     {name = "Mikolaj Czuchaj", email = "mikolaj.czuchaj@tu-berlin.de"},
     {name = "Simon Jekosch", email = "s.jekosch@tu-berlin.de"},
+]
+
+
+[project.optional-dependencies]
+full = [
+    "opencv-python", # only for msm_app
+]
+
+tapy = [
+    "spectacoular[full]",
+    "tapy"
 ]
 
 [project.urls]
@@ -100,6 +112,10 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["spectacoular", "apps"]
+
+[tool.uv.sources]
+# for a different branch use: uv add git+ssh://git@git.tu-berlin.de/akustik/tapy.git --branch=dev
+tapy = { git = "ssh://git@git.tu-berlin.de/akustik/tapy.git", branch = "main" }
 
 # app shortcuts
 [project.scripts]
