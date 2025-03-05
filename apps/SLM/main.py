@@ -90,7 +90,7 @@ tbc = sp.TimeBandsConsumer(source=te,channels=[0,],num=8192, lfunc=bands_label)
 # band slm chain
 fob2 = ac.OctaveFilterBank(source=ts, fraction='Octave')
 tp2 = ac.TimePower(source=fob2)
-ta = sp.TimeAverage(source=tp2, naverage=512) # hack for *about* 50~ms average
+ta = sp.Average(source=tp2, num_per_average=512) # hack for *about* 50~ms average
 tic3 = sp.TimeConsumer(source=ta,down=1,channels=list(range(ta.num_channels)),
     num=32,rollover=16*2*96)
 

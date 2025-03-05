@@ -8,7 +8,13 @@ This application can be used to calculate source maps from measured microphone a
 Serving the Application:
 ------------------------
 
-One can run the application by navigating to the `spectacoular/apps` folder and typing the following command in a dedicated console (e.g. shell)
+One can run the application by simply running 
+
+.. code-block:: console
+
+    $ result_explorer --show
+
+in the command line or by navigating to the `spectacoular/apps` folder and typing the following command in a dedicated console (e.g. shell)
 
 .. code-block:: console
 

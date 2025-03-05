@@ -286,7 +286,7 @@ class PhantomControl(MeasurementControl):
     def change_file(self, attr, old, new):
         h5f = self.h5path / self.select_file.value
         if not h5f.exists():
-            self.logger.info("file does not exist.")
+            self.logger.info("file does not exist. Create file...")
             if self.select_file.value == "rotating.h5":
                 self.create_three_sources_moving(h5f)
             elif self.select_file.value == "calib.h5":
