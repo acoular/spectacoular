@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
-    branches: [ "*" ]
     
 jobs:
   conda_build_and_install:
@@ -27,11 +26,11 @@ jobs:
           name: conda-package
           path: ./conda_package
       - name: Upload conda package to Anaconda Cloud
-      if: ${{ github.event_name =='workflow_dispatch' && github.ref == 'refs/heads/master' }}
-      run: |
-        eval "$(conda shell.bash hook)"
-        conda activate base
-        anaconda login --username ${{ secrets.ANACONDA_USERNAME }} --password ${{ secrets.ANACONDA_PASSWORD }}
-        anaconda upload ./conda_package/noarch/*.tar.bz2
-  
-  
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' }}
+        run: |
+          eval "$(conda shell.bash hook)"
+          conda activate base
+          anaconda login --username ${{ secrets.ANACONDA_USERNAME }} --password ${{ secrets.ANACONDA_PASSWORD }}
+          anaconda upload ./conda_package/noarch/*.tar.bz2
+
+
