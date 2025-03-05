@@ -3,8 +3,6 @@ import importlib
 from bokeh.models.widgets import TextAreaInput
 from layout import COLOR
 from collections import deque
-from tapy.core.logger import getLogger
-
 
 
 class LogWidget:
@@ -22,6 +20,7 @@ class LogWidget:
         if spec is None:
             self.logger = logging.getLogger(__name__)
         else:
+            from tapy.core.logger import getLogger
             self.logger = getLogger('tapy')
         self.logger.setLevel(loglevel)
 
