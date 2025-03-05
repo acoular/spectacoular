@@ -95,11 +95,11 @@ platform.windows.pre-install-commands = ['systeminfo']
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "/spectacoular",  "spectacoular/apps"
+  "/spectacoular",  "/apps"
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["spectacoular", "spectacoular/apps"]
+packages = ["spectacoular", "apps"]
 
 # app shortcuts
 [project.scripts]
