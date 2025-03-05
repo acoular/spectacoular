@@ -95,8 +95,17 @@ platform.windows.pre-install-commands = ['systeminfo']
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "/spectacoular",
+  "/spectacoular",  "spectacoular/apps"
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["spectacoular"]
+packages = ["spectacoular", "spectacoular/apps"]
+
+# app shortcuts
+[project.scripts]
+slm_app = "spectacoular.apps.slm_app:main"
+result_explorer = "spectacoular.apps.result_explorer:main"
+micgeom_app = "spectacoular.apps.micgeom_app:main"
+timesamples_app = "spectacoular.apps.timesamples_app:main"
+msm_app = "spectacoular.apps.msm_app:main"
+rotating_app = "spectacoular.apps.rotating_app:main"

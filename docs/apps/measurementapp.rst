@@ -12,7 +12,13 @@ This allows to use USB interfaces such as the `miniDSP UMA16 MEMS <https://www.m
 Serving the Application in Phantom mode:
 ----------------------------------------
 
-Navigate to the `spectacoular/apps` directory and type the following command in a dedicated console (e.g. shell)
+One can run the application by simply running 
+
+.. code-block:: console
+
+    $ msm_app --show --args --device=phantom
+
+in the command line or by navigating to the `spectacoular/apps` directory. Then, type the following command in a dedicated console (e.g. shell)
 
 .. code-block:: console
 
@@ -24,7 +30,14 @@ Alternatively one can start the shell script named `start_phantom.sh`
 Serving the Application with an UMA16 microphone array:
 -------------------------------------------------------
 
-Navigate to the `spectacoular/apps` folder and type the following command in a dedicated console (e.g. shell)
+Run the application with 
+
+.. code-block:: console
+
+    $ msm_app --show --args --device=sounddevice
+
+
+Alternatively, navigate to the `spectacoular/apps` folder and type the following command in a dedicated console (e.g. shell)
 
 .. code-block:: console
 
