@@ -492,6 +492,16 @@ class SinusControl(MeasurementControl):
         self.reload_settings_options.on_click(self.update_select_settings_options_callback)
         self.settings_button.on_click(self.settings_callback)  
 
+    def _get_safe_widgets(self, obj, trait_widget_mapper, trait_widget_args):
+        widgets = {}
+        for trait, widget_type in trait_widget_mapper.items():
+            try:
+                widget_args = trait_widget_args.get(trait, {})
+                widgets[trait] = obj.get_widgets(trait, widget_type, widget_args)
+            except Exception as e:
+                self.logger.error(f"Error creating widget for trait '{trait}': {e}")
+        return widgets
+
     def get_analog_input_tab(self):
         set_settings_button = Button(label="Set Analog Input Settings", button_type="warning")
         def _callback(event):
@@ -506,9 +516,8 @@ class SinusControl(MeasurementControl):
             trait_widget_mapper = {'name': TextInput, 'sensitivity': NumericInput}
             trait_widget_mapper.update({k: Select for k in aio._settable_attr})
             trait_widget_args = {'sensitivity': {'mode': 'float'}, 'name': {'disabled': True}}
-            analog_input_widgets.append(
-                list(sp.get_widgets(aio, trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args)
-                .values()))
+            widgets = self._get_safe_widgets(aio, trait_widget_mapper, trait_widget_args)
+            analog_input_widgets.append(list(widgets.values()))
         return Panel(child=layout([[set_settings_button],[analog_input_widgets]]), title="Analog Input Settings")
 
     def get_analog_output_tab(self):
@@ -523,9 +532,8 @@ class SinusControl(MeasurementControl):
             trait_widget_mapper = {'name': TextInput}
             trait_widget_mapper.update({k: Select for k in aio._settable_attr})
             trait_widget_args = {'name': {'disabled': True}}
-            analog_output_widgets.append(
-                list(sp.get_widgets(aio, trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args)
-                .values()))
+            widgets = self._get_safe_widgets(aio, trait_widget_mapper, trait_widget_args)
+            analog_output_widgets.append(list(widgets.values()))
         return Panel(child=layout([[set_settings_button],[analog_output_widgets]]), title="Analog Output Settings")
 
     def get_device_tab(self):
@@ -541,9 +549,8 @@ class SinusControl(MeasurementControl):
             trait_widget_mapper = {'serial': TextInput, 'BlockCount': Slider}
             trait_widget_mapper.update({k: Select for k in pci._settable_attr if k != 'BlockCount'})
             mics_trait_widget_args = {'serial': {'disabled': True}}
-            devices_widgets.append(
-                list(sp.get_widgets(pci, trait_widget_mapper=trait_widget_mapper, trait_widget_args=mics_trait_widget_args)
-            .values()))
+            widgets = self._get_safe_widgets(pci, trait_widget_mapper, mics_trait_widget_args)
+            devices_widgets.append(list(widgets.values()))
         return Panel(child=layout([[set_settings_button],[devices_widgets]]), title="PCI Device Settings")
 
     def get_adc_to_dac_tab(self):
@@ -558,9 +565,8 @@ class SinusControl(MeasurementControl):
             trait_widget_mapper = {'name': TextInput}
             trait_widget_mapper.update({k: Select for k in adc._settable_attr})
             trait_widget_args = {'name': {'disabled': True}}
-            adc_to_dac_widgets.append(
-                list(sp.get_widgets(adc, trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args)
-                .values()))
+            widgets = self._get_safe_widgets(adc, trait_widget_mapper, trait_widget_args)
+            adc_to_dac_widgets.append(list(widgets.values()))
         return Panel(child=layout([[set_settings_button],[adc_to_dac_widgets]]), title="ADC to DAC Settings")
 
     def _update_teds_data(self, event):
