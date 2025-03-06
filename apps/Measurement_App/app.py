@@ -499,7 +499,7 @@ class SinusControl(MeasurementControl):
                 continue
             try:
                 widget_args = trait_widget_args.get(trait, {})
-                widgets[trait] = sp.get_widgets(obj, {trait: widget_type}, widget_args)
+                widgets.update{sp.get_widgets(obj, {trait: widget_type}, widget_args)}
             except Exception as e:
                 self.logger.error(f"Error creating widget for trait '{trait}': {e}")
         return widgets
