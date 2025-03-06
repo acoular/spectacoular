@@ -497,7 +497,7 @@ class SinusControl(MeasurementControl):
         for trait, widget_type in trait_widget_mapper.items():
             try:
                 widget_args = trait_widget_args.get(trait, {})
-                widgets[trait] = sp.get_widgets(obj, widget_type, widget_args)
+                widgets[trait] = sp.get_widgets(obj, {trait: widget_type}, widget_args)
             except Exception as e:
                 self.logger.error(f"Error creating widget for trait '{trait}': {e}")
         return widgets
