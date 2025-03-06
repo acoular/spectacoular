@@ -495,6 +495,8 @@ class SinusControl(MeasurementControl):
     def _get_safe_widgets(self, obj, trait_widget_mapper, trait_widget_args):
         widgets = {}
         for trait, widget_type in trait_widget_mapper.items():
+            if trait == 'SyncWithDevices': # skip this trait due to mapping errors
+                continue
             try:
                 widget_args = trait_widget_args.get(trait, {})
                 widgets[trait] = sp.get_widgets(obj, {trait: widget_type}, widget_args)
