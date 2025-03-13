@@ -75,6 +75,14 @@ parser.add_argument(
   type=str,
   default='TA181',
   help='Inventory number of the Apollo device. (Not required for other devices)')
+parser.add_argument(
+    '--sinus_channel_control',
+    type=str,
+    nargs='*',  # Allows for zero or more arguments
+    default=[],  # Default is an empty list
+    choices=['AnalogInput', 'AnalogOutput', 'Device', 'ADCToDAC', 'TEDS'],
+    help="adds control tabs to measurement app"
+)
 
 args = parser.parse_args()
 
@@ -122,7 +130,7 @@ else:
     from app import SinusControl
     mics = sp.MicGeom(file = mics_dir / 'tub_vogel64.xml')
     grid = sp.RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
-    control = SinusControl(
+    control = SinusControl(sinus_channel_control=args.sinus_channel_control,
         doc=doc, logger=log.logger, blocksize=args.blocksize,
         steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
         device=DEVICE, config_dir=args.config_dir, config_name=args.config_name, inventory_no=args.inventory_no)

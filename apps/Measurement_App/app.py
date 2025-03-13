@@ -392,14 +392,14 @@ class SoundDeviceControl(MeasurementControl):
 
 class SinusControl(MeasurementControl):
 
-    def __init__(self, device, config_dir, config_name, inventory_no='TA132', **kwargs):
+    def __init__(self, device, config_dir, config_name, sinus_channel_control, inventory_no='TA132', **kwargs):
         try:
             from tapy.devices.sinus import Tornado, Typhoon, Apollo
             from tapy.bindings.acoular import SinusSamplesGenerator
             from tapy.drivers.sinus import SINUS_STREAM
         except ImportError:
             raise ImportError("tapy is not installed. Please install it first.")
-
+        self.sinus_channel_control = sinus_channel_control
         self.stream = SINUS_STREAM
         self.config_dir = Path(config_dir)
         config = None
@@ -539,7 +539,7 @@ class SinusControl(MeasurementControl):
         devices_widgets = []
         for pci in self.device.pci:
             trait_widget_mapper = {'serial': TextInput, 'BlockCount': Slider}
-            trait_widget_mapper.update({k: Select for k in pci._settable_attr if k != 'BlockCount'})
+            trait_widget_mapper.update({k: Select for k in pci._settable_attr if k not in ['BlockCount','SyncWithDevices']})
             mics_trait_widget_args = {'serial': {'disabled': True}}
             devices_widgets.append(
                 list(sp.get_widgets(pci, trait_widget_mapper=trait_widget_mapper, trait_widget_args=mics_trait_widget_args)
@@ -620,7 +620,18 @@ class SinusControl(MeasurementControl):
         return Panel(child=layout([[download_button, teds_table]], sizing_mode='stretch_both'), title="TEDS Data")
 
     def get_tab(self):
-        return self.get_device_tab(), self.get_analog_input_tab(), self.get_analog_output_tab(), self.get_adc_to_dac_tab(), self.get_teds_tab()
+        tabs = []
+        if 'Device' in self.sinus_channel_control:
+            tabs.append(self.get_device_tab())
+        if 'AnalogInput' in self.sinus_channel_control:
+            tabs.append(self.get_analog_input_tab())
+        if 'AnalogOutput' in self.sinus_channel_control:
+            tabs.append(self.get_analog_output_tab())
+        if 'ADCToDAC' in self.sinus_channel_control:
+            tabs.append(self.get_adc_to_dac_tab())
+        if 'TEDS' in self.sinus_channel_control:
+            tabs.append(self.get_teds_tab())
+        return tabs
 
 
 class Calibration:
