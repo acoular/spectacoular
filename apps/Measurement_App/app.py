@@ -370,7 +370,7 @@ class SoundDeviceControl(MeasurementControl):
             if 'nanoSHARC' in dev['name']:
                 default_index = f"{i}"
         if default_index is None:
-            default_index = f"{list(devices.keys())[0]}"
+            default_index = f"{devices[0][0]}"
         num_channels = sd.query_devices(int(default_index))['max_input_channels']
         return devices, default_index, num_channels
 
