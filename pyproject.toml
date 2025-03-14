@@ -32,8 +32,6 @@ classifiers = [
 dependencies = [
       'acoular>=25.01',
       'bokeh >=3.0',
-      'sounddevice',
-      "tapy>=1.10.0",
 ]
 
 maintainers = [
