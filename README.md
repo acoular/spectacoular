@@ -1,5 +1,5 @@
 
-![Poster](docs/_static/poster.png)
+![Poster](https://github.com/acoular/spectacoular/blob/master/docs/_static/poster.png)
 
 ## Package Documentation
 
