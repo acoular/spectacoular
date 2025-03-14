@@ -29,15 +29,6 @@ from traits.api import (
 from spectacoular import BaseSpectacoular
 
 XCAM = (-0.5,-0.375,1.,0.75)
-BFALPHA = 0.45
-
-# def set_alpha_callback(bfImage):
-#     def global_alpha_callback(attr,old,new):
-#         if checkbox_use_camera.active: 
-#             bfImage.glyph.global_alpha = BFALPHA
-#         else:
-#             bfImage.glyph.global_alpha = 1
-#     checkbox_use_camera.on_change('active',global_alpha_callback)
 
 class CameraComponent(BaseSpectacoular):
 

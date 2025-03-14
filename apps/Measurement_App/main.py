@@ -48,7 +48,7 @@ parser.add_argument(
 parser.add_argument(
   '--blocksize',
   type=int,
-  default=4096,
+  default=512,
   help='Size of data blocks to be processed')
 parser.add_argument(
     '--td_dir',
@@ -60,6 +60,12 @@ parser.add_argument(
     type=str,
     default=Path(__file__).resolve().parent / "micgeom",
     help='Directory containing microphone geometry files')
+parser.add_argument(
+    '--mics_name',
+    type=str,
+    default=None,
+    help='Name of microphone geometry file inside mics_dir'
+)
 parser.add_argument(
     '--config_dir',
     default=Path(__file__).resolve().parent / "config_files",
@@ -83,10 +89,8 @@ parser.add_argument(
     choices=['AnalogInput', 'AnalogOutput', 'Device', 'ADCToDAC', 'TEDS'],
     help="adds control tabs to measurement app"
 )
-
 args = parser.parse_args()
 
-DEVICE = args.device
 MICSIZE = 20
 
 # set up logging
@@ -96,6 +100,12 @@ log = LogWidget(doc=doc)
 # directory containing microphone geometry files
 mics_dir = args.mics_dir
 log.logger.debug(f"mics_dir: {mics_dir}")
+
+# microphone geometry file
+mname = mics_dir / 'tub_vogel64.xml'
+if args.mics_name is not None:
+    mname = mics_dir / args.mics_name
+mics = sp.MicGeom(file = mname)
 
 # set up directory for saving td files
 td = args.td_dir
@@ -110,30 +120,28 @@ log.logger.debug(f"td_dir: {td}")
 # load device
 # =============================================================================
 use_sinus = False
-if DEVICE == 'sounddevice':
+
+if args.device == 'sounddevice':
     from app import SoundDeviceControl
-    mics = sp.MicGeom()
-    grid = sp.RectGrid()
-    control = SoundDeviceControl(
-        doc=doc, logger=log.logger, blocksize=args.blocksize,
-        steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
+    grid = sp.RectGrid( x_min=-0.5, x_max=0.5, y_min=-0.5, y_max=0.5, z=0.5, increment=0.025)
+    control = SoundDeviceControl(doc=doc, logger=log.logger, blocksize=args.blocksize,
+        steer=ac.SteeringVector(grid=grid, mics=mics),
     )    
-elif DEVICE == 'phantom':
+
+elif args.device == 'phantom':
     from app import PhantomControl
-    mics = sp.MicGeom(file = mics_dir / 'tub_vogel64.xml')
     grid = sp.RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.75, y_max=0.75, z=0.75, increment=0.05)
     control = PhantomControl(
         doc=doc, logger=log.logger, blocksize=args.blocksize,
-        steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
+        steer=ac.SteeringVector(grid=grid, mics=mics),
     )   
 else: 
     from app import SinusControl
-    mics = sp.MicGeom(file = mics_dir / 'tub_vogel64.xml')
     grid = sp.RectGrid( x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015)
     control = SinusControl(sinus_channel_control=args.sinus_channel_control,
         doc=doc, logger=log.logger, blocksize=args.blocksize,
-        steer=ac.SteeringVector(grid=grid, mics=mics, ref=[0,0,0]),
-        device=DEVICE, config_dir=args.config_dir, config_name=args.config_name, inventory_no=args.inventory_no)
+        steer=ac.SteeringVector(grid=grid, mics=mics),
+        device=args.device, config_dir=args.config_dir, config_name=args.config_name, inventory_no=args.inventory_no)
     use_sinus = True
 
 
@@ -232,7 +240,8 @@ invalid_input_channels = MultiSelect(
     value=[])
 control.beamf.source.source.source.source.source.set_widgets(**{'invalid_channels':invalid_input_channels})
 auto_level_toggle = Toggle(label="Auto Level", button_type="success",active=True)
-dynamic_range = NumericInput(value=20, title="Dynamic Range/dB")
+dynamic_range = NumericInput(value=10, title="Dynamic Range/dB")
+snapshot_avg = NumericInput(value=1, title="Snapshots to Average")
 bf_max_level = Slider(start=0, end=140, value=100, step=1, title="Peak Level/dB")
 bf_alpha = Slider(start=0, end=1, step=0.05, value=1, title="Sourcemap Alpha")
 
@@ -342,6 +351,10 @@ def dynamic_slider_callback(attr, old, new):
 dynamic_range.on_change('value', dynamic_slider_callback)    
 bf_max_level.on_change('value', dynamic_slider_callback)
 
+def snapshot_avg_callback(attr, old, new):
+    control.beamf.source.num_per_average = args.blocksize*new
+snapshot_avg.on_change('value', snapshot_avg_callback)
+
 def update_bf_image_axis():
     dx = grid.x_max-grid.x_min
     dy = grid.y_max-grid.y_min
@@ -403,7 +416,7 @@ mic_control = layout([
 bf_control = layout([
     [Div(text=r"""<b style="font-size:15px;">Beamforming Setup</b>""")],
     [freqSlider],
-    [bf_alpha],
+    [bf_alpha, snapshot_avg],
     [auto_level_toggle, dynamic_range, bf_max_level],
     [rgWidgets['x_min'], rgWidgets['x_max'], rgWidgets['y_min'], rgWidgets['y_max']],
     [rgWidgets['increment'], rgWidgets['z']],

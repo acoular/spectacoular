@@ -344,31 +344,35 @@ class PhantomControl(MeasurementControl):
 class SoundDeviceControl(MeasurementControl):
 
     def __init__(self, **kwargs):
-        devices = self._get_devices()
-        self.device_select = Select(title="Choose input device:", 
-            value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
-        kwargs['source'] = sp.SoundDeviceSamplesGenerator(
-            device=int(self.device_select.value), 
-            num_channels=sd.query_devices(int(self.device_select.value))['max_input_channels']
-            )
+        devices, default_index, num_channels = self._get_devices()
+        kwargs['source'] = sp.SoundDeviceSamplesGenerator(device=int(default_index), num_channels=num_channels)
         widgets = kwargs['source'].get_widgets(
             trait_widget_mapper={'device': Select, 'num_channels': NumericInput},
             trait_widget_args={
-                'device': {'value': "{}".format(list(devices.keys())[0]), 
-                            'options' : list(devices.items())},
-                'num_channels' : {'title' : 'Number of Input Channels', 'value': kwargs['source'].num_channels},
+                'device': {'value': default_index, 'options' : devices},
+                'num_channels' : {'title' : 'Number of Input Channels', 'value': num_channels},
             })
         self.device_select = widgets['device']
         self.num_channels_text = widgets['num_channels']
         self.device_select.on_change('value', self.device_update)
+        for dev in devices:
+            if 'nanoSHARC' in dev[1] and '16' in dev[1]:
+                kwargs['steer'].mics.file = Path(ac.__file__).parent / 'xml' / 'minidsp_uma-16.xml'
         super().__init__(**kwargs)
 
     def _get_devices(self):
-        devices = {}
-        for i,dev in enumerate(sd.query_devices()):
+        devices = []
+        default_index = None
+        for i, dev in enumerate(sd.query_devices()):
             if dev['max_input_channels']>0:
-                devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
-        return devices
+                devices.append(
+                    (f"{i}", "{name} {max_input_channels}".format(**dev)))
+            if 'nanoSHARC' in dev['name']:
+                default_index = f"{i}"
+        if default_index is None:
+            default_index = f"{list(devices.keys())[0]}"
+        num_channels = sd.query_devices(int(default_index))['max_input_channels']
+        return devices, default_index, num_channels
 
     def device_update(self, attr, old, new):
         self.source.num_channels = sd.query_devices(self.source.device)['max_input_channels']
