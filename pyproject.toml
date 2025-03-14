@@ -48,6 +48,7 @@ maintainers = [
 [project.optional-dependencies]
 full = [
     "opencv-python", # only for msm_app
+    "sounddevice", 
 ]
 
 tapy = [

@@ -9,6 +9,12 @@ The 'phantom' mode serves as a demonstration of the application features. The 's
 
 This allows to use USB interfaces such as the `miniDSP UMA16 MEMS <https://www.minidsp.com/products/usb-audio-interface/uma-16-microphone-array>`_ microphone array as the measurement hardware.
 
+Note that the 'sounddevice' mode requires to install spectacoular with full dependencies. This can be done by running
+
+.. code-block:: console
+
+    $ conda install -c acoular spectacoular[full]
+
 Serving the Application in Phantom mode:
 ----------------------------------------
 
