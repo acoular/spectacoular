@@ -344,31 +344,35 @@ class PhantomControl(MeasurementControl):
 class SoundDeviceControl(MeasurementControl):
 
     def __init__(self, **kwargs):
-        devices = self._get_devices()
-        self.device_select = Select(title="Choose input device:", 
-            value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
-        kwargs['source'] = sp.SoundDeviceSamplesGenerator(
-            device=int(self.device_select.value), 
-            num_channels=sd.query_devices(int(self.device_select.value))['max_input_channels']
-            )
+        devices, default_index, num_channels = self._get_devices()
+        kwargs['source'] = sp.SoundDeviceSamplesGenerator(device=int(default_index), num_channels=num_channels)
         widgets = kwargs['source'].get_widgets(
             trait_widget_mapper={'device': Select, 'num_channels': NumericInput},
             trait_widget_args={
-                'device': {'value': "{}".format(list(devices.keys())[0]), 
-                            'options' : list(devices.items())},
-                'num_channels' : {'title' : 'Number of Input Channels', 'value': kwargs['source'].num_channels},
+                'device': {'value': default_index, 'options' : devices},
+                'num_channels' : {'title' : 'Number of Input Channels', 'value': num_channels},
             })
         self.device_select = widgets['device']
         self.num_channels_text = widgets['num_channels']
         self.device_select.on_change('value', self.device_update)
+        for dev in devices:
+            if 'nanoSHARC' in dev[1] and '16' in dev[1]:
+                kwargs['steer'].mics.file = Path(ac.__file__).parent / 'xml' / 'minidsp_uma-16.xml'
         super().__init__(**kwargs)
 
     def _get_devices(self):
-        devices = {}
-        for i,dev in enumerate(sd.query_devices()):
+        devices = []
+        default_index = None
+        for i, dev in enumerate(sd.query_devices()):
             if dev['max_input_channels']>0:
-                devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
-        return devices
+                devices.append(
+                    (f"{i}", "{name} {max_input_channels}".format(**dev)))
+            if 'nanoSHARC' in dev['name']:
+                default_index = f"{i}"
+        if default_index is None:
+            default_index = f"{list(devices.keys())[0]}"
+        num_channels = sd.query_devices(int(default_index))['max_input_channels']
+        return devices, default_index, num_channels
 
     def device_update(self, attr, old, new):
         self.source.num_channels = sd.query_devices(self.source.device)['max_input_channels']
@@ -392,14 +396,14 @@ class SoundDeviceControl(MeasurementControl):
 
 class SinusControl(MeasurementControl):
 
-    def __init__(self, device, config_dir, config_name, inventory_no='TA132', **kwargs):
+    def __init__(self, device, config_dir, config_name, sinus_channel_control, inventory_no='TA132', **kwargs):
         try:
             from tapy.devices.sinus import Tornado, Typhoon, Apollo
             from tapy.bindings.acoular import SinusSamplesGenerator
             from tapy.drivers.sinus import SINUS_STREAM
         except ImportError:
             raise ImportError("tapy is not installed. Please install it first.")
-
+        self.sinus_channel_control = sinus_channel_control
         self.stream = SINUS_STREAM
         self.config_dir = Path(config_dir)
         config = None
@@ -539,7 +543,7 @@ class SinusControl(MeasurementControl):
         devices_widgets = []
         for pci in self.device.pci:
             trait_widget_mapper = {'serial': TextInput, 'BlockCount': Slider}
-            trait_widget_mapper.update({k: Select for k in pci._settable_attr if k != 'BlockCount'})
+            trait_widget_mapper.update({k: Select for k in pci._settable_attr if k not in ['BlockCount','SyncWithDevices']})
             mics_trait_widget_args = {'serial': {'disabled': True}}
             devices_widgets.append(
                 list(sp.get_widgets(pci, trait_widget_mapper=trait_widget_mapper, trait_widget_args=mics_trait_widget_args)
@@ -620,7 +624,18 @@ class SinusControl(MeasurementControl):
         return Panel(child=layout([[download_button, teds_table]], sizing_mode='stretch_both'), title="TEDS Data")
 
     def get_tab(self):
-        return self.get_device_tab(), self.get_analog_input_tab(), self.get_analog_output_tab(), self.get_adc_to_dac_tab(), self.get_teds_tab()
+        tabs = []
+        if 'Device' in self.sinus_channel_control:
+            tabs.append(self.get_device_tab())
+        if 'AnalogInput' in self.sinus_channel_control:
+            tabs.append(self.get_analog_input_tab())
+        if 'AnalogOutput' in self.sinus_channel_control:
+            tabs.append(self.get_analog_output_tab())
+        if 'ADCToDAC' in self.sinus_channel_control:
+            tabs.append(self.get_adc_to_dac_tab())
+        if 'TEDS' in self.sinus_channel_control:
+            tabs.append(self.get_teds_tab())
+        return tabs
 
 
 class Calibration:

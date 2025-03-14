@@ -18,8 +18,9 @@ This will install SpectAcoular in your Anaconda Python environment and make the 
 To verify your installation, one can run one of the pre-build interactive applications (e.g. MicGeomExample app). To do so, navigate to the spectacoular/apps directory and type the following command in a dedicated console (e.g. shell):
 
 ```console
-$ bokeh serve --show MicGeomExample
+$ micgeom_app
 ```
 
 A new window should appear in the browser running the application.
 
+    

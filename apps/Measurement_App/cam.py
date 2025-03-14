@@ -29,15 +29,6 @@ from traits.api import (
 from spectacoular import BaseSpectacoular
 
 XCAM = (-0.5,-0.375,1.,0.75)
-BFALPHA = 0.45
-
-# def set_alpha_callback(bfImage):
-#     def global_alpha_callback(attr,old,new):
-#         if checkbox_use_camera.active: 
-#             bfImage.glyph.global_alpha = BFALPHA
-#         else:
-#             bfImage.glyph.global_alpha = 1
-#     checkbox_use_camera.on_change('active',global_alpha_callback)
 
 class CameraComponent(BaseSpectacoular):
 
@@ -125,9 +116,11 @@ class CameraComponent(BaseSpectacoular):
         if new:
             self._vc_stream = cv2.VideoCapture(self.camera_index)
             update_rate = 1000/self.framerate # in milliseconds
+            update_rate = 2*update_rate # update only half as often as the camera
             M, N = self.height, self.width
             self._vc_stream.set(3, N)
             self._vc_stream.set(4, M)
+            self._vc_stream.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Keep only the latest frame in buffer
             img = empty((M, N), dtype=uint32)
             view = img.view(dtype=uint8).reshape((M, N, 4))[::-1,::-1]
             view[:,:,3] = 255

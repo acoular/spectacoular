@@ -114,8 +114,8 @@ include = [
 packages = ["spectacoular", "apps"]
 
 [tool.uv.sources]
-# for a different branch use: uv add git+ssh://git@git.tu-berlin.de/akustik/tapy.git --branch=dev
-tapy = { git = "ssh://git@git.tu-berlin.de/akustik/tapy.git", branch = "main" }
+# for a different branch use: uv add git+ssh://git@git.tu-berlin.de/akustik/tapy.git --branch=main
+tapy = { git = "ssh://git@git.tu-berlin.de/akustik/tapy.git", branch = "dev" }
 
 # app shortcuts
 [project.scripts]
