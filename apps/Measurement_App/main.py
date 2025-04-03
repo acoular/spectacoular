@@ -98,7 +98,7 @@ doc = curdoc()
 log = LogHandler(doc=doc)
 
 # directory containing microphone geometry files
-mics_dir = args.mics_dir
+mics_dir = Path(args.mics_dir)
 log.logger.debug(f"mics_dir: {mics_dir}")
 
 # microphone geometry file
