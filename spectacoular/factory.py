@@ -30,13 +30,13 @@ NUMERIC_TYPES = (Int,int, Float,float, CInt, CFloat)
                  #Complex, complex) # Complex Numbers Missing at the Moment
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
-    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate,Union), # (Trait,Property,Delegate)
-    Toggle : (Bool,) + (TraitCompound,Any,Delegate,Union), 
-    Select : (Enum, TraitEnum, Map, TraitMap, BaseStr, BaseFile, ) + NUMERIC_TYPES, # Numeric types and Str types should also be allowed here, to further use the set_widgets method with predefined options
-    Slider : (Range, ) + NUMERIC_TYPES,
-    DataTable : (Array,CArray,List,Tuple, ),
+    NumericInput : NUMERIC_TYPES + (TraitCompound,Any,Delegate, Union), # (Trait,Property,Delegate)
+    Toggle : (Bool,) + (TraitCompound,Any,Delegate, Union), 
+    Select : (Enum, TraitEnum, Map, TraitMap, BaseStr, BaseFile, Union ) + NUMERIC_TYPES, # Numeric types and Str types should also be allowed here, to further use the set_widgets method with predefined options
+    Slider : (Range, Union) + NUMERIC_TYPES,
+    DataTable : (Array,CArray,List,Tuple, Union),
     TextInput : (BaseStr, Str, BaseFile, ) + (TraitCompound,Any,Delegate,Union),
-    MultiSelect : (List, )
+    MultiSelect : (List, Union)
 }
 
 DEFAULT_TRAIT_WIDGET_MAPPINGS = {
@@ -583,6 +583,27 @@ class TextInputMapper(TraitWidgetMapper):
         self._set_traitvalue(self.widget.value) # set traitvalue to widgetvalue
         self._set_callbacks()
 
+    def _set_widgetvalue(self,traitvalue,widgetproperty="value"):
+        """
+        Sets the value of a widget to the class traits attribute value.
+        In case, the widget value and the trait value are of different type, 
+        a cast function is used.        
+
+        Parameters
+        ----------
+        traitvalue : depends on trait attribute type
+            value of the class trait attribute.
+
+        Returns
+        -------
+        None.
+        
+        """
+        if hasattr(self.widget, "description"):
+            self.widget.description = self.traitdescription
+        if traitvalue is None:
+            traitvalue = ""
+        setattr(self.widget,widgetproperty,traitvalue)
 
 class SelectMapper(TraitWidgetMapper):
     """
