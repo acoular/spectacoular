@@ -2,7 +2,7 @@
 # Copyright (c) Acoular Development Team.
 #------------------------------------------------------------------------------
 from traits.api import HasPrivateTraits, Str, CArray, Range, Int, Float,\
-File, Property, Trait, List, ListStr, ListFloat, \
+File, Property, Trait, List, \
 Bool,Tuple, Any
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import TextInput, Slider,DataTable, Select,TableColumn
@@ -378,14 +378,14 @@ class ListWidgetMapping(Test):
     # type List, multiple dtypes are valid inputs if the input trait is not
     # explicitly defined.
     
-    testListStr = List(Str()) 
-    testListStr2 = ListStr(['1','2']) 
+    testListStr = List(str) 
+    testListStr2 = List(str, ['1','2']) 
 
     testListInt = List(Int()) 
     testListInt2 = List(int, [1,2,3,4,5]) 
 
-    testListFloat = List(Float()) 
-    testListFloat2 = ListFloat([1.,2.,3.,4.,5.]) 
+    testListFloat = List(float) 
+    testListFloat2 = List(float, [1.,2.,3.,4.,5.]) 
     
     #testListTrait?
     #testListBool?
