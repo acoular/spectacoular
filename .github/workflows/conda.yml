@@ -9,7 +9,7 @@ on:
     
 jobs:
   conda_build_and_install:
-    name: Test conda deployment of package with Python 3.13
+    name: Test conda deployment of package
     runs-on: ubuntu-latest
     steps:
       - name: Check out a copy of the repository
