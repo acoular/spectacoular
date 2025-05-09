@@ -1,6 +1,6 @@
 package:
   name: spectacoular
-  version: "{{ os.popen('hatch version').read().strip() }}"
+  version: "{{ environ.get('VERSION') }}"
 
 source:
   path: ..
