@@ -24,19 +24,12 @@ authors:
 identifiers:
   - description: "spectacoular: all versions"
     type: "doi"
-    value: "10.5281/zenodo.7060188"
-  - description: "spectacoular: 22.08"
-    type: "doi"
-    value: "10.5281/zenodo.7060188"
-  - description: "spectacoular: 21.08"
-    type: "doi"
-    value: "10.5281/zenodo.5242827"
-
+    value: "10.5281/zenodo.5242826"
 repository-code: "https://github.com/acoular/spectacoular"
 url: "https://acoular.org"
 license: "BSD-3-Clause"
-version: "22.08"
-date-released: "2022-09-25"
+version: "25.05"
+date-released: "2025-05-09"
 contact:
   - email: "info@acoular.org"
     name: "Acoular Development Team"
