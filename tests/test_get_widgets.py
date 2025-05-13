@@ -56,7 +56,11 @@ def test_get_widgets(cls):
         import sounddevice as sd
         # in some cases, the default value of device=0 is not valid. Thus, we use the default input device here
         device = sd.default.device[0]
-        sp_instance = sp_cls(device=device)
+        try:
+            sd.query_devices(device)
+            sp_instance = sp_cls(device=device)
+        except sd.PortAudioError as e:
+            pytest.skip(f'{cls} cannot be tested with device={device}. {e}')
     else:
         # test default
         sp_instance = sp_cls()
