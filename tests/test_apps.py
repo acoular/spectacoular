@@ -44,7 +44,7 @@ def bokeh_server(request):
 
 # indirect: passs the parameter to the fixture before the test
 @pytest.mark.parametrize("bokeh_server", [
-    "SLM", "FreqBeamformingExample", "MicGeomExample", "RotatingExample", "TimeSamplesExample"], indirect=True) 
+    "MicGeomExample", "SLM", "FreqBeamformingExample", "RotatingExample", "TimeSamplesExample"], indirect=True) 
 def test_bokeh_app(bokeh_server):
     bokeh_server.start()
     assert bokeh_server.io_loop is not None, "Bokeh server failed to start."
