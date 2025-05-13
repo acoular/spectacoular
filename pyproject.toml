@@ -97,7 +97,7 @@ python = ["3.12", "3.13"]
 
 [tool.hatch.envs.tests.scripts]
 import = ["python -c \"import spectacoular\""]
-test = ["python -m pytest -v --durations=10 tests"]
+test = ["python -m pytest -v --durations=10 tests --ignore=tests/deprecated"]
 
 [tool.hatch.envs.tests.overrides]
 platform.linux.pre-install-commands = ['cat /proc/cpuinfo']
@@ -125,3 +125,11 @@ micgeom_app = "spectacoular.apps.micgeom_app:main"
 timesamples_app = "spectacoular.apps.timesamples_app:main"
 msm_app = "spectacoular.apps.msm_app:main"
 rotating_app = "spectacoular.apps.rotating_app:main"
+
+
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    # Suppress warnings about unclosed files in tables at the end of the tests
+    "ignore:Closing remaining open file*:tables.exceptions.UnclosedFileWarning",
+]

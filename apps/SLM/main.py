@@ -73,7 +73,7 @@ def bands_label(bands):
     return ["{:.0f}".format(x) for x in iso_bands(bands)]
 
 # build processing chains
-ts = ac.SoundDeviceSamplesGenerator(numsamples=-1,num_channels=1)
+ts = ac.SoundDeviceSamplesGenerator(num_samples=-1,num_channels=1)
 
 # slm chain
 fw = ac.FiltFreqWeight(source=ts)

@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
-    branches: [ "*" ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -32,3 +31,5 @@ jobs:
         run: sudo apt-get install libportaudio2
       - name: Check import
         run: hatch -v run +py=${{ matrix.python-version }} tests:import
+      - name: Run tests
+        run: hatch -v run +py=${{ matrix.python-version }} tests:test

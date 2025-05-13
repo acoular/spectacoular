@@ -46,7 +46,7 @@ mselect = MultiSelect(title="Select Channel:", value=[], height=250,
 
 # create Button to trigger plot
 plotButton = Toggle(label="Plot Data",button_type="primary")
-timeRange = RangeSlider(start=ts.start,end=ts.numsamples,value=(0,ts.numsamples), step=1000, title="Time Range")
+timeRange = RangeSlider(start=ts.start,end=ts.num_samples,value=(0,ts.num_samples), step=1000, title="Time Range")
 linesizeSlider = Slider(start=0.0, end=5, value=2., 
                     step=0.05, title="Line Size",disabled=False)
 def update_linesize(attr,old,new):

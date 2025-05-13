@@ -21,8 +21,8 @@ from bokeh.server.server import Server
 doc = curdoc() 
 # build processing chain
 micgeofile = Path(ac.__file__).parent / 'xml' / 'array_56.xml'
-tdfile = 'rotating_source.h5'
-ts = sp.MaskedTimeSamples(name=tdfile)
+tdfile = Path(__file__).parent.parent / 'rotating_source.h5'
+ts = sp.MaskedTimeSamples(file=tdfile)
 
 mg = sp.MicGeom(file=micgeofile)
 
@@ -91,7 +91,7 @@ mpos_columns = [TableColumn(field='x', title='x/m', editor=editor, formatter=for
                 TableColumn(field='z', title='x/m', editor=editor, formatter=formatter)]
 trait_widget_mapper = {'pos_total': DataTable}
 trait_widget_args = {'pos_total':  {'editable':True, 'transposed':True, 'columns':mpos_columns,}}
-mgWidgets = mg.get_widgets(trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args)['pos_total']
+mgWidgets = mg.get_widgets(trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args)
 
 colorMapper = LogColorMapper(palette=viridis(100), 
                               low=50, high=65 ,low_color=(1,1,1,0))
@@ -107,7 +107,7 @@ sp.set_calc_button_callback(bv.update,calcButton)
 
 #MicGeomPlot
 mgPlot = figure(title='Microphone Geometry', tools = 'hover,pan,wheel_zoom,reset')
-mgPlot.circle(x='x',y='y',source=mgWidgets['pos_total'].source)
+mgPlot.circle(x='x',y='y', radius=1, source=mgWidgets['pos_total'].source)
 
 # beamformerPlot
 bfPlot = figure(title='Beamforming Result', tools = 'pan,wheel_zoom,reset')
