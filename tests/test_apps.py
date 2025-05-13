@@ -6,6 +6,7 @@ import importlib
 from bokeh.server.server import Server
 from bokeh.application import Application
 from bokeh.application.handlers.function import FunctionHandler
+import os
 
 sys.path.append(str(Path(spectacoular.__file__).parent.parent / "apps"  ))  # Add the parent directory to sys.path
 
@@ -42,9 +43,10 @@ def bokeh_server(request):
         if server:
             server.stop()
 
-# indirect: passs the parameter to the fixture before the test
+# Skip the test for the "SLM" app if the operating system is Windows
 @pytest.mark.parametrize("bokeh_server", [
-    "MicGeomExample", "SLM", "FreqBeamformingExample", "RotatingExample", "TimeSamplesExample"], indirect=True) 
+    pytest.param("SLM", marks=pytest.mark.skipif(os.name == 'nt', reason="Test is not supported on Windows.")),
+    "MicGeomExample", "FreqBeamformingExample", "RotatingExample", "TimeSamplesExample"], indirect=True)
 def test_bokeh_app(bokeh_server):
     bokeh_server.start()
     assert bokeh_server.io_loop is not None, "Bokeh server failed to start."
