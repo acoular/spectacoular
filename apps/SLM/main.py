@@ -104,9 +104,14 @@ devices = {}
 for i,dev in enumerate(sd.query_devices()):
     if dev['max_input_channels']>0:
         devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
-device_select = Select(title="Choose input device:", 
-    value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
-ts.device=int(device_select.value)
+if devices:
+    device_select = Select(title="Choose input device:", 
+        value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
+    ts.device = int(device_select.value)
+else:
+    device_select = Select(title="Choose input device:", 
+        value="No devices available", options=["No devices available"])
+    device_select.disabled = True
 ts.set_widgets(device=device_select)
 
 # button to stop the server
