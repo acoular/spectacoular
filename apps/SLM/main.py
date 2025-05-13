@@ -204,7 +204,7 @@ levelhistory2.yaxis.axis_label = 'sound pressure level / dB'
 #litems = []
 slopes = {}
 for ch,color,band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands)):
-    levelhistory2.circle(x='t', y=transform(ch,todB), source=tic3.ds, color=None, \
+    levelhistory2.circle(radius=1., x='t', y=transform(ch,todB), source=tic3.ds, color=None, \
         selection_color=color)
     levelhistory2.line(x='t', y=transform(ch,todB), source=tic3.ds, color=color, \
         legend_label=band)
