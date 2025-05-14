@@ -121,8 +121,11 @@ if devices:
             break
         except sd.PortAudioError as e:
             print(f"Error accessing audio device {dev[1]}: {e}")
-
-ts.set_widgets(device=device_select)
+    ts.set_widgets(device=device_select)
+else:
+    device_select = Select(title="Choose input device:", options=["No input devices found"])
+    device_select.disabled = True
+    print("No input devices found")
 
 # button to stop the server
 exit_button = Button(label="Exit", button_type="danger",sizing_mode="stretch_width",width=100)
