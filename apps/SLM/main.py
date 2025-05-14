@@ -73,7 +73,15 @@ def bands_label(bands):
     return ["{:.0f}".format(x) for x in iso_bands(bands)]
 
 # build processing chains
-ts = ac.SoundDeviceSamplesGenerator(num_samples=-1,num_channels=1, device=sd.default.device[0])
+ts = ac.SoundDeviceSamplesGenerator()
+default_device_settable = True
+try:
+    ts.device = sd.default.device[0]
+    ts.num_channels = 1
+except sd.PortAudioError as e:
+    print(f"Error accessing audio device {sd.default.device[0]}: {e}")
+    default_device_settable = False
+
 
 # slm chain
 fw = ac.FiltFreqWeight(source=ts)
@@ -95,23 +103,25 @@ tic3 = sp.TimeConsumer(source=ta,down=1,channels=list(range(ta.num_channels)),
     num=32,rollover=16*2*96)
 
 # oscilloscope chain
-tic2 = sp.TimeConsumer(source=ts,down=32,channels=[0,],
-    num=8192,rollover=32*4*96)
-
+tic2 = sp.TimeConsumer(source=ts,down=32,channels=[0,], num=8192,rollover=32*4*96)
 
 # set up devices choice
 devices = {}
 for i,dev in enumerate(sd.query_devices()):
     if dev['max_input_channels']>0:
         devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
+
 if devices:
-    device_select = Select(title="Choose input device:", 
-        value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
-    ts.device = int(device_select.value)
-else:
-    device_select = Select(title="Choose input device:", 
-        value="No devices available", options=["No devices available"])
-    device_select.disabled = True
+    device_select = Select(title="Choose input device:", options=list(devices.items()))
+    # try all devices until the first one works
+    for dev in device_select.options:
+        try:
+            ts.device = int(dev[0])
+            device_select.value = dev[0]
+            break
+        except sd.PortAudioError as e:
+            print(f"Error accessing audio device {dev[1]}: {e}")
+
 ts.set_widgets(device=device_select)
 
 # button to stop the server
