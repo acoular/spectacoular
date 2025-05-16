@@ -73,7 +73,15 @@ def bands_label(bands):
     return ["{:.0f}".format(x) for x in iso_bands(bands)]
 
 # build processing chains
-ts = ac.SoundDeviceSamplesGenerator(numsamples=-1,num_channels=1)
+ts = ac.SoundDeviceSamplesGenerator()
+default_device_settable = True
+try:
+    ts.device = sd.default.device[0]
+    ts.num_channels = 1
+except sd.PortAudioError as e:
+    print(f"Error accessing audio device {sd.default.device[0]}: {e}")
+    default_device_settable = False
+
 
 # slm chain
 fw = ac.FiltFreqWeight(source=ts)
@@ -95,19 +103,29 @@ tic3 = sp.TimeConsumer(source=ta,down=1,channels=list(range(ta.num_channels)),
     num=32,rollover=16*2*96)
 
 # oscilloscope chain
-tic2 = sp.TimeConsumer(source=ts,down=32,channels=[0,],
-    num=8192,rollover=32*4*96)
-
+tic2 = sp.TimeConsumer(source=ts,down=32,channels=[0,], num=8192,rollover=32*4*96)
 
 # set up devices choice
 devices = {}
 for i,dev in enumerate(sd.query_devices()):
     if dev['max_input_channels']>0:
         devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
-device_select = Select(title="Choose input device:", 
-    value="{}".format(list(devices.keys())[0]), options=list(devices.items()))
-ts.device=int(device_select.value)
-ts.set_widgets(device=device_select)
+
+if devices:
+    device_select = Select(title="Choose input device:", options=list(devices.items()))
+    # try all devices until the first one works
+    for dev in device_select.options:
+        try:
+            ts.device = int(dev[0])
+            device_select.value = dev[0]
+            break
+        except sd.PortAudioError as e:
+            print(f"Error accessing audio device {dev[1]}: {e}")
+    ts.set_widgets(device=device_select)
+else:
+    device_select = Select(title="Choose input device:", options=["No input devices found"])
+    device_select.disabled = True
+    print("No input devices found")
 
 # button to stop the server
 exit_button = Button(label="Exit", button_type="danger",sizing_mode="stretch_width",width=100)
@@ -204,7 +222,7 @@ levelhistory2.yaxis.axis_label = 'sound pressure level / dB'
 #litems = []
 slopes = {}
 for ch,color,band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands)):
-    levelhistory2.circle(x='t', y=transform(ch,todB), source=tic3.ds, color=None, \
+    levelhistory2.circle(radius=1., x='t', y=transform(ch,todB), source=tic3.ds, color=None, \
         selection_color=color)
     levelhistory2.line(x='t', y=transform(ch,todB), source=tic3.ds, color=color, \
         legend_label=band)

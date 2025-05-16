@@ -114,7 +114,7 @@ class MicGeomComponent(BaseSpectacoular):
 
     def _add_invalid_channel_callback(self, widget):
         def _update_invalid_channels():
-            nmics = self.presenter.source.mpos_tot.shape[1]
+            nmics = self.presenter.source.pos_total.shape[1]
             inv = self.presenter.source.invalid_channels
             alpha = self.mic_alpha*np.ones(nmics)
             alpha[inv] = 0

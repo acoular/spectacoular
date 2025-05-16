@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
-    branches: [ "*" ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -27,8 +26,11 @@ jobs:
         uses: ./.github/actions/setup-hatch
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install libport
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install libportaudio2
+      - name: Set up PortAudio
+        uses: ./.github/actions/setup-portaudio
+        with:
+          os: ${{ matrix.os }}
       - name: Check import
         run: hatch -v run +py=${{ matrix.python-version }} tests:import
+      - name: Run tests
+        run: hatch -v run +py=${{ matrix.python-version }} tests:test
