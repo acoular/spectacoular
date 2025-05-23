@@ -34,7 +34,7 @@ from bokeh.palettes import Viridis256
 from bokeh.plotting import curdoc, figure
 from cam import CameraComponent
 from layout import COLOR
-from log import LogWidget
+from log import LogHandler
 
 import spectacoular as sp
 
@@ -95,10 +95,10 @@ MICSIZE = 20
 
 # set up logging
 doc = curdoc()
-log = LogWidget(doc=doc)
+log = LogHandler(doc=doc)
 
 # directory containing microphone geometry files
-mics_dir = args.mics_dir
+mics_dir = Path(args.mics_dir)
 log.logger.debug(f"mics_dir: {mics_dir}")
 
 # microphone geometry file
@@ -153,7 +153,7 @@ else:
 amp_fig = figure(
     title='SPL/dB',tooltips=[("Lp/dB", "@level"), ("Channel", "@channels"),], tools="",
     x_range=FactorRange(*_get_channel_labels(control.source)), 
-    y_range=(0,120), width=1400, height=750)
+    y_range=(0,120), height=750, sizing_mode='stretch_width')
 amp_fig.xgrid.visible = False
 amp_fig.xaxis.major_label_orientation = np.pi/2
 amp_fig.toolbar.logo=None
@@ -197,8 +197,6 @@ bf_image = mics_beamf_fig.image(image='level', x=grid.x_min, y=grid.y_min,
 mics_beamf_fig.add_layout(ColorBar(color_mapper=beamf_color_mapper,location=(0,0),
                            title="dB",
                            title_standoff=10),'right')
-
-
 
 # Microphone Geometry Plot
 mic_layout = sp.layouts.MicGeomComponent(mic_alpha=0.4,
@@ -400,8 +398,7 @@ rgWidgets['y_max'].on_change('value', update_bf_plot)
 # Tabs
 amplitudesTab = Panel(child=column(
     row(Spacer(width=25),clip_level,Spacer(width=25),labelSelect),
-    row(amp_fig, log.log_text), sizing_mode='stretch_both'),title='Channel Levels')
-
+    amp_fig, sizing_mode='stretch_both'),title='Channel Levels')
 
 mics_widgets['invalid_channels'].title = "Invalid Mics"
 mics_widgets['invalid_channels'].height = 150
