@@ -458,10 +458,9 @@ class SinusControl(MeasurementControl):
 
     def settings_callback(self):
         self.logger.info("load settings ...")
+        self.device.config = str(self.config_dir/self.select_setting.value)
         try:
-            self.device.ini_import(self.config_dir/self.select_setting.value,
-                    level=self.level_select.value)
-            self.device.set_config_settings()
+            self.device.set_config_settings(level=self.level_select.value)
         except Exception as e_text: 
             self.logger.error("{}".format(e_text))
             return
