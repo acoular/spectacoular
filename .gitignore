@@ -1,6 +1,7 @@
 # ignore files and file types:
 *.pyc
 *.pyd
+*.SEC
 
 # ignore directories:
 __pycache__/
@@ -14,13 +15,12 @@ _build/
 apps/Measurement_App/static/two_sources_one_moving_10s.h5
 apps/Measurement_App/data/
 *.log
-docs/_static/api_ref/generated/
-docs/api_ref/generated/
+*/api_ref/generated/
+*/auto_examples/*
 docs/_build
-docs/
 copy_html.sh
 
-*.SEC
 tests/.hypothesis/*
 .vscode/launch.json
 .vscode/settings.json
+*/three_sources.h5
