@@ -26,7 +26,7 @@ Problems, suggestions and success using SpectAcoular may be reported via the Aco
    :caption: Contents:
 
    install/index.rst
-   apps/index.rst
+   user_guide/index.rst
    api_ref/index_apiref.rst
 
 

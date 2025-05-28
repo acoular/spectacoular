@@ -7,6 +7,7 @@
     :toctree: generated/
 
     get_widgets
+    set_widgets
     BaseSpectacoular
     NumericInputMapper
     ToggleMapper
@@ -118,40 +119,93 @@ def widget_mapper_factory(obj,traitname,widgetType):
 
 
 def get_widgets(self, trait_widget_mapper={}, trait_widget_args={}): 
-    """This function creates a View (a bunch of instanciated widgets without a layout) 
-    defined by the :attr:`trait_widget_mapper` mapping attribute
-    of the given object (or specified via :meth:`get_widgets` method arguments). 
+    """Creates a mapping between several class trait attributes and Bokeh widgets.   
+   
+    This function is implemented in all SpectAcoular classes and is added to Acoular's classes via the 
+    the :mod:`~spectacoular.bokehview` module. For each attribute provided, it builds a corresponding
+    Bokeh widget.
     
-    This function is implemented in all SpectAcoular classes and is added to
-    Acoular's classes in bokehview.py. It builds Bokeh widgets from 
-    corresponding class trait attributes by utilizing the :class:`TraitWidgetMapper` 
-    derived classes. The desired mapping is defined by the :attr:`trait_widget_mapper` 
-    dictionary. 
+    The function handles multiple cases of View construction:
 
-    This function implements multiple cases of View construction:
+    * **Default View:** the function is called as a method by a :class:`~spectacoular.factory.BaseSpectacoular`
+      derived instance without specifying :attr:`trait_widget_mapper` and :attr:`trait_widget_args` 
+      explicitly as function arguments. In this case, the default widget mapping, defined in 
+      :mod:`~spectacoular.bokehview`, will be used:
+      
+      .. bokeh-plot::
+          :source-position: above
 
-    * (Case 1 - Default View) get_widgets() is called by a BaseSpectacoular 
-      derived instance without specifying trait_widget_mapper and trait_widget_args 
-      as function arguments. In this case, the mapping defined by the object instance attributes
-      (`self.trait_widget_mapper`,self.`trait_widget_args`) will be used to 
-      construct the View.     
+          from spectacoular import RectGrid
+          from bokeh.io import show
+          from bokeh.layouts import gridplot
 
-    * (Case 2 - Custom View (a)) get_widgets() is called by a BaseSpectacoular 
-      derived instance and the desired mapping is given by the 
-      :meth:`get_widgets` function arguments (trait_widget_mapper and trait_widget_args).
-      In this case, the mapping defined by the function arguments will be used to
-      create the View. The instance attributes (`self.trait_widget_mapper`,self.`trait_widget_args`) 
+          grid = RectGrid()
+
+          widgets = list(grid.get_widgets().values())
+          show(gridplot(widgets, ncols=5, sizing_mode='stretch_both'))
+
+    * **No Predefined View:** :meth:`get_widgets` is called and a HasTraits derived instance 
+      is given as the first argument to the function without any further arguments.
+      In this case, a default mapping is created from all editable traits to create the view. 
+
+    .. bokeh-plot::
+        :source-position: above
+
+        from acoular import RectGrid
+        from spectacoular import get_widgets
+        from bokeh.io import show
+        from bokeh.layouts import gridplot
+
+        grid = RectGrid()
+
+        widgets = list(get_widgets(grid).values())
+        show(gridplot(widgets, ncols=5, sizing_mode='stretch_both'))
+
+    * **Custom View:** :meth:`~spectacoular.factory.get_widgets` is called by a :class:`~spectacoular.factory.BaseSpectacoular`
+      derived instance and an explicit mapping is given. In this case, the instance attributes (`self.trait_widget_mapper`,self.`trait_widget_args`) 
       will be superseded. 
 
-    * (Case 3 - No Predefined View) :meth:`get_widgets` is called and a HasTraits derived instance 
-      is given as the first argument to the function. The instance object has no 
-      trait_widget_mapper and trait_widget_args attributes. 
-      In this case, a default mapping is created from all editable traits to create the view. 
+      .. bokeh-plot::
+          :source-position: above
+
+          from spectacoular import RectGrid
+          from bokeh.io import show
+          from bokeh.models.widgets import Slider
+          from bokeh.layouts import column
+
+          grid = RectGrid()
+          
+          trait_widget_mapper = {'x_min': Slider}
+          trait_widget_args = {'x_min': {'title': 'X Min', 'start': -1, 'end': 1, 'step':0.1}}
+
+          widgets = list(grid.get_widgets(
+                trait_widget_mapper=trait_widget_mapper, 
+                trait_widget_args=trait_widget_args
+          ).values())
+          show(column(widgets,sizing_mode='stretch_both'))
+
+      The same functionality can also be used with HasTraits derived classes, not part of Spectacoular:
+
+      .. bokeh-plot::
+          :source-position: above
+
+          from acoular import RectGrid
+          from spectacoular import get_widgets
+          from bokeh.io import show
+          from bokeh.models.widgets import Slider
+          from bokeh.layouts import column
+
+          grid = RectGrid()
+
+          trait_widget_mapper = {'x_min': Slider}
+          trait_widget_args = {'x_min': {'title': 'X Min', 'start': -1, 'end': 1, 'step':0.1}}
+
+          widgets = list(get_widgets(grid,
+                trait_widget_mapper=trait_widget_mapper, 
+                trait_widget_args=trait_widget_args
+          ).values())
+          show(column(widgets,sizing_mode='stretch_both'))      
     
-    * (Case 4 - Custom View (b)) :meth:`get_widgets` is called and a HasTraits derived instance 
-      is given as the first argument to the function. The instance object has no 
-      trait_widget_mapper and trait_widget_args attributes, but a mapping is defined by the 
-      second (and third) function argument. In this case, the mapping defined by the function arguments will be used to create the View. 
     
     Parameters
     ----------
