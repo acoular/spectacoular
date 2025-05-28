@@ -15,6 +15,9 @@ using the SpectAcoular package.
    :source-position: none
 
 
+.. note::
+    For full interactivity, this example should be run as a Bokeh server application.
+
 """
 #%% 
 # Set up the microphone geometry plot

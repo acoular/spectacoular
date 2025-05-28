@@ -1,57 +1,52 @@
-Installation
-============
+Installing SpectAcoular
+========================
 
 Requirements
 ------------
 
-SpectAcoular runs under 64bit Windows and Linux (it should also run under OS X, but this is untested).
-In order to install SpectAcoular you need a Python 3 environment with the following Python Packages installed:
+SpectAcoular requires Python 3 and runs on all major platforms. A working Python environment with the following packages is required:
 
-    * `Acoular <http://www.acoular.org/>`_, 
-    * `Bokeh <https://docs.bokeh.org/en/latest/index.html#>`_, 
+**Required dependencies** (installed automatically):
+  - `Acoular <http://www.acoular.org/>`_ 
+  - `Bokeh <https://docs.bokeh.org/en/latest/>`_ 
 
-There are also optional dependencies that are required for some of the applications:
+**Optional dependencies** (for certain applications):
+  - `OpenCV <https://opencv.org/>`_ 
+  - `Sounddevice <https://python-sounddevice.readthedocs.io/en/0.4.1/>`_ 
 
-    * `OpenCV <https://opencv.org/>`_ (only for the Measurement App),
-    * `Sounddevice <https://python-sounddevice.readthedocs.io/en/0.4.1/>`_ (only for the Measurement App),
+.. note::
+
+   If using `pip` to install `sounddevice`, make sure the **PortAudio library** is installed on your system. Alternatively, using `conda` is recommended for handling this dependency, as it includes PortAudio.
 
 Installation with pip
 ---------------------
 
-One easy way to install SpectAcoular is to use the Python package manager `pip <https://pip.pypa.io/en/stable/>`_.
-In order to install SpectAcoular with pip, open a console, i.e. either "cmd" or the "Anaconda command prompt" on Windows, Terminal on Linux.
-
-In the command line, type
+To install SpectAcoular using `pip`, run the following in your terminal or command prompt:
 
 .. code-block:: console
 
-    $ pip install spectacoular
+    pip install spectacoular
 
-This will install SpectAcoular in your Python environment and make the SpectAcoular library available from Python. 
-If you want to install the optional dependencies, you can do so by running
-
-.. code-block:: console
-
-    $ pip install spectacoular[full]
-
-
-Installation with conda, micromamba or mamba
-----------------------------------------------------
-
-This option assumes that you have the `Anaconda <https://www.anaconda.com/download/>`_ Python-distribution (or alternatively mamba / micromamba) 
-installed on your computer. **You may install Anaconda alongside any other Python installation on your system**, without the need to interfere with 
-the other Python installation.
-
-Once Anaconda Python is properly installed and works, start a console, i.e. either "cmd" or the "Anaconda command prompt" on Windows, Terminal on Linux.
-In the command line, type
+To install the optional dependencies for all apps (e.g., `opencv-python` and `sounddevice`), use the `full` install option:
 
 .. code-block:: console
 
-    $ conda install -c acoular spectacoular
+    pip install spectacoular[full]
 
+Installation with conda, micromamba, or mamba
+---------------------------------------------
 
-This will install SpectAcoular in your Anaconda Python environment and make the SpectAcoular library available from Python. 
-In addition, this will install all dependencies (those other packages mentioned above) if they are not already present on your system.
-Depending on your type of Anaconda installation (single user or system-wide), you may be asked for admin privileges in order to start the installation process.
+If you use the `conda`, `mamba`, or `micromamba` package manager, you can install SpectAcoular from the `acoular` channel:
 
+.. code-block:: console
+
+    conda install -c acoular spectacoular
+
+This installs the core SpectAcoular package and its required dependencies. However, note that `conda` **does not support** the `spectacoular[full]` extras syntax. To install optional dependencies like `opencv` and `sounddevice` via `conda`, use:
+
+.. code-block:: console
+
+    conda install -c conda-forge opencv sounddevice
+
+This approach ensures that `sounddevice` works correctly, as the required system library (PortAudio) is included.
 

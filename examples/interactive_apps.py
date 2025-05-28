@@ -4,8 +4,8 @@
 """
 .. _interactive_apps:
 
-Build interactive applications with SpectAcoular
-================================================
+Interactive Server Applications with SepctAcoular
+=================================================
 
 In many cases, a standalone HTML document is not sufficient to provide full interactivity, especially
 when computations are required on the Python side to update data shown in the Browser document. 
@@ -144,7 +144,11 @@ bf_presenter = sp.BeamformerPresenter(
 
 from bokeh.models.widgets import Slider # noqa: E402
 
-freq_slider = Slider(title='f/Hz',value=bf_presenter.freq, start=500.0, end=10000.0, step=50.0)
+freqs = bb.freq_data.fftfreq()
+df = int(bb.freq_data.sample_freq/bb.freq_data.block_size)
+
+
+freq_slider = Slider(title='f/Hz',value=bf_presenter.freq, start=freqs[1], end=freqs[-1], step=df)
 
 bf_presenter.set_widgets(freq=freq_slider)
 
