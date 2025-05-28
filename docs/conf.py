@@ -30,6 +30,10 @@ author = 'Acoular Development Team'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'bokeh.sphinxext.bokeh_plot',
+    #'bokeh.sphinxext.bokeh_gallery',
+    'sphinx_gallery.gen_gallery',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary', 
     'sphinx.ext.doctest', 
@@ -82,3 +86,31 @@ html_theme_path = ['_themes/']
 html_static_path = ['_static']
 
 
+
+#%%
+# sphinx_gallery.gen_gallery extension settings
+# ---------------------------------------------
+
+# Custom CSS paths should either relative to html_static_path
+# or fully qualified paths (eg. https://...)
+# necessary to hide "go to the end" note etc.
+html_css_files = ['sphinx_gallery.css']
+
+# sphinx_gallery.gen_gallery extension configuration
+sphinx_gallery_conf = {
+    'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
+    'example_extensions': {'.py'},
+    'download_all_examples': False,  # whether to download all examples
+    'examples_dirs': ['../examples'],   
+}
+
+#%% 
+# intersphinx extension settings
+
+intersphinx_mapping = {
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "matplotlib": ("https://matplotlib.org/stable", None),
+    "bokeh": ("https://docs.bokeh.org/en/latest", None),
+    "acoular": ("https://www.acoular.org/", None),
+}

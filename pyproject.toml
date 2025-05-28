@@ -24,10 +24,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Physics",
     "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python",
 ]
 dependencies = [
     'acoular>=25.01,<=25.04',
@@ -55,6 +52,30 @@ tapy = [
     "tapy"
 ]
 
+docs = [
+    "spectacoular[full]",
+    "ipython",
+    "graphviz",
+    "matplotlib",
+    "numpydoc",
+    "pickleshare",
+    "sphinx",
+    "sphinx_gallery",
+]
+
+tests = [
+    "spectacoular[full]",
+    "pytest",
+    "hypothesis",
+]
+
+dev = [
+    "spectacoular[docs,tests]",
+    "hatch",
+    "ruff==0.8.1", # remember to change version pin in docs/source/contributing/install.rst
+]
+
+
 [project.urls]
 homepage = "https://acoular.github.io/spectacoular/"
 documentation = "https://acoular.github.io/spectacoular/"
@@ -67,20 +88,11 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 path = "spectacoular/version.py"
 
-# [tool.hatch.envs.hatch-static-analysis]
-# dependencies = ["ruff==0.4.1"]
-# config-path = [".ruff.toml"]
-
 [tool.hatch.envs.docs]
 platforms = ["linux"]
 python = "3.13"
 dependencies = [
-    "ipython",
-    "graphviz",
-    "matplotlib",
-    "numpydoc",
-    "pickleshare",
-    "sphinx",
+    "spectacoular[docs]"
 ]
 
 [tool.hatch.envs.docs.scripts]
@@ -88,9 +100,7 @@ build = ["cd docs && make html"]
 
 [tool.hatch.envs.tests]
 dependencies = [
-    "pytest",
-    "hypothesis",
-    "sounddevice",
+    "spectacoular[tests]",
 ]
 
 [[tool.hatch.envs.tests.matrix]]

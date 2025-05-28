@@ -290,7 +290,13 @@ if ac.config.have_sounddevice:
         In the future, this class should work in buffer mode and 
         also write the current frame that is played to a class attribute.
         """
-        
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            if ac.config.have_sounddevice is False:
+                msg = f'SoundDevice library not found but is required for using {self.__class__}.'
+                raise ImportError(msg)
+
         # internal identifier
         digest = Property( depends_on = ['source.digest', '__class__'])
     
