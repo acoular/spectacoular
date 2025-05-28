@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>spectacoular.factory.set_widgets &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=47202671" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css?v=41595bc8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_gallery.css" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="BaseSpectacoular" href="spectacoular.factory.BaseSpectacoular.html" />
+    <link rel="prev" title="spectacoular.factory.get_widgets" href="spectacoular.factory.get_widgets.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>spectacoular.factory.set_widgets</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.factory.get_widgets.html">spectacoular.factory.get_widgets</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.factory.BaseSpectacoular.html">BaseSpectacoular</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="spectacoular-factory-set-widgets">
+<h1>spectacoular.factory.set_widgets<a class="headerlink" href="#spectacoular-factory-set-widgets" title="Link to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="spectacoular.factory.set_widgets">
+<span class="sig-prename descclassname"><span class="pre">spectacoular.factory.</span></span><span class="sig-name descname"><span class="pre">set_widgets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.factory.set_widgets" title="Link to this definition">¶</a></dt>
+<dd><p>Set instances of Bokeh widgets to certain trait attributes</p>
+<p>This function is implemented in all SpectAcoular classes and is added to
+Acoular’s classes in bokehview.py.
+It allows to reference an existing widget to a certain class trait attribute.
+Expects a class traits name as parameter and the widget instance as 
+value.</p>
+<dl>
+<dt>For example: </dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">spectacoular</span><span class="w"> </span><span class="kn">import</span> <span class="n">RectGrid</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.models.widgets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Select</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rg</span> <span class="o">=</span> <span class="n">RectGrid</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sl</span> <span class="o">=</span> <span class="n">Select</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;10.0&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rg</span><span class="o">.</span><span class="n">set_widgets</span><span class="p">(</span><span class="n">x_max</span><span class="o">=</span><span class="n">sl</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>The value of the trait attribute changes to the widgets value when it is 
+different.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>**kwargs</strong></dt><dd><p>The name of the class trait attributes. Depends on the class.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>None.</dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.factory.get_widgets.html">spectacoular.factory.get_widgets</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.factory.BaseSpectacoular.html">BaseSpectacoular</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

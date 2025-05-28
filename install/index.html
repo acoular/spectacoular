@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Installing SpectAcoular &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=47202671" />
+    <link rel="stylesheet" type="text/css" href="../_static/haikuac.css?v=41595bc8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_gallery.css" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="User Guide" href="../user_guide/index.html" />
+    <link rel="prev" title="SpectAcoular! An extension for Acoular" href="../index.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>Installing SpectAcoular</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="../index.html">SpectAcoular! An extension for Acoular</a>
+        &#160;&#160;::&#160;&#160;       
+        <a class="uplink" href="../index.html">Main Page</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="../user_guide/index.html">User Guide</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="installing-spectacoular">
+<h1>Installing SpectAcoular<a class="headerlink" href="#installing-spectacoular" title="Link to this heading">¶</a></h1>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">¶</a></h2>
+<p>SpectAcoular requires Python 3 and runs on all major platforms. A working Python environment with the following packages is required:</p>
+<dl class="simple">
+<dt><strong>Required dependencies</strong> (installed automatically):</dt><dd><ul class="simple">
+<li><p><a class="reference external" href="http://www.acoular.org/">Acoular</a></p></li>
+<li><p><a class="reference external" href="https://docs.bokeh.org/en/latest/">Bokeh</a></p></li>
+</ul>
+</dd>
+<dt><strong>Optional dependencies</strong> (for certain applications):</dt><dd><ul class="simple">
+<li><p><a class="reference external" href="https://opencv.org/">OpenCV</a></p></li>
+<li><p><a class="reference external" href="https://python-sounddevice.readthedocs.io/en/0.4.1/">Sounddevice</a></p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If using <cite>pip</cite> to install <cite>sounddevice</cite>, make sure the <strong>PortAudio library</strong> is installed on your system. Alternatively, using <cite>conda</cite> is recommended for handling this dependency, as it includes PortAudio.</p>
+</div>
+</section>
+<section id="installation-with-pip">
+<h2>Installation with pip<a class="headerlink" href="#installation-with-pip" title="Link to this heading">¶</a></h2>
+<p>To install SpectAcoular using <cite>pip</cite>, run the following in your terminal or command prompt:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">pip install spectacoular</span>
+</pre></div>
+</div>
+<p>To install the optional dependencies for all apps (e.g., <cite>opencv-python</cite> and <cite>sounddevice</cite>), use the <cite>full</cite> install option:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">pip install spectacoular[full]</span>
+</pre></div>
+</div>
+</section>
+<section id="installation-with-conda-micromamba-or-mamba">
+<h2>Installation with conda, micromamba, or mamba<a class="headerlink" href="#installation-with-conda-micromamba-or-mamba" title="Link to this heading">¶</a></h2>
+<p>If you use the <cite>conda</cite>, <cite>mamba</cite>, or <cite>micromamba</cite> package manager, you can install SpectAcoular from the <cite>acoular</cite> channel:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">conda install -c acoular spectacoular</span>
+</pre></div>
+</div>
+<p>This installs the core SpectAcoular package and its required dependencies. However, note that <cite>conda</cite> <strong>does not support</strong> the <cite>spectacoular[full]</cite> extras syntax. To install optional dependencies like <cite>opencv</cite> and <cite>sounddevice</cite> via <cite>conda</cite>, use:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">conda install -c conda-forge opencv sounddevice</span>
+</pre></div>
+</div>
+<p>This approach ensures that <cite>sounddevice</cite> works correctly, as the required system library (PortAudio) is included.</p>
+</section>
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="../index.html">SpectAcoular! An extension for Acoular</a>
+        &#160;&#160;::&#160;&#160;       
+        <a class="uplink" href="../index.html">Main Page</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="../user_guide/index.html">User Guide</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

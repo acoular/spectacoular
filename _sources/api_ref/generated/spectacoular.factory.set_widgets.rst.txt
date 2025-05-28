@@ -1,0 +1,6 @@
+﻿spectacoular.factory.set\_widgets
+=================================
+
+.. currentmodule:: spectacoular.factory
+
+.. autofunction:: set_widgets

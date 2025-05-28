@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>TimeSamplesPhantom &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=47202671" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css?v=41595bc8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_gallery.css" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="TimeOutPresenter" href="spectacoular.lprocess.TimeOutPresenter.html" />
+    <link rel="prev" title="lprocess" href="../spectacoular.lprocess.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>TimeSamplesPhantom</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="../spectacoular.lprocess.html">lprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.lprocess.html">lprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.lprocess.TimeOutPresenter.html">TimeOutPresenter</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="timesamplesphantom">
+<h1>TimeSamplesPhantom<a class="headerlink" href="#timesamplesphantom" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectacoular.lprocess.TimeSamplesPhantom">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectacoular.lprocess.</span></span><span class="sig-name descname"><span class="pre">TimeSamplesPhantom</span></span><a class="headerlink" href="#spectacoular.lprocess.TimeSamplesPhantom" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://www.acoular.org/api_ref/generated/generated/acoular.sources.MaskedTimeSamples.html#acoular.sources.MaskedTimeSamples" title="(in Acoular v25.04)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MaskedTimeSamples</span></code></a>, <a class="reference internal" href="spectacoular.factory.BaseSpectacoular.html#spectacoular.factory.BaseSpectacoular" title="spectacoular.factory.BaseSpectacoular"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseSpectacoular</span></code></a></p>
+<p>TimeSamples derived class for propagating signal processing blocks with
+user-defined time delay.</p>
+<p>The functionality of the class is to deliver existing blocks of data in a
+certain time interval. Can be used to simulate a measurement (but data
+is read from file).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.lprocess.TimeSamplesPhantom.time_delay">
+<span class="sig-name descname"><span class="pre">time_delay</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Float(</span> <span class="pre">…</span></em><a class="headerlink" href="#spectacoular.lprocess.TimeSamplesPhantom.time_delay" title="Link to this definition">¶</a></dt>
+<dd><p>Defines the delay with which the individual data blocks are propagated.
+Defaults to 1/sample_freq</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.lprocess.TimeSamplesPhantom.collectsamples">
+<span class="sig-name descname"><span class="pre">collectsamples</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Bool(True,</span> <span class="pre">…</span></em><a class="headerlink" href="#spectacoular.lprocess.TimeSamplesPhantom.collectsamples" title="Link to this definition">¶</a></dt>
+<dd><p>Indicates if samples are collected, helper trait to break result loop</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.lprocess.TimeSamplesPhantom.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">128</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.lprocess.TimeSamplesPhantom.result" title="Link to this definition">¶</a></dt>
+<dd><p>Python generator that yields the output block-wise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>num</strong><span class="classifier">integer, defaults to 128</span></dt><dd><p>This parameter defines the size of the blocks to be yielded
+(i.e. the number of samples per block) .</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>Samples in blocks of shape (num, num_channels).</dt><dd><p>The last block may be shorter than num.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="../spectacoular.lprocess.html">lprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.lprocess.html">lprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.lprocess.TimeOutPresenter.html">TimeOutPresenter</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

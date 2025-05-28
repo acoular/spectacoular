@@ -1,0 +1,4 @@
+﻿consumer
+=====================
+
+.. automodule:: spectacoular.consumer

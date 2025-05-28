@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>TimeBandsConsumer &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=47202671" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css?v=41595bc8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_gallery.css" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="lprocess" href="../spectacoular.lprocess.html" />
+    <link rel="prev" title="TimeConsumer" href="spectacoular.consumer.TimeConsumer.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>TimeBandsConsumer</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.consumer.TimeConsumer.html">TimeConsumer</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.consumer.html">consumer</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="../spectacoular.lprocess.html">lprocess</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="timebandsconsumer">
+<h1>TimeBandsConsumer<a class="headerlink" href="#timebandsconsumer" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeBandsConsumer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectacoular.consumer.</span></span><span class="sig-name descname"><span class="pre">TimeBandsConsumer</span></span><a class="headerlink" href="#spectacoular.consumer.TimeBandsConsumer" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="spectacoular.consumer.TimeConsumer.html#spectacoular.consumer.TimeConsumer" title="spectacoular.consumer.TimeConsumer"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeConsumer</span></code></a></p>
+<p><a class="reference internal" href="spectacoular.consumer.TimeConsumer.html#spectacoular.consumer.TimeConsumer" title="spectacoular.consumer.TimeConsumer"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeConsumer</span></code></a> derived class for building an interface from Acoular’s generator 
+pipelines to Bokeh’s ColumnDataSource which specialises in Plots over frequency bands
+(like octave spectrum)</p>
+<p>Works like <a class="reference internal" href="spectacoular.consumer.TimeConsumer.html#spectacoular.consumer.TimeConsumer" title="spectacoular.consumer.TimeConsumer"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeConsumer</span></code></a>, but ignores <code class="xref py py-attr docutils literal notranslate"><span class="pre">down</span></code> and <code class="xref py py-attr docutils literal notranslate"><span class="pre">rollover</span></code>. Instead,
+just the first sample of each block is taken from the input. <code class="xref py py-attr docutils literal notranslate"><span class="pre">ds</span></code> has a column for 
+each input channel with one frequency band value in each row. <a class="reference internal" href="#spectacoular.consumer.TimeBandsConsumer.bands" title="spectacoular.consumer.TimeBandsConsumer.bands"><code class="xref py py-attr docutils literal notranslate"><span class="pre">bands</span></code></a> gives the bands
+and <a class="reference internal" href="#spectacoular.consumer.TimeBandsConsumer.lfunc" title="spectacoular.consumer.TimeBandsConsumer.lfunc"><code class="xref py py-attr docutils literal notranslate"><span class="pre">lfunc</span></code></a> can be used to convert to human-readable label strings.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeBandsConsumer.lfunc">
+<span class="sig-name descname"><span class="pre">lfunc</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Callable(</span> <span class="pre">lambda</span> <span class="pre">bands:</span> <span class="pre">[&quot;{:.0f}&quot;.format(f)</span> <span class="pre">for</span> <span class="pre">f</span> <span class="pre">in</span> <span class="pre">bands])</span></em><a class="headerlink" href="#spectacoular.consumer.TimeBandsConsumer.lfunc" title="Link to this definition">¶</a></dt>
+<dd><p>Function to convert bands into list of labels</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeBandsConsumer.bands">
+<span class="sig-name descname"><span class="pre">bands</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Property(</span> <span class="pre">depends_on</span> <span class="pre">=</span> <span class="pre">['source.digest'])</span></em><a class="headerlink" href="#spectacoular.consumer.TimeBandsConsumer.bands" title="Link to this definition">¶</a></dt>
+<dd><p>List of labels for bands</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeBandsConsumer.numbands">
+<span class="sig-name descname"><span class="pre">numbands</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Property(</span> <span class="pre">depends_on</span> <span class="pre">=</span> <span class="pre">['source.digest'])</span></em><a class="headerlink" href="#spectacoular.consumer.TimeBandsConsumer.numbands" title="Link to this definition">¶</a></dt>
+<dd><p>Number of bands</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.consumer.TimeBandsConsumer.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.consumer.TimeBandsConsumer.update" title="Link to this definition">¶</a></dt>
+<dd><p>callback function for GUI event loop, updates data source</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.consumer.TimeConsumer.html">TimeConsumer</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.consumer.html">consumer</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="../spectacoular.lprocess.html">lprocess</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

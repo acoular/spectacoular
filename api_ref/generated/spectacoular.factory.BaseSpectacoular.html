@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>BaseSpectacoular &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=47202671" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css?v=41595bc8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_gallery.css" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="NumericInputMapper" href="spectacoular.factory.NumericInputMapper.html" />
+    <link rel="prev" title="spectacoular.factory.set_widgets" href="spectacoular.factory.set_widgets.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>BaseSpectacoular</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.factory.set_widgets.html">spectacoular.factory.set_widgets</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.factory.NumericInputMapper.html">NumericInputMapper</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="basespectacoular">
+<h1>BaseSpectacoular<a class="headerlink" href="#basespectacoular" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectacoular.factory.BaseSpectacoular">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectacoular.factory.</span></span><span class="sig-name descname"><span class="pre">BaseSpectacoular</span></span><a class="headerlink" href="#spectacoular.factory.BaseSpectacoular" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">HasPrivateTraits</span></code></p>
+<p>Base class for any class defined in the SpectAcoular module.</p>
+<p>It provides the necessary methods to create widgets from trait attributes 
+and to assign Bokeh’s widgets to trait attributes.
+This class has no real functionality on its own and should not be 
+used directly.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.factory.BaseSpectacoular.trait_widget_mapper">
+<span class="sig-name descname"><span class="pre">trait_widget_mapper</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Dict({</span> <span class="pre">…</span></em><a class="headerlink" href="#spectacoular.factory.BaseSpectacoular.trait_widget_mapper" title="Link to this definition">¶</a></dt>
+<dd><p>dictionary containing the mapping between a class trait attribute and 
+a Bokeh widget. Keys: name of the trait attribute. Values: Bokeh widget.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.factory.BaseSpectacoular.trait_widget_args">
+<span class="sig-name descname"><span class="pre">trait_widget_args</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Dict({</span> <span class="pre">…</span></em><a class="headerlink" href="#spectacoular.factory.BaseSpectacoular.trait_widget_args" title="Link to this definition">¶</a></dt>
+<dd><p>dictionary containing arguments that belongs to a widget that is created
+from a trait attribute and should be considered when the widget is built.
+For example: {“traitname”:{‘disabled’:True,’background_color’:’red’,…}}.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.factory.BaseSpectacoular.get_widgets">
+<span class="sig-name descname"><span class="pre">get_widgets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trait_widget_mapper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trait_widget_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.factory.BaseSpectacoular.get_widgets" title="Link to this definition">¶</a></dt>
+<dd><p>function to create widgets from class trait attributes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.factory.BaseSpectacoular.set_widgets">
+<span class="sig-name descname"><span class="pre">set_widgets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.factory.BaseSpectacoular.set_widgets" title="Link to this definition">¶</a></dt>
+<dd><p>function to assign widget instances to class trait attributes</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.factory.set_widgets.html">spectacoular.factory.set_widgets</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.factory.html">factory</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.factory.NumericInputMapper.html">NumericInputMapper</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

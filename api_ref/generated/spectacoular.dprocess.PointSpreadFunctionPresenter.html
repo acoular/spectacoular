@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>PointSpreadFunctionPresenter &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=47202671" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css?v=41595bc8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_gallery.css" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="TimeSamplesPresenter" href="spectacoular.dprocess.TimeSamplesPresenter.html" />
+    <link rel="prev" title="BeamformerPresenter" href="spectacoular.dprocess.BeamformerPresenter.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>PointSpreadFunctionPresenter</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.dprocess.BeamformerPresenter.html">BeamformerPresenter</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.dprocess.html">dprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.dprocess.TimeSamplesPresenter.html">TimeSamplesPresenter</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="pointspreadfunctionpresenter">
+<h1>PointSpreadFunctionPresenter<a class="headerlink" href="#pointspreadfunctionpresenter" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectacoular.dprocess.PointSpreadFunctionPresenter">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectacoular.dprocess.</span></span><span class="sig-name descname"><span class="pre">PointSpreadFunctionPresenter</span></span><a class="headerlink" href="#spectacoular.dprocess.PointSpreadFunctionPresenter" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="spectacoular.dprocess.BasePresenter.html#spectacoular.dprocess.BasePresenter" title="spectacoular.dprocess.BasePresenter"><code class="xref py py-class docutils literal notranslate"><span class="pre">BasePresenter</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.dprocess.PointSpreadFunctionPresenter.source">
+<span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Trait(PointSpreadFunction)</span></em><a class="headerlink" href="#spectacoular.dprocess.PointSpreadFunctionPresenter.source" title="Link to this definition">¶</a></dt>
+<dd><p>Data source; <a class="reference external" href="https://www.acoular.org/api_ref/generated/generated/acoular.fbeamform.PointSpreadFunction.html#acoular.fbeamform.PointSpreadFunction" title="(in Acoular v25.04)"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointSpreadFunction</span></code></a> or derived object.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.dprocess.PointSpreadFunctionPresenter.cdsource">
+<span class="sig-name descname"><span class="pre">cdsource</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Instance(ColumnDataSource,</span> <span class="pre">kw={'data':{</span> <span class="pre">…</span></em><a class="headerlink" href="#spectacoular.dprocess.PointSpreadFunctionPresenter.cdsource" title="Link to this definition">¶</a></dt>
+<dd><p>ColumnDataSource that holds data that can be consumed by plots and glyphs</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.dprocess.PointSpreadFunctionPresenter.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">optional_items</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.dprocess.PointSpreadFunctionPresenter.update" title="Link to this definition">¶</a></dt>
+<dd><p>Function that updates the keys and values of <a class="reference internal" href="#spectacoular.dprocess.PointSpreadFunctionPresenter.cdsource" title="spectacoular.dprocess.PointSpreadFunctionPresenter.cdsource"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cdsource</span></code></a> attribute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>None.</dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.dprocess.BeamformerPresenter.html">BeamformerPresenter</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.dprocess.html">dprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.dprocess.TimeSamplesPresenter.html">TimeSamplesPresenter</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

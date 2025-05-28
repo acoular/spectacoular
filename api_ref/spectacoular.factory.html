@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>factory &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=47202671" />
+    <link rel="stylesheet" type="text/css" href="../_static/haikuac.css?v=41595bc8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_gallery.css" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="spectacoular.factory.get_widgets" href="generated/spectacoular.factory.get_widgets.html" />
+    <link rel="prev" title="spectacoular.bokehview.add_bokeh_attr" href="generated/spectacoular.bokehview.add_bokeh_attr.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>factory</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="generated/spectacoular.bokehview.add_bokeh_attr.html">spectacoular.bokehview.add_bokeh_attr</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index_apiref.html">Reference Manual</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="generated/spectacoular.factory.get_widgets.html">spectacoular.factory.get_widgets</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="module-spectacoular.factory">
+<span id="factory"></span><h1>factory<a class="headerlink" href="#module-spectacoular.factory" title="Link to this heading">¶</a></h1>
+<p>Implements factory for trait to widget translation.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/spectacoular.factory.get_widgets.html#spectacoular.factory.get_widgets" title="spectacoular.factory.get_widgets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_widgets</span></code></a>(self[, trait_widget_mapper, ...])</p></td>
+<td><p>Creates a mapping between several class trait attributes and Bokeh widgets.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/spectacoular.factory.set_widgets.html#spectacoular.factory.set_widgets" title="spectacoular.factory.set_widgets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_widgets</span></code></a>(self, **kwargs)</p></td>
+<td><p>Set instances of Bokeh widgets to certain trait attributes</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/spectacoular.factory.BaseSpectacoular.html#spectacoular.factory.BaseSpectacoular" title="spectacoular.factory.BaseSpectacoular"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseSpectacoular</span></code></a></p></td>
+<td><p>Base class for any class defined in the SpectAcoular module.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/spectacoular.factory.NumericInputMapper.html#spectacoular.factory.NumericInputMapper" title="spectacoular.factory.NumericInputMapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NumericInputMapper</span></code></a>(obj, traitname)</p></td>
+<td><p>Factory that creates <code class="xref py py-class docutils literal notranslate"><span class="pre">NumericInput</span></code> widget from a class trait attribute of type Int.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/spectacoular.factory.ToggleMapper.html#spectacoular.factory.ToggleMapper" title="spectacoular.factory.ToggleMapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ToggleMapper</span></code></a>(obj, traitname)</p></td>
+<td><p>Factory that creates <code class="xref py py-class docutils literal notranslate"><span class="pre">Toggle</span></code> widget from a class trait attribute of type Bool.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/spectacoular.factory.TextInputMapper.html#spectacoular.factory.TextInputMapper" title="spectacoular.factory.TextInputMapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TextInputMapper</span></code></a>(obj, traitname)</p></td>
+<td><p>Factory that creates <code class="xref py py-class docutils literal notranslate"><span class="pre">TextInput</span></code> widget from a class trait attribute.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/spectacoular.factory.SelectMapper.html#spectacoular.factory.SelectMapper" title="spectacoular.factory.SelectMapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SelectMapper</span></code></a>(obj, traitname)</p></td>
+<td><p>Factory that creates <code class="xref py py-class docutils literal notranslate"><span class="pre">Select</span></code> widget from a class trait attribute.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/spectacoular.factory.SliderMapper.html#spectacoular.factory.SliderMapper" title="spectacoular.factory.SliderMapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SliderMapper</span></code></a>(obj, traitname)</p></td>
+<td><p>Factory that creates <code class="xref py py-class docutils literal notranslate"><span class="pre">Slider</span></code> widget from a class trait attribute.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/spectacoular.factory.DataTableMapper.html#spectacoular.factory.DataTableMapper" title="spectacoular.factory.DataTableMapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DataTableMapper</span></code></a>(obj, traitname)</p></td>
+<td><p>Factory that creates <code class="xref py py-class docutils literal notranslate"><span class="pre">DataTable</span></code> widget from a class trait attribute.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="generated/spectacoular.bokehview.add_bokeh_attr.html">spectacoular.bokehview.add_bokeh_attr</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index_apiref.html">Reference Manual</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="generated/spectacoular.factory.get_widgets.html">spectacoular.factory.get_widgets</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

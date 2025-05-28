@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>MicGeomPresenter &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=47202671" />
+    <link rel="stylesheet" type="text/css" href="../../_static/haikuac.css?v=41595bc8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_gallery.css" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="BeamformerPresenter" href="spectacoular.dprocess.BeamformerPresenter.html" />
+    <link rel="prev" title="BasePresenter" href="spectacoular.dprocess.BasePresenter.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>MicGeomPresenter</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.dprocess.BasePresenter.html">BasePresenter</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.dprocess.html">dprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.dprocess.BeamformerPresenter.html">BeamformerPresenter</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <section id="micgeompresenter">
+<h1>MicGeomPresenter<a class="headerlink" href="#micgeompresenter" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectacoular.dprocess.MicGeomPresenter">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectacoular.dprocess.</span></span><span class="sig-name descname"><span class="pre">MicGeomPresenter</span></span><a class="headerlink" href="#spectacoular.dprocess.MicGeomPresenter" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="spectacoular.dprocess.BasePresenter.html#spectacoular.dprocess.BasePresenter" title="spectacoular.dprocess.BasePresenter"><code class="xref py py-class docutils literal notranslate"><span class="pre">BasePresenter</span></code></a></p>
+<p>This class provides data for visualization of a Microphone Geometry.</p>
+<p>The data of its ColumnDataSource fits to different bokeh glyphs (e.g. circle).</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>   <span class="kn">import</span><span class="w"> </span><span class="nn">spectacoular</span>
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">mg</span> <span class="o">=</span> <span class="n">spectacoular</span><span class="o">.</span><span class="n">MicGeom</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;/path/to/file.xml&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">mv</span> <span class="o">=</span> <span class="n">spectacoular</span><span class="o">.</span><span class="n">MicGeomPresenter</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">mg</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span>   
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">mgPlot</span> <span class="o">=</span> <span class="n">figure</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Microphone Geometry&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">mgPlot</span><span class="o">.</span><span class="n">circle</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span><span class="n">source</span><span class="o">=</span><span class="n">mv</span><span class="o">.</span><span class="n">cdsource</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.dprocess.MicGeomPresenter.source">
+<span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Instance(MicGeom)</span></em><a class="headerlink" href="#spectacoular.dprocess.MicGeomPresenter.source" title="Link to this definition">¶</a></dt>
+<dd><p>Data source; <a class="reference external" href="https://www.acoular.org/api_ref/generated/generated/acoular.microphones.MicGeom.html#acoular.microphones.MicGeom" title="(in Acoular v25.04)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MicGeom</span></code></a> or derived object.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectacoular.dprocess.MicGeomPresenter.cdsource">
+<span class="sig-name descname"><span class="pre">cdsource</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">Instance(ColumnDataSource,</span> <span class="pre">kw={'data':{</span> <span class="pre">…</span></em><a class="headerlink" href="#spectacoular.dprocess.MicGeomPresenter.cdsource" title="Link to this definition">¶</a></dt>
+<dd><p>ColumnDataSource that holds data that can be consumed by plots and glyphs</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectacoular.dprocess.MicGeomPresenter.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">optional_items</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectacoular.dprocess.MicGeomPresenter.update" title="Link to this definition">¶</a></dt>
+<dd><p>Function that updates the <cite>cdsource</cite> attribute.</p>
+<p>No processing here, since <cite>BasePresenter</cite> only represents a base class 
+to derive other classes from.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="spectacoular.dprocess.BasePresenter.html">BasePresenter</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../spectacoular.dprocess.html">dprocess</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spectacoular.dprocess.BeamformerPresenter.html">BeamformerPresenter</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Creating widgets with SpectAcoular &#8212; SpectAcoular  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=47202671" />
+    <link rel="stylesheet" type="text/css" href="../_static/haikuac.css?v=41595bc8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_gallery.css" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Interactive Server Applications with SepctAcoular" href="interactive_apps.html" />
+    <link rel="prev" title="Basic plotting with Bokeh" href="basic_mic_geom_plot.html" /> 
+  </head><body>
+      <div class="header"><h1 class="heading"><a href="../index.html">
+          <span>SpectAcoular  documentation</span></a></h1>
+        <h2 class="heading"><span>Creating widgets with SpectAcoular</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="basic_mic_geom_plot.html">Basic plotting with Bokeh</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../user_guide/index.html">User Guide</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="interactive_apps.html">Interactive Server Applications with SepctAcoular</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-basic-mic-geom-widgets-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="creating-widgets-with-spectacoular">
+<span id="basic-mic-geom-widgets"></span><span id="sphx-glr-auto-examples-basic-mic-geom-widgets-py"></span><h1>Creating widgets with SpectAcoular<a class="headerlink" href="#creating-widgets-with-spectacoular" title="Link to this heading">¶</a></h1>
+<p>In this example, we are going to create an interactive plot of a Microphone Array Geometry with additional control widgets
+using the SpectAcoular package.</p>
+<script src="bokeh-content-ad428a543d514a8196be759506b0a7e8-auto_examples-basic_mic_geom_widgets.js" id="aa50ab1b-56a0-4cac-aaa3-06a2a964ff15"></script><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For full interactivity, this example should be run as a Bokeh server application.</p>
+</div>
+<section id="set-up-the-microphone-geometry-plot">
+<h2>Set up the microphone geometry plot<a class="headerlink" href="#set-up-the-microphone-geometry-plot" title="Link to this heading">¶</a></h2>
+<p>Similar to the <a class="reference internal" href="basic_mic_geom_plot.html#basic-mic-geom-plot"><span class="std std-ref">Basic plotting with Bokeh</span></a>, we will first import the necessary modules and set up
+the microphone geometry plot.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">acoular</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ac</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">spectacoular</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.models</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/sources.html#bokeh.models.ColumnDataSource" title="bokeh.models.ColumnDataSource" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ColumnDataSource</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.plotting</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.figure" title="bokeh.plotting.figure" class="sphx-glr-backref-module-bokeh-plotting sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">figure</span></a>
+
+<span class="c1"># set up the figure</span>
+<a href="https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.figure" title="bokeh.plotting.figure" class="sphx-glr-backref-module-bokeh-plotting sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">figure</span></a> <span class="o">=</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.figure" title="bokeh.plotting.figure" class="sphx-glr-backref-module-bokeh-plotting sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">figure</span></a><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Microphone Geometry&#39;</span><span class="p">,</span> <span class="n">tools</span><span class="o">=</span><span class="s1">&#39;hover,zoom_in,zoom_out,reset,lasso_select&#39;</span><span class="p">,</span> <span class="n">match_aspect</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># set up the microphone geometry</span>
+<span class="n">default_xml_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">ac</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s1">&#39;xml&#39;</span> <span class="o">/</span> <span class="s1">&#39;tub_vogel64.xml&#39;</span>
+<span class="n">mics</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">MicGeom</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">default_xml_file</span><span class="p">)</span>
+
+<span class="c1"># add circles to the figure to represent the microphones</span>
+<span class="n">cds</span> <span class="o">=</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/sources.html#bokeh.models.ColumnDataSource" title="bokeh.models.ColumnDataSource" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ColumnDataSource</span></a><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">mics</span><span class="o">.</span><span class="n">pos_total</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">mics</span><span class="o">.</span><span class="n">pos_total</span><span class="p">[</span><span class="mi">1</span><span class="p">]})</span>
+<span class="n">glyph</span> <span class="o">=</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.figure.circle" title="bokeh.plotting.figure.circle" class="sphx-glr-backref-module-bokeh-plotting-figure sphx-glr-backref-type-py-method"><span class="n">figure</span><span class="o">.</span><span class="n">circle</span></a><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="s1">&#39;#1F77B4&#39;</span><span class="p">,</span> <span class="n">fill_alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">cds</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="create-widgets-for-micgeom">
+<h2>Create widgets for MicGeom<a class="headerlink" href="#create-widgets-for-micgeom" title="Link to this heading">¶</a></h2>
+<p>The <a class="reference external" href="https://www.acoular.org/api_ref/generated/generated/acoular.microphones.MicGeom.html#acoular.microphones.MicGeom" title="(in Acoular v25.04)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MicGeom</span></code></a> class provides several attributes, known as traits, that can be used to
+either provide additional information about the microphone array or to modify the geometry.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">mics</span><span class="o">.</span><span class="n">traits</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+<span class="c1"># Out:</span>
+<span class="c1"># [&#39;num_mics&#39;, &#39;center&#39;, &#39;aperture&#39;, &#39;file&#39;, &#39;pos_total&#39;, &#39;pos&#39;,  ...]</span>
+</pre></div>
+</div>
+<p>Let’s say we want to know about the number of microphones (<a class="reference external" href="https://www.acoular.org/api_ref/generated/generated/acoular.microphones.MicGeom.html#acoular.microphones.MicGeom.num_mics" title="(in Acoular v25.04)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">num_mics</span></code></a>) and
+the aperture of the microphone array (<a class="reference external" href="https://www.acoular.org/api_ref/generated/generated/acoular.microphones.MicGeom.html#acoular.microphones.MicGeom.aperture" title="(in Acoular v25.04)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">aperture</span></code></a>), we can use SpectAcoular’s
+<a class="reference internal" href="../api_ref/generated/spectacoular.factory.get_widgets.html#spectacoular.factory.get_widgets" title="spectacoular.factory.get_widgets"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_widgets()</span></code></a> function to translate each attribute into a Bokeh widget.</p>
+<p>Defining each trait to widget mapping individually can become cumbersome, and not all
+widgets are suitable for all traits. Therefore, SpectAcoular provides default widget mapping for
+most of Acoular’s classes.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.models.widgets</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/inputs.html#bokeh.models.NumericInput" title="bokeh.models.NumericInput" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">NumericInput</span></a> <span class="c1"># noqa: E402</span>
+
+<span class="n">numeric_widgets</span> <span class="o">=</span> <span class="n">mics</span><span class="o">.</span><span class="n">get_widgets</span><span class="p">(</span>
+    <span class="p">{</span><span class="s1">&#39;aperture&#39;</span> <span class="p">:</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/inputs.html#bokeh.models.NumericInput" title="bokeh.models.NumericInput" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">NumericInput</span></a><span class="p">,</span> <span class="s1">&#39;num_mics&#39;</span><span class="p">:</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/inputs.html#bokeh.models.NumericInput" title="bokeh.models.NumericInput" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">NumericInput</span></a><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;aperture&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="s1">&#39;Aperture/m&#39;</span><span class="p">,</span> <span class="s1">&#39;disabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+     <span class="s1">&#39;num_mics&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Mics&#39;</span><span class="p">,</span> <span class="s1">&#39;disabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}})</span>
+</pre></div>
+</div>
+<p>It would also be beneficial to have a widget that allows the user to edit the microphone positions
+and to display the coodinates in a table format. Both can be achieved by using Bokeh’s
+<a class="reference external" href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.DataTable" title="(in Bokeh v3.7.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTable</span></code></a> widget. In addition, we will use the
+<a class="reference external" href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.NumberEditor" title="(in Bokeh v3.7.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NumberEditor</span></code></a> to allow the user to edit the values in the table.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.models.widgets</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.DataTable" title="bokeh.models.DataTable" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">DataTable</span></a> <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.models</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.TableColumn" title="bokeh.models.TableColumn" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">TableColumn</span></a><span class="p">,</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.NumberEditor" title="bokeh.models.NumberEditor" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">NumberEditor</span></a> <span class="c1"># noqa: E402</span>
+
+<span class="n">editor</span> <span class="o">=</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.NumberEditor" title="bokeh.models.NumberEditor" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">NumberEditor</span></a><span class="p">()</span>
+<span class="n">pos_table</span> <span class="o">=</span> <span class="p">[</span>
+    <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.TableColumn" title="bokeh.models.TableColumn" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">TableColumn</span></a><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;x/m&#39;</span><span class="p">,</span> <span class="n">editor</span><span class="o">=</span><span class="n">editor</span><span class="p">),</span>
+    <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.TableColumn" title="bokeh.models.TableColumn" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">TableColumn</span></a><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;y/m&#39;</span><span class="p">,</span> <span class="n">editor</span><span class="o">=</span><span class="n">editor</span><span class="p">),</span>
+    <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.TableColumn" title="bokeh.models.TableColumn" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">TableColumn</span></a><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;z/m&#39;</span><span class="p">,</span> <span class="n">editor</span><span class="o">=</span><span class="n">editor</span><span class="p">)</span>
+        <span class="p">]</span>
+
+<span class="c1"># get the widgets for the MicGeom instance</span>
+<span class="n">data_table_widget</span> <span class="o">=</span> <span class="n">mics</span><span class="o">.</span><span class="n">get_widgets</span><span class="p">(</span>
+    <span class="p">{</span><span class="s1">&#39;pos_total&#39;</span><span class="p">:</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/widgets/tables.html#bokeh.models.DataTable" title="bokeh.models.DataTable" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">DataTable</span></a><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;pos_total&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mi">450</span><span class="p">,</span> <span class="s1">&#39;transposed&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;columns&#39;</span><span class="p">:</span> <span class="n">pos_table</span><span class="p">,</span> <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="n">cds</span><span class="p">,</span> <span class="s1">&#39;editable&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}}</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, we want to allow the user to add or remove microphones from the microphone array.
+Therefore, we will use the <a class="reference external" href="https://docs.bokeh.org/en/latest/docs/reference/models/tools.html#bokeh.models.PointDrawTool" title="(in Bokeh v3.7.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointDrawTool</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.models</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/tools.html#bokeh.models.PointDrawTool" title="bokeh.models.PointDrawTool" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">PointDrawTool</span></a> <span class="c1"># noqa: E402</span>
+
+
+<span class="n">draw_tool</span> <span class="o">=</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/models/tools.html#bokeh.models.PointDrawTool" title="bokeh.models.PointDrawTool" class="sphx-glr-backref-module-bokeh-models sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">PointDrawTool</span></a><span class="p">(</span><span class="n">renderers</span><span class="o">=</span><span class="p">[</span><span class="n">glyph</span><span class="p">],</span> <span class="n">empty_value</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+
+<a href="https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.figure.add_tools" title="bokeh.plotting.figure.add_tools" class="sphx-glr-backref-module-bokeh-plotting-figure sphx-glr-backref-type-py-method"><span class="n">figure</span><span class="o">.</span><span class="n">add_tools</span></a><span class="p">(</span><span class="n">draw_tool</span><span class="p">)</span>
+<a href="https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.figure" title="bokeh.plotting.figure" class="sphx-glr-backref-module-bokeh-plotting sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">figure</span></a><span class="o">.</span><span class="n">toolbar</span><span class="o">.</span><span class="n">active_tap</span> <span class="o">=</span> <span class="n">draw_tool</span>
+</pre></div>
+</div>
+<p>Let’s create a layout that contains the figure and the widgets.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.layouts</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/layouts.html#bokeh.layouts.column" title="bokeh.layouts.column" class="sphx-glr-backref-module-bokeh-layouts sphx-glr-backref-type-py-function"><span class="n">column</span></a><span class="p">,</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/layouts.html#bokeh.layouts.row" title="bokeh.layouts.row" class="sphx-glr-backref-module-bokeh-layouts sphx-glr-backref-type-py-function"><span class="n">row</span></a> <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.io</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/io.html#bokeh.io.show" title="bokeh.io.show" class="sphx-glr-backref-module-bokeh-io sphx-glr-backref-type-py-function"><span class="n">show</span></a> <span class="c1"># noqa: E402</span>
+
+<span class="n">widget_column</span> <span class="o">=</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/layouts.html#bokeh.layouts.column" title="bokeh.layouts.column" class="sphx-glr-backref-module-bokeh-layouts sphx-glr-backref-type-py-function"><span class="n">column</span></a><span class="p">(</span><span class="o">*</span><span class="n">numeric_widgets</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="o">*</span><span class="n">data_table_widget</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">width</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+<span class="n">layout</span> <span class="o">=</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/layouts.html#bokeh.layouts.row" title="bokeh.layouts.row" class="sphx-glr-backref-module-bokeh-layouts sphx-glr-backref-type-py-function"><span class="n">row</span></a><span class="p">(</span><a href="https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.figure" title="bokeh.plotting.figure" class="sphx-glr-backref-module-bokeh-plotting sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">figure</span></a><span class="p">,</span> <span class="n">widget_column</span><span class="p">)</span>
+<a href="https://docs.bokeh.org/en/latest/docs/reference/io.html#bokeh.io.show" title="bokeh.io.show" class="sphx-glr-backref-module-bokeh-io sphx-glr-backref-type-py-function"><span class="n">show</span></a><span class="p">(</span><span class="n">layout</span><span class="p">)</span>  <span class="c1"># Show the plot in a new browser window</span>
+</pre></div>
+</div>
+<p>The following code is for Bokeh server apps only.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.io</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.bokeh.org/en/latest/docs/reference/io.html#bokeh.io.curdoc" title="bokeh.io.curdoc" class="sphx-glr-backref-module-bokeh-io sphx-glr-backref-type-py-function"><span class="n">curdoc</span></a>
+<a href="https://docs.bokeh.org/en/latest/docs/reference/io.html#bokeh.io.curdoc" title="bokeh.io.curdoc" class="sphx-glr-backref-module-bokeh-io sphx-glr-backref-type-py-function"><span class="n">curdoc</span></a><span class="p">()</span><span class="o">.</span><span class="n">add_root</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>  <span class="c1"># Add the layout to the current document for Bokeh server apps</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-basic-mic-geom-widgets-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/bf69e4464daa8191b871b5e74550386e/basic_mic_geom_widgets.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">basic_mic_geom_widgets.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/3c2d6bef29f90c16ce77577c1ff637fa/basic_mic_geom_widgets.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">basic_mic_geom_widgets.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/2866b62d971723a0f3e9c347ccb3406b/basic_mic_geom_widgets.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">basic_mic_geom_widgets.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="basic_mic_geom_plot.html">Basic plotting with Bokeh</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../user_guide/index.html">User Guide</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="interactive_apps.html">Interactive Server Applications with SepctAcoular</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2020, Acoular Development Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>
