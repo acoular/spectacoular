@@ -467,6 +467,7 @@ class SinusControl(MeasurementControl):
         self.logger.info("set settings ok!")
         self.source._enabled_analog_inputs # trigger update of fs and num_channels  
         self.update_widgets_and_glyphs(None)
+        self._update_teds_data(None)
 
     def update_widgets_and_glyphs(self, event):
         block_count = int(self.device.pci[0].BlockCount)
