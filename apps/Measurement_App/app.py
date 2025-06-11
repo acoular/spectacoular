@@ -408,7 +408,7 @@ class SinusControl(MeasurementControl):
         self.config_dir = Path(config_dir)
         config = None
         if config_name is not None:
-            config = Path(self.config_dir) / config_name
+            config = str(Path(self.config_dir) / config_name)
         if device == 'tornado':
             self.device = Tornado(config=config)
         elif device == 'typhoon':
