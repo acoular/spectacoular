@@ -408,7 +408,7 @@ class SinusControl(MeasurementControl):
         self.config_dir = Path(config_dir)
         config = None
         if config_name is not None:
-            config = Path(self.config_dir) / config_name
+            config = str(Path(self.config_dir) / config_name)
         if device == 'tornado':
             self.device = Tornado(config=config)
         elif device == 'typhoon':
@@ -458,16 +458,16 @@ class SinusControl(MeasurementControl):
 
     def settings_callback(self):
         self.logger.info("load settings ...")
+        self.device.config = str(self.config_dir/self.select_setting.value)
         try:
-            self.device.ini_import(self.config_dir/self.select_setting.value,
-                    level=self.level_select.value)
-            self.device.set_config_settings()
+            self.device.set_config_settings(level=self.level_select.value)
         except Exception as e_text: 
             self.logger.error("{}".format(e_text))
             return
         self.logger.info("set settings ok!")
         self.source._enabled_analog_inputs # trigger update of fs and num_channels  
         self.update_widgets_and_glyphs(None)
+        self._update_teds_data(None)
 
     def update_widgets_and_glyphs(self, event):
         block_count = int(self.device.pci[0].BlockCount)
