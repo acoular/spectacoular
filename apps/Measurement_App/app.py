@@ -21,6 +21,12 @@ try:
     import sounddevice as sd
 except:
     pass
+try:
+    from tapy.devices.sensors import OHT20
+    oht = OHT20(...) # hier noch Port eingeben
+    oht_enabled = True
+except:
+    oht_enabled = False
 
 BUFFERSIZE = 400
 
@@ -157,6 +163,10 @@ class MeasurementControl:
                 self.ti_savename.value = current_time()
             # if sinus_enabled: # gather important informations from SINUS Messtechnik devices
             #     self.msm.metadata = gather_metadata(devManager,devInputManager,inputSignalGen,iniManager,ch)
+            if oht_enabled: # humiditiy/temperature sensor available
+                self.msm.metadata["humidity_percent"] = oht.read_humidity()
+                self.msm.metadata["temperature_celsius"] = oht.read_temperature()
+                self.msm.metadata["dewpoint_celsius"] = oht.read_dewpoint()
             msm_event = Event()
             msm_consumer = EventThread(
                     post_callback=partial(self._change_mode, self.msm_toggle, 'msm', False),
