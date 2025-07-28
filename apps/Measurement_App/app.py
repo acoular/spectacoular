@@ -23,7 +23,7 @@ except:
     pass
 try:
     from tapy.devices.sensors import OHT20
-    oht = OHT20(...) # hier noch Port eingeben
+    oht = OHT20(port="/dev/ttyACM0") # hier noch Port eingeben
     oht_enabled = True
 except:
     oht_enabled = False
@@ -65,7 +65,7 @@ class MeasurementControl:
         self.calib_toggle = Toggle(label="Calibration", active=False,disabled=True,button_type="warning", sizing_mode="stretch_width", height=button_height)
         self.beamf_toggle = Toggle(label="Beamforming", active=False,disabled=True,button_type="warning", sizing_mode="stretch_width", height=button_height)
         # Others
-        self.ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
+        self.ti_msmtime = TextInput(value="999", title="Measurement Time [s]:")
         self.ti_savename = TextInput(value="", title="Filename:",disabled=True,
             description=f"Filename for the measurement data. Files are saved to {ac.config.td_dir}")
         self.current_time_checkbox = CheckboxGroup(labels=["use current time"], active=[0])
