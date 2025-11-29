@@ -293,7 +293,7 @@ def update_amp_bar_plot():
         amp_cds.data['colors'] = np.where(levels < clip_level.value, control.modecolor, control.clipcolor)
 
 def update_mic_geom_plot():
-    if mics.num_mics > 0: 
+    if mics.num_mics > 0 and control.disp.cdsource.data['data'].size > 0:
         p2 = control.disp.cdsource.data['data'][0]
         levels = ac.L_p(p2)
         if mics_widgets['mic_size'].value > 0:
