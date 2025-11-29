@@ -49,6 +49,7 @@ class CameraComponent(BaseSpectacoular):
     extent_width = Float(XCAM[2], desc="width of the camera image")
     extent_height = Float(XCAM[3], desc="height of the camera image")
     alpha = Float(1.0, desc="the alpha value of the image")
+    flip_horizontal = Bool(False, desc="Flip the camera image horizontally")
 
     figure = Instance(figure)
 
@@ -76,6 +77,7 @@ class CameraComponent(BaseSpectacoular):
             "extent_width": bokeh.models.widgets.NumericInput,
             "extent_height": bokeh.models.widgets.NumericInput,
             "alpha": bokeh.models.widgets.Slider,
+            "flip_horizontal": bokeh.models.widgets.Toggle,
         }
     )
 
@@ -125,6 +127,7 @@ class CameraComponent(BaseSpectacoular):
                 "disabled": not HAVE_CV2,
             },
             "alpha": {"title": "Image Alpha", "start": 0, "end": 1, "step": 0.05},
+            "flip_horizontal": {"label": "Flip horizontal", "active": False, "disabled": not HAVE_CV2, "button_type": "default"},
         }
     )
 
@@ -152,6 +155,9 @@ class CameraComponent(BaseSpectacoular):
             expected_height, expected_width = view.shape[0], view.shape[1]
             if frame.shape[0] != expected_height or frame.shape[1] != expected_width:
                 frame = cv2.resize(frame, (expected_width, expected_height))
+            # Flip horizontally if enabled
+            if self.flip_horizontal:
+                frame = cv2.flip(frame, 1)
             view[:, :, 0] = frame[:, :, 2]  # copy red channel
             view[:, :, 2] = frame[:, :, 0]  # copy blue channel
             view[:, :, 1] = frame[:, :, 1]  # copy green channel
