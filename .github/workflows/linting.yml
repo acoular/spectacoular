@@ -1,0 +1,9 @@
+name: Reuse Acoular checks
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  linting:
+    uses: acoular/acoular/.github/workflows/checks.yml@master
