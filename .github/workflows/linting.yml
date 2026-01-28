@@ -6,4 +6,4 @@ on:
 
 jobs:
   linting:
-    uses: acoular/acoular/.github/workflows/checks.yml@master
+    uses: acoular/acoular/.github/workflows/checks.yml@reuse-ci
