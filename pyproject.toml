@@ -32,6 +32,7 @@ classifiers = [
 dependencies = [
     'acoular>=25.01,<=25.04',
     'bokeh >=3.0',
+    "sounddevice",
 ]
 
 maintainers = [
@@ -47,7 +48,6 @@ maintainers = [
 [project.optional-dependencies]
 full = [
     "opencv-python", # only for msm_app
-    "sounddevice", 
 ]
 
 tapy = [
