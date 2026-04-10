@@ -37,7 +37,6 @@ from acoular import (
     MaskedTimeSamples,
     PointSource,
     Average,
-    TimeAverage,
     FiltOctave,
     Trigger,
     AngleTracker,
@@ -605,7 +604,6 @@ trait_widget_args = {
 }
 
 add_bokeh_attr(Average, trait_widget_mapper, trait_widget_args)
-add_bokeh_attr(TimeAverage, trait_widget_mapper, trait_widget_args)
 
 # %% tprocess.py
 
