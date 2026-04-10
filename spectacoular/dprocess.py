@@ -77,12 +77,12 @@ class MicGeomPresenter(BasePresenter):
 
     Example:
 
-        >>>    import spectacoular
-        >>>    mg = spectacoular.MicGeom(file='/path/to/file.xml')
-        >>>    mv = spectacoular.MicGeomPresenter(source=mg)
-        >>>
-        >>>    mgPlot = figure(title='Microphone Geometry')
-        >>>    mgPlot.circle(x='x',y='y',source=mv.cdsource)
+    >>> import spectacoular
+    >>> mg = spectacoular.MicGeom(file='/path/to/file.xml')
+    >>> mv = spectacoular.MicGeomPresenter(source=mg)
+    >>>
+    >>> mgPlot = figure(title='Microphone Geometry')
+    >>> mgPlot.circle(x='x',y='y',source=mv.cdsource)
     """
 
     #: Data source; :class:`~acoular.microphones.MicGeom` or derived object.
@@ -253,12 +253,12 @@ class TimeSamplesPresenter(BasePresenter):
 
     Example:
 
-        >>>    import spectacoular
-        >>>    ts = spectacoular.TimeSamples(file='/path/to/file.h5')
-        >>>    tv = spectacoular.TimeSamplesPresenter(source=ts)
-        >>>
-        >>>    tsPlot = figure(title="Channel Data")
-        >>>    tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
+    >>> import spectacoular
+    >>> ts = spectacoular.TimeSamples(file='/path/to/file.h5')
+    >>> tv = spectacoular.TimeSamplesPresenter(source=ts)
+    >>>
+    >>> tsPlot = figure(title="Channel Data")
+    >>> tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
 
     """
 
