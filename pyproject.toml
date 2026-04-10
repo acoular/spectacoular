@@ -69,6 +69,7 @@ docs = [
 lint = ["ruff==0.14.2"]
 
 tests = [
+    "diff_cover",
     "pytest",
     "pytest-cov",
     "hypothesis",
