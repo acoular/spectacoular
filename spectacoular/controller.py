@@ -1,17 +1,19 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Copyright (c), Acoular Development Team.
-#------------------------------------------------------------------------------
-"""Implements controller classes and functions """
+# ------------------------------------------------------------------------------
+"""Implements controller classes and functions"""
 
 from bokeh.models import CustomJS
 
 
-def set_calc_button_callback(calcFunc, calcButton, label='Calculate', active_label='Calculating ...'):
+def set_calc_button_callback(
+    calcFunc, calcButton, label="Calculate", active_label="Calculating ..."
+):
     """
-    Sets a simple wrapper function to set a Bokeh button inactive and change 
+    Sets a simple wrapper function to set a Bokeh button inactive and change
     its label during calculation.
-    
-    
+
+
     Parameters
     ----------
     calcFunc : callable
@@ -29,7 +31,9 @@ def set_calc_button_callback(calcFunc, calcButton, label='Calculate', active_lab
 
     """
 
-    js_callback = CustomJS(args=dict(label=label, active_label=active_label), code="""
+    js_callback = CustomJS(
+        args=dict(label=label, active_label=active_label),
+        code="""
 
     // Callback disabeling the button
 
@@ -42,8 +46,8 @@ def set_calc_button_callback(calcFunc, calcButton, label='Calculate', active_lab
         cb_obj.disabled = false;
     }
 
-    """)
-
+    """,
+    )
 
     def calc(attr, old, new):
         if calcButton.active:
@@ -53,7 +57,6 @@ def set_calc_button_callback(calcFunc, calcButton, label='Calculate', active_lab
                 print(ex)
             finally:
                 calcButton.active = False
-    calcButton.js_on_change('active', js_callback)
-    calcButton.on_change('active', calc)
 
-
+    calcButton.js_on_change("active", js_callback)
+    calcButton.on_change("active", calc)

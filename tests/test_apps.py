@@ -8,7 +8,10 @@ from bokeh.application import Application
 from bokeh.application.handlers.function import FunctionHandler
 import os
 
-sys.path.append(str(Path(spectacoular.__file__).parent.parent / "apps"  ))  # Add the parent directory to sys.path
+sys.path.append(
+    str(Path(spectacoular.__file__).parent.parent / "apps")
+)  # Add the parent directory to sys.path
+
 
 @pytest.fixture
 def bokeh_server(request):
@@ -29,7 +32,7 @@ def bokeh_server(request):
     try:
         for port in range(default_port, max_port + 1):
             try:
-                server = Server({'/': bokeh_app}, port=port)
+                server = Server({"/": bokeh_app}, port=port)
                 yield server  # Provide the server to the test
                 break
             except OSError as e:
@@ -38,15 +41,31 @@ def bokeh_server(request):
                 else:
                     pytest.fail(f"Error starting the server: {e}")
         if server is None:
-            pytest.fail(f"Failed to start the server. No available ports in range {default_port}-{max_port}.")
+            pytest.fail(
+                f"Failed to start the server. No available ports in range {default_port}-{max_port}."
+            )
     finally:
         if server:
             server.stop()
 
+
 # Skip the test for the "SLM" app if the operating system is Windows
-@pytest.mark.parametrize("bokeh_server", [
-    pytest.param("SLM", marks=pytest.mark.skipif(os.name == 'nt', reason="Test is not supported on Windows.")),
-    "MicGeomExample", "FreqBeamformingExample", "RotatingExample", "TimeSamplesExample"], indirect=True)
+@pytest.mark.parametrize(
+    "bokeh_server",
+    [
+        pytest.param(
+            "SLM",
+            marks=pytest.mark.skipif(
+                os.name == "nt", reason="Test is not supported on Windows."
+            ),
+        ),
+        "MicGeomExample",
+        "FreqBeamformingExample",
+        "RotatingExample",
+        "TimeSamplesExample",
+    ],
+    indirect=True,
+)
 def test_bokeh_app(bokeh_server):
     bokeh_server.start()
     assert bokeh_server.io_loop is not None, "Bokeh server failed to start."
