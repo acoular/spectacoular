@@ -70,6 +70,7 @@ lint = ["ruff==0.14.2"]
 
 tests = [
     "pytest",
+    "pytest-cov",
     "hypothesis",
 ]
 
