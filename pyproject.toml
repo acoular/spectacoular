@@ -76,7 +76,7 @@ tests = [
 dev = [
     {include-group = "docs"},
     {include-group = "lint"},
-    {include-group = "test"},
+    {include-group = "tests"},
 ]
 
 # app shortcuts
