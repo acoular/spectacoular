@@ -42,19 +42,6 @@ extensions = [
 ]
 
 
-# optional spell checking:
-# conda install -c conda-forge sphinxcontrib-spelling
-# conda install -c chen pyenchant
-try:
-
-    extensions.append("sphinxcontrib.spelling")
-except:
-    pass
-
-spelling_word_list_filename = (
-    "spelling_wordlist.txt"  # including words without spell check (Acoular, ...)
-)
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
