@@ -31,7 +31,7 @@ classifiers = [
 ]
 dependencies = [
     'acoular>=25.01,<=25.04',
-      'bokeh >=3.0',
+    'bokeh >=3.0',
 ]
 
 maintainers = [
