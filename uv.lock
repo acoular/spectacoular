@@ -9,7 +9,7 @@ resolution-markers = [
 
 [[package]]
 name = "acoular"
-version = "25.4"
+version = "26.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numba" },
@@ -23,9 +23,9 @@ dependencies = [
     { name = "tables", version = "3.11.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "traits" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/cf/e8b54807553d30ec359b1bafa1a2f70835d966553121972a72855e14cb54/acoular-25.4.tar.gz", hash = "sha256:13fae9ebfa94986b5f84382bfa31e7e8fd6417dd1c7471ff34002733314c9cd5", size = 160413, upload-time = "2025-04-29T12:01:33.085Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/1e/87cc58cbab7f2d54c1a1030da7f787d7a5a45559740039e8e13aa5615323/acoular-26.1.tar.gz", hash = "sha256:0ed66f07df0e0a2eff19a5847ecc04fd1b7f9370453b7c91506d630bf23bacbe", size = 168300, upload-time = "2026-02-03T09:40:38.676Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/96/fe2be78b1720d5691e75b33578120a5e325c1e96d4073ea78cc54de860e5/acoular-25.4-py3-none-any.whl", hash = "sha256:2dbac311a937097b02211d722bee49def321a03b8900b2a0f28ba9eb4cda9036", size = 183624, upload-time = "2025-04-29T12:01:31.276Z" },
+    { url = "https://files.pythonhosted.org/packages/64/d8/7228e51f3de1507291b0c67517f20a0ee8d0a073f7c65d1d19363db2cac1/acoular-26.1-py3-none-any.whl", hash = "sha256:a30171b6abd4369f34df9b237d216a7e681f8547d91cdef097efb88a759c9def", size = 192444, upload-time = "2026-02-03T09:40:40.132Z" },
 ]
 
 [[package]]
@@ -2875,7 +2875,7 @@ tests = [
 
 [package.metadata]
 requires-dist = [
-    { name = "acoular", specifier = ">=25.1,<=25.4" },
+    { name = "acoular", specifier = ">=26.1" },
     { name = "bokeh", specifier = ">=3.0" },
     { name = "opencv-python", marker = "extra == 'full'" },
     { name = "opencv-python", marker = "extra == 'tapy'" },
