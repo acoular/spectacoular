@@ -327,7 +327,7 @@ if ac.config.have_sounddevice:
         audio playback. Input and output devices can be listed by
 
         >>> import sounddevice
-        >>> sounddevice.query_devices()
+        >>> sounddevice.query_devices()  # doctest: +SKIP
 
         In the future, this class should work in buffer mode and
         also write the current frame that is played to a class attribute.

@@ -78,11 +78,11 @@ class MicGeomPresenter(BasePresenter):
     Example:
 
     >>> import spectacoular
-    >>> mg = spectacoular.MicGeom(file='/path/to/file.xml')
-    >>> mv = spectacoular.MicGeomPresenter(source=mg)
+    >>> mg = spectacoular.MicGeom(file='/path/to/file.xml')  # doctest: +SKIP
+    >>> mv = spectacoular.MicGeomPresenter(source=mg)  # doctest: +SKIP
     >>>
-    >>> mgPlot = figure(title='Microphone Geometry')
-    >>> mgPlot.circle(x='x',y='y',source=mv.cdsource)
+    >>> mgPlot = figure(title='Microphone Geometry')  # doctest: +SKIP
+    >>> mgPlot.circle(x='x',y='y',source=mv.cdsource)  # doctest: +SKIP
     """
 
     #: Data source; :class:`~acoular.microphones.MicGeom` or derived object.
@@ -254,11 +254,11 @@ class TimeSamplesPresenter(BasePresenter):
     Example:
 
     >>> import spectacoular
-    >>> ts = spectacoular.TimeSamples(file='/path/to/file.h5')
-    >>> tv = spectacoular.TimeSamplesPresenter(source=ts)
+    >>> ts = spectacoular.TimeSamples(file='/path/to/file.h5')  # doctest: +SKIP
+    >>> tv = spectacoular.TimeSamplesPresenter(source=ts)  # doctest: +SKIP
     >>>
-    >>> tsPlot = figure(title="Channel Data")
-    >>> tsPlot.multi_line(xs='xs', ys='ys',source=tv.cdsource)
+    >>> tsPlot = figure(title="Channel Data")  # doctest: +SKIP
+    >>> tsPlot.multi_line(xs='xs', ys='ys', source=tv.cdsource)  # doctest: +SKIP
 
     """
 
