@@ -771,7 +771,7 @@ class SelectMapper(TraitWidgetMapper):
         """
         self.widget = widget
         traitvalue = self.widget.value
-        if not self.traitvaluetype == str:  # checks if casting is necessary
+        if not isinstance(self.traitvaluetype, str):  # checks if casting is necessary
             traitvalue = self.traitvaluetype(
                 traitvalue
             )  # cast to the correct traittype

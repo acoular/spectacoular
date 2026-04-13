@@ -93,9 +93,9 @@ grid_grid = gridplot(list(sp.get_widgets(rg).values()), ncols=2, width=150)
 # The :class:`~bokeh.models.Image` glyph requires us to specify the x and y coordinate sof the bottom
 # left grid corner, the width and height of the grid, and the sound pressure to be displayed.
 
-from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, LinearColorMapper
-from bokeh.palettes import viridis
+from bokeh.plotting import figure  # noqa: E402
+from bokeh.models import ColumnDataSource, LinearColorMapper  # noqa: E402
+from bokeh.palettes import viridis  # noqa: E402
 
 
 source_plot = figure(title="Acoular Three Sources", tools="hover,reset,pan,wheel_zoom")

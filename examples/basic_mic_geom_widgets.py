@@ -145,7 +145,7 @@ show(layout)  # Show the plot in a new browser window
 # %%
 # The following code is for Bokeh server apps only.
 
-from bokeh.io import curdoc
+from bokeh.io import curdoc  # noqa: E402
 
 curdoc().add_root(
     layout
