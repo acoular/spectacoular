@@ -265,8 +265,8 @@ mic_layout = sp.layouts.MicGeomComponent(
 )
 mic_presenter.update(
     **{
-        "sizes": np.array([MICSIZE] * mics.mpos_tot.shape[1]),
-        "colors": [COLOR[1]] * mics.mpos_tot.shape[1],
+        "sizes": np.array([MICSIZE] * mics.pos_total.shape[1]),
+        "colors": [COLOR[1]] * mics.pos_total.shape[1],
     }
 )
 

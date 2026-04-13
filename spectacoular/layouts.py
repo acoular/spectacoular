@@ -110,7 +110,7 @@ class MicGeomComponent(BaseSpectacoular):
         ):  # if size is a string, it is a reference to a column in the data source
             self.glyph.size = self.mic_size
         self.presenter.cdsource.data["sizes"] = (
-            np.ones(self.presenter.source.mpos_tot.shape[1]) * self.mic_size
+            np.ones(self.presenter.source.pos_total.shape[1]) * self.mic_size
         )
 
     @observe("figure")
