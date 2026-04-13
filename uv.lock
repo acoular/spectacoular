@@ -2896,6 +2896,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "spectacoular", extra = ["full"] },
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "sphinx", version = "9.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -2922,6 +2923,7 @@ tests = [
     { name = "hypothesis" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "spectacoular", extra = ["full"] },
 ]
 
 [package.metadata]
@@ -2948,6 +2950,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff", specifier = "==0.14.2" },
+    { name = "spectacoular", extras = ["full"] },
     { name = "sphinx" },
     { name = "sphinx-gallery" },
 ]
@@ -2966,6 +2969,7 @@ tests = [
     { name = "hypothesis" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "spectacoular", extras = ["full"] },
 ]
 
 [[package]]

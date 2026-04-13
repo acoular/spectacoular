@@ -73,6 +73,7 @@ tests = [
     "pytest",
     "pytest-cov",
     "hypothesis",
+    "spectacoular[full]",
 ]
 
 dev = [
