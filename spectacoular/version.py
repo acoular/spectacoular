@@ -2,5 +2,5 @@
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
 __author__ = "Acoular Development Team"
-__date__ = "11 June 2025"
-__version__ = "25.05.post2"
+__date__ = "13 April 2026"
+__version__ = "26.03"
