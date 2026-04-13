@@ -118,23 +118,10 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
         if self.num_samples == 0:
             raise IOError("no samples available")
         i = 0
-        if self.calib:
-            if self.calib.num_mics == self.num_channels:
-                cal_factor = self.calib.data[np.newaxis]
-            else:
-                raise ValueError(
-                    "calibration data not compatible: %i, %i"
-                    % (self.calib.num_mics, self.num_channels)
-                )
-            while i < self.num_samples and self.collectsamples:
-                yield self.data[i : i + num] * cal_factor
-                sleep(slp_time)
-                i += num
-        else:
-            while i < self.num_samples and self.collectsamples:
-                yield self.data[i : i + num]
-                sleep(slp_time)
-                i += num
+        while i < self.num_samples and self.collectsamples:
+            yield self.data[i : i + num]
+            sleep(slp_time)
+            i += num
 
 
 class TimeOutPresenter(ac.TimeOut, BasePresenter):
