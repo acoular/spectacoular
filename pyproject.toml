@@ -24,11 +24,14 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Physics",
     "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    'acoular>=25.01,<=25.04',
-      'bokeh >=3.0',
+    'acoular>=26.01',
+    'bokeh >=3.0',
 ]
 
 maintainers = [
@@ -44,7 +47,7 @@ maintainers = [
 [project.optional-dependencies]
 full = [
     "opencv-python", # only for msm_app
-    "sounddevice", 
+    "sounddevice",
 ]
 
 tapy = [
@@ -52,8 +55,8 @@ tapy = [
     "tapy"
 ]
 
+[dependency-groups]
 docs = [
-    "spectacoular[full]",
     "ipython",
     "graphviz",
     "matplotlib",
@@ -63,18 +66,30 @@ docs = [
     "sphinx_gallery",
 ]
 
+lint = ["ruff==0.14.2"]
+
 tests = [
-    "spectacoular[full]",
+    "diff_cover",
     "pytest",
+    "pytest-cov",
     "hypothesis",
+    "spectacoular[full]",
 ]
 
 dev = [
-    "spectacoular[docs,tests]",
-    "hatch",
-    "ruff==0.8.1", # remember to change version pin in docs/source/contributing/install.rst
+    {include-group = "docs"},
+    {include-group = "lint"},
+    {include-group = "tests"},
 ]
 
+# app shortcuts
+[project.scripts]
+slm_app = "spectacoular.apps.slm_app:main"
+result_explorer = "spectacoular.apps.result_explorer:main"
+micgeom_app = "spectacoular.apps.micgeom_app:main"
+timesamples_app = "spectacoular.apps.timesamples_app:main"
+msm_app = "spectacoular.apps.msm_app:main"
+rotating_app = "spectacoular.apps.rotating_app:main"
 
 [project.urls]
 homepage = "https://acoular.github.io/spectacoular/"
@@ -88,38 +103,8 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 path = "spectacoular/version.py"
 
-[tool.hatch.envs.docs]
-platforms = ["linux"]
-python = "3.13"
-dependencies = [
-    "spectacoular[docs]"
-]
-
-[tool.hatch.envs.docs.scripts]
-build = ["cd docs && make html"]
-
-[tool.hatch.envs.tests]
-dependencies = [
-    "spectacoular[tests]",
-]
-
-[[tool.hatch.envs.tests.matrix]]
-python = ["3.12", "3.13"]
-
-[tool.hatch.envs.tests.scripts]
-import = ["python -c \"import spectacoular\""]
-test = ["python -m pytest -v --durations=10 tests --ignore=tests/deprecated"]
-
-[tool.hatch.envs.tests.overrides]
-platform.linux.pre-install-commands = ['cat /proc/cpuinfo']
-platform.macos.pre-install-commands = ['sysctl -a machdep.cpu']
-platform.windows.pre-install-commands = ['systeminfo']
-
-
 [tool.hatch.build.targets.sdist]
-include = [
-  "/spectacoular",  "/apps"
-]
+include = ["spectacoular",  "apps"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["spectacoular", "apps"]
@@ -128,18 +113,10 @@ packages = ["spectacoular", "apps"]
 # for a different branch use: uv add git+ssh://git@git.tu-berlin.de/akustik/tapy.git --branch=main
 tapy = { git = "ssh://git@git.tu-berlin.de/akustik/tapy.git", branch = "dev" }
 
-# app shortcuts
-[project.scripts]
-slm_app = "spectacoular.apps.slm_app:main"
-result_explorer = "spectacoular.apps.result_explorer:main"
-micgeom_app = "spectacoular.apps.micgeom_app:main"
-timesamples_app = "spectacoular.apps.timesamples_app:main"
-msm_app = "spectacoular.apps.msm_app:main"
-rotating_app = "spectacoular.apps.rotating_app:main"
-
-
 
 [tool.pytest.ini_options]
+testpaths = "tests"
+addopts = "-v --durations=10 --cov-report=html --cov-report=term-missing"
 filterwarnings = [
     # Suppress warnings about unclosed files in tables at the end of the tests
     "ignore:Closing remaining open file*:tables.exceptions.UnclosedFileWarning",

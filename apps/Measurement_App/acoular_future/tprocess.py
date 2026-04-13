@@ -1,7 +1,8 @@
 import acoular as ac
 import spectacoular as sp
 from traits.api import Property, List, cached_property, Instance, Delegate
-from numpy import array 
+from numpy import array
+
 
 class MaskedChannels(ac.TimeOut, sp.BaseSpectacoular):
     """Signal processing block for channel and sample selection.
@@ -17,21 +18,24 @@ class MaskedChannels(ac.TimeOut, sp.BaseSpectacoular):
     source = Instance(ac.SamplesGenerator)
 
     # Channels that are to be treated as invalid.
-    invalid_channels = List(int, desc='list of invalid channels')
+    invalid_channels = List(int, desc="list of invalid channels")
 
     # Channel mask to serve as an index for all valid channels, is set automatically.
-    channels = Property(depends_on=['invalid_channels', 'source.num_channels'], desc='channel mask')
+    channels = Property(
+        depends_on=["invalid_channels", "source.num_channels"], desc="channel mask"
+    )
 
     # Number of channels in input, as given by :attr:`~acoular.base.TimeOut.source`.
-    num_channels_total = Delegate('source', 'num_channels')
+    num_channels_total = Delegate("source", "num_channels")
 
     # Number of valid channels, is set automatically.
     num_channels = Property(
-        depends_on=['invalid_channels', 'source.num_channels'], desc='number of valid input channels'
+        depends_on=["invalid_channels", "source.num_channels"],
+        desc="number of valid input channels",
     )
 
     # internal identifier
-    digest = Property(depends_on=['source.digest', 'invalid_channels'])
+    digest = Property(depends_on=["source.digest", "invalid_channels"])
 
     @cached_property
     def _get_digest(self):
@@ -41,7 +45,9 @@ class MaskedChannels(ac.TimeOut, sp.BaseSpectacoular):
     def _get_channels(self):
         if len(self.invalid_channels) == 0:
             return slice(0, None, None)
-        allr = [i for i in range(self.num_channels_total) if i not in self.invalid_channels]
+        allr = [
+            i for i in range(self.num_channels_total) if i not in self.invalid_channels
+        ]
         return array(allr)
 
     @cached_property
@@ -67,4 +73,3 @@ class MaskedChannels(ac.TimeOut, sp.BaseSpectacoular):
         """
         for block in self.source.result(num):
             yield block[:, self.channels]
-
