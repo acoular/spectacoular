@@ -7,5 +7,5 @@
 Plugin classes for acoular to be used with spectacoular
 """
 
-from .spectra import CSMInOut, PowerSpectraSetCSM
-from .tbeamform import BeamformerFreqTime
+from .spectra import CSMInOut, PowerSpectraSetCSM  # noqa: F401
+from .tbeamform import BeamformerFreqTime  # noqa: F401
