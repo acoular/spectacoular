@@ -441,7 +441,7 @@ def selection_change(attrname, old, new):
     for ch, color, band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands)):
         levels = ac.L_p(tic3.ds.data[ch][new])
         # dynamic range should be at least 20 dB
-        if len(new) > 2 and levels.ptp() > 20:
+        if len(new) > 2 and np.ptp(levels) > 20:
             levels1 = levels[levels > levels.min() + 10]
             # do not consider the lowest 10 dB
             t1 = t[levels > levels.min() + 10]
