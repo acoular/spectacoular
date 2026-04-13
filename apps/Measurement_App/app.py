@@ -31,7 +31,7 @@ from bokeh.models.ranges import Range1d
 
 try:
     import sounddevice as sd
-except:
+except ModuleNotFoundError:
     pass
 
 BUFFERSIZE = 400
