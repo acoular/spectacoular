@@ -2,6 +2,7 @@
 # Copyright (c), Acoular Development Team.
 # ------------------------------------------------------------------------------
 
+from importlib.util import find_spec
 from .bokehview import (
     add_bokeh_attr,
     SampleSplitter,
@@ -36,7 +37,6 @@ from .bokehview import (
     SpatialInterpolatorRotation,
     SpatialInterpolatorConstantRotation,
     WriteH5,
-    SoundDeviceSamplesGenerator,
     MaskedTimeOut,
 )
 from .factory import (
@@ -61,7 +61,6 @@ from .lprocess import (
     CalibHelper,
     TimeOutPresenter,
     TimeSamplesPhantom,
-    TimeSamplesPlayback,
 )
 from .consumer import TimeBandsConsumer, TimeConsumer
 from .layouts import MicGeomComponent
@@ -119,7 +118,6 @@ __all__ = [
     "TimeConsumer",
     "TimeOutPresenter",
     "TimeSamplesPhantom",
-    "TimeSamplesPlayback",
     "TimeSamplesPresenter",
     "ToggleMapper",
     "__author__",
@@ -130,3 +128,11 @@ __all__ = [
     "set_calc_button_callback",
     "set_widgets",
 ]
+if find_spec("sounddevice"):
+    from .bokehview import SoundDeviceSamplesGenerator
+    from .lprocess import TimeSamplesPlayback
+
+    __all__ += [
+        "SoundDeviceSamplesGenerator",
+        "TimeSamplesPlayback",
+    ]

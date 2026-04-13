@@ -2869,15 +2869,16 @@ source = { editable = "." }
 dependencies = [
     { name = "acoular" },
     { name = "bokeh" },
-    { name = "sounddevice" },
 ]
 
 [package.optional-dependencies]
 full = [
     { name = "opencv-python" },
+    { name = "sounddevice" },
 ]
 tapy = [
     { name = "opencv-python" },
+    { name = "sounddevice" },
     { name = "tapy" },
 ]
 
@@ -2929,7 +2930,8 @@ requires-dist = [
     { name = "bokeh", specifier = ">=3.0" },
     { name = "opencv-python", marker = "extra == 'full'" },
     { name = "opencv-python", marker = "extra == 'tapy'" },
-    { name = "sounddevice" },
+    { name = "sounddevice", marker = "extra == 'full'" },
+    { name = "sounddevice", marker = "extra == 'tapy'" },
     { name = "tapy", marker = "extra == 'tapy'", git = "ssh://git@git.tu-berlin.de/akustik/tapy.git?branch=dev" },
 ]
 provides-extras = ["full", "tapy"]
