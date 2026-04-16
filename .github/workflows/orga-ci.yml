@@ -29,3 +29,5 @@ jobs:
 
   tests:
     uses: acoular/ci/.github/workflows/tests.yml@main
+    with:
+      src_dir: src/spectacoular
