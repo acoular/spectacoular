@@ -82,14 +82,13 @@ dev = [
     {include-group = "tests"},
 ]
 
-# app shortcuts
 [project.scripts]
-slm_app = "apps.slm_app:main"
-result_explorer = "apps.result_explorer:main"
 micgeom_app = "apps.micgeom_app:main"
-timesamples_app = "apps.timesamples_app:main"
 msm_app = "apps.msm_app:main"
+result_explorer = "apps.result_explorer:main"
 rotating_app = "apps.rotating_app:main"
+slm_app = "apps.slm_app:main"
+timesamples_app = "apps.timesamples_app:main"
 
 [project.urls]
 homepage = "https://acoular.github.io/spectacoular/"
