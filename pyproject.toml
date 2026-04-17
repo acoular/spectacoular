@@ -103,10 +103,11 @@ build-backend = "hatchling.build"
 path = "src/spectacoular/version.py"
 
 [tool.hatch.build.targets.sdist]
-packages = ["src/spectacoular", "src/apps"]
+include = ["spectacoular", "apps"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/spectacoular", "src/apps"]
+
 
 [[tool.uv.index]]
 name = "pypi"
