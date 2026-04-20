@@ -49,6 +49,7 @@ class CameraComponent(BaseSpectacoular):
     extent_width = Float(XCAM[2], desc="width of the camera image")
     extent_height = Float(XCAM[3], desc="height of the camera image")
     alpha = Float(1.0, desc="the alpha value of the image")
+    flip_horizontal = Bool(False, desc="Flip the camera image horizontally")
 
     figure = Instance(figure)
 
@@ -76,6 +77,7 @@ class CameraComponent(BaseSpectacoular):
             "extent_width": bokeh.models.widgets.NumericInput,
             "extent_height": bokeh.models.widgets.NumericInput,
             "alpha": bokeh.models.widgets.Slider,
+            "flip_horizontal": bokeh.models.widgets.Toggle,
         }
     )
 
@@ -98,8 +100,8 @@ class CameraComponent(BaseSpectacoular):
                 "value": 0,
                 "disabled": not HAVE_CV2,
             },
-            "width": {"title": "Width", "value": 640, "disabled": True},
-            "height": {"title": "Height", "value": 480, "disabled": True},
+            "width": {"title": "Width", "value": 640, "disabled": not HAVE_CV2},
+            "height": {"title": "Height", "value": 480, "disabled": not HAVE_CV2},
             "extent_x": {
                 "title": "Lower Left X",
                 "value": XCAM[0],
@@ -125,6 +127,12 @@ class CameraComponent(BaseSpectacoular):
                 "disabled": not HAVE_CV2,
             },
             "alpha": {"title": "Image Alpha", "start": 0, "end": 1, "step": 0.05},
+            "flip_horizontal": {
+                "label": "Flip horizontal",
+                "active": False,
+                "disabled": not HAVE_CV2,
+                "button_type": "default",
+            },
         }
     )
 
@@ -148,6 +156,13 @@ class CameraComponent(BaseSpectacoular):
     def _update_camera(self, cds, img, view):
         rval, frame = self._vc_stream.read()
         if rval:
+            # Resize frame if it doesn't match expected dimensions
+            expected_height, expected_width = view.shape[0], view.shape[1]
+            if frame.shape[0] != expected_height or frame.shape[1] != expected_width:
+                frame = cv2.resize(frame, (expected_width, expected_height))
+            # Flip horizontally if enabled
+            if self.flip_horizontal:
+                frame = cv2.flip(frame, 1)
             view[:, :, 0] = frame[:, :, 2]  # copy red channel
             view[:, :, 2] = frame[:, :, 0]  # copy blue channel
             view[:, :, 1] = frame[:, :, 1]  # copy green channel
@@ -161,32 +176,53 @@ class CameraComponent(BaseSpectacoular):
         self.height = int(vc.get(cv2.CAP_PROP_FRAME_HEIGHT))
         vc.release()
 
+    def _stop_camera_stream(self, cds):
+        """Stop the camera stream and clean up resources"""
+        if self._vc_stream is not None:
+            self._vc_stream.release()
+        if self.image_type == "Stream" and self._callback_id is not None:
+            self.doc.remove_periodic_callback(self._callback_id)
+        cds.data["image_data"] = []
+
+    def _start_camera_stream(self, cds):
+        """Start the camera stream with current resolution settings"""
+        self._vc_stream = cv2.VideoCapture(self.camera_index)
+        update_rate = 1000 / self.framerate  # in milliseconds
+        update_rate = 2 * update_rate  # update only half as often as the camera
+        M, N = self.height, self.width
+        self._vc_stream.set(3, N)
+        self._vc_stream.set(4, M)
+        # Verify actual resolution (camera might not support exact requested resolution)
+        actual_width = int(self._vc_stream.get(cv2.CAP_PROP_FRAME_WIDTH))
+        actual_height = int(self._vc_stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        # Use actual resolution if different from requested
+        if actual_width != N or actual_height != M:
+            M, N = actual_height, actual_width
+        self._vc_stream.set(
+            cv2.CAP_PROP_BUFFERSIZE, 1
+        )  # Keep only the latest frame in buffer
+        img = empty((M, N), dtype=uint32)
+        view = img.view(dtype=uint8).reshape((M, N, 4))[::-1, ::-1]
+        view[:, :, 3] = 255
+        callback = partial(self._update_camera, cds=cds, img=img, view=view)
+        if self.image_type == "Stream":
+            self._callback_id = self.doc.add_periodic_callback(callback, update_rate)
+        else:
+            self._callback_id = self.doc.add_next_tick_callback(callback)
+
     def _camera_callback(self, attr, old, new, cds):
         if new:
-            self._vc_stream = cv2.VideoCapture(self.camera_index)
-            update_rate = 1000 / self.framerate  # in milliseconds
-            update_rate = 2 * update_rate  # update only half as often as the camera
-            M, N = self.height, self.width
-            self._vc_stream.set(3, N)
-            self._vc_stream.set(4, M)
-            self._vc_stream.set(
-                cv2.CAP_PROP_BUFFERSIZE, 1
-            )  # Keep only the latest frame in buffer
-            img = empty((M, N), dtype=uint32)
-            view = img.view(dtype=uint8).reshape((M, N, 4))[::-1, ::-1]
-            view[:, :, 3] = 255
-            callback = partial(self._update_camera, cds=cds, img=img, view=view)
-            if self.image_type == "Stream":
-                self._callback_id = self.doc.add_periodic_callback(
-                    callback, update_rate
-                )
-            else:
-                self._callback_id = self.doc.add_next_tick_callback(callback)
+            self._start_camera_stream(cds)
         else:
-            self._vc_stream.release()
-            if self.image_type == "Stream":
-                self.doc.remove_periodic_callback(self._callback_id)
-            cds.data["image_data"] = []
+            self._stop_camera_stream(cds)
+
+    def _resolution_callback(self, attr, old, new, cds):
+        """Callback for when width or height changes - restart camera if active"""
+        if self.active and self._vc_stream is not None:
+            # Stop current stream
+            self._stop_camera_stream(cds)
+            # Restart with new resolution
+            self._start_camera_stream(cds)
 
     def _global_alpha_callback(self, attr, old, new):
         # go through all image glyphs and change global alpha if above
@@ -205,4 +241,14 @@ class CameraComponent(BaseSpectacoular):
                 self._camera_callback, cds=self._glyph_renderer.data_source
             )
             widgets["active"].on_change("active", callback)
+        if widgets.get("width") is not None:
+            resolution_callback = partial(
+                self._resolution_callback, cds=self._glyph_renderer.data_source
+            )
+            widgets["width"].on_change("value", resolution_callback)
+        if widgets.get("height") is not None:
+            resolution_callback = partial(
+                self._resolution_callback, cds=self._glyph_renderer.data_source
+            )
+            widgets["height"].on_change("value", resolution_callback)
         return widgets
