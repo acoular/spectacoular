@@ -127,7 +127,12 @@ class CameraComponent(BaseSpectacoular):
                 "disabled": not HAVE_CV2,
             },
             "alpha": {"title": "Image Alpha", "start": 0, "end": 1, "step": 0.05},
-            "flip_horizontal": {"label": "Flip horizontal", "active": False, "disabled": not HAVE_CV2, "button_type": "default"},
+            "flip_horizontal": {
+                "label": "Flip horizontal",
+                "active": False,
+                "disabled": not HAVE_CV2,
+                "button_type": "default",
+            },
         }
     )
 
@@ -175,15 +180,15 @@ class CameraComponent(BaseSpectacoular):
         """Stop the camera stream and clean up resources"""
         if self._vc_stream is not None:
             self._vc_stream.release()
-        if self.image_type == 'Stream' and self._callback_id is not None:
+        if self.image_type == "Stream" and self._callback_id is not None:
             self.doc.remove_periodic_callback(self._callback_id)
-        cds.data['image_data'] = []
+        cds.data["image_data"] = []
 
     def _start_camera_stream(self, cds):
         """Start the camera stream with current resolution settings"""
         self._vc_stream = cv2.VideoCapture(self.camera_index)
-        update_rate = 1000/self.framerate # in milliseconds
-        update_rate = 2*update_rate # update only half as often as the camera
+        update_rate = 1000 / self.framerate  # in milliseconds
+        update_rate = 2 * update_rate  # update only half as often as the camera
         M, N = self.height, self.width
         self._vc_stream.set(3, N)
         self._vc_stream.set(4, M)
@@ -193,12 +198,14 @@ class CameraComponent(BaseSpectacoular):
         # Use actual resolution if different from requested
         if actual_width != N or actual_height != M:
             M, N = actual_height, actual_width
-        self._vc_stream.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Keep only the latest frame in buffer
+        self._vc_stream.set(
+            cv2.CAP_PROP_BUFFERSIZE, 1
+        )  # Keep only the latest frame in buffer
         img = empty((M, N), dtype=uint32)
-        view = img.view(dtype=uint8).reshape((M, N, 4))[::-1,::-1]
-        view[:,:,3] = 255
+        view = img.view(dtype=uint8).reshape((M, N, 4))[::-1, ::-1]
+        view[:, :, 3] = 255
         callback = partial(self._update_camera, cds=cds, img=img, view=view)
-        if self.image_type == 'Stream':
+        if self.image_type == "Stream":
             self._callback_id = self.doc.add_periodic_callback(callback, update_rate)
         else:
             self._callback_id = self.doc.add_next_tick_callback(callback)
@@ -227,15 +234,21 @@ class CameraComponent(BaseSpectacoular):
     @cached_property
     def _get_widgets(self):
         widgets = self.get_widgets()
-        if widgets.get('camera_index') is not None:
-            widgets['camera_index'].on_change('value', self._camera_index_callback)
-        if widgets.get('active') is not None:
-            callback = partial(self._camera_callback, cds=self._glyph_renderer.data_source)
-            widgets['active'].on_change('active', callback)
-        if widgets.get('width') is not None:
-            resolution_callback = partial(self._resolution_callback, cds=self._glyph_renderer.data_source)
-            widgets['width'].on_change('value', resolution_callback)
-        if widgets.get('height') is not None:
-            resolution_callback = partial(self._resolution_callback, cds=self._glyph_renderer.data_source)
-            widgets['height'].on_change('value', resolution_callback)
+        if widgets.get("camera_index") is not None:
+            widgets["camera_index"].on_change("value", self._camera_index_callback)
+        if widgets.get("active") is not None:
+            callback = partial(
+                self._camera_callback, cds=self._glyph_renderer.data_source
+            )
+            widgets["active"].on_change("active", callback)
+        if widgets.get("width") is not None:
+            resolution_callback = partial(
+                self._resolution_callback, cds=self._glyph_renderer.data_source
+            )
+            widgets["width"].on_change("value", resolution_callback)
+        if widgets.get("height") is not None:
+            resolution_callback = partial(
+                self._resolution_callback, cds=self._glyph_renderer.data_source
+            )
+            widgets["height"].on_change("value", resolution_callback)
         return widgets
