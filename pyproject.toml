@@ -6,7 +6,7 @@
 name = "spectacoular"
 dynamic = ["version"]
 description = "Library for SpectAcoular interactive applications with Acoular"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.11,<3.15"
 authors = [
     {name = "Acoular Development Team", email = "info@acoular.org"},
 ]
@@ -24,10 +24,10 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Physics",
     "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     'acoular>=26.01',
