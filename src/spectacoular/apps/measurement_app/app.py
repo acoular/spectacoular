@@ -6,7 +6,7 @@ from functools import partial
 from datetime import datetime
 from threads import SamplesThread, EventThread
 from layout import toggle_labels, plot_colors, button_height
-from acoular_future.tprocess import MaskedChannels
+from acoular import MaskedTimeOut
 from pathlib import Path
 import numpy as np
 from time import sleep
@@ -81,7 +81,7 @@ class MeasurementControl:
                     source=ac.TimePower(
                         source=sp.FiltOctave(
                             source=ac.BeamformerTime(
-                                source=MaskedChannels(source=self.splitter), steer=steer
+                                source=MaskedTimeOut(source=self.splitter), steer=steer
                             ),
                             band=cfreq,
                         )
