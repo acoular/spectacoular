@@ -43,7 +43,7 @@ parser.add_argument(
     "--device",
     type=str,
     default="phantom",
-    choices=["phantom", "sounddevice", "tornado", "typhoon", "apollo"],
+    choices=["phantom", "calib", "sounddevice", "tornado", "typhoon", "apollo"],
     help="Connected device.",
 )
 parser.add_argument(
@@ -133,7 +133,7 @@ if args.device == "sounddevice":
         steer=ac.SteeringVector(grid=grid, mics=mics),
     )
 
-elif args.device == "phantom":
+elif args.device in ("phantom", "calib"):
     from app import PhantomControl
 
     grid = sp.RectGrid(
@@ -144,6 +144,7 @@ elif args.device == "phantom":
         logger=log.logger,
         blocksize=args.blocksize,
         steer=ac.SteeringVector(grid=grid, mics=mics),
+        initial_file="calib.h5" if args.device == "calib" else "rotating.h5",
     )
 else:
     from app import SinusControl

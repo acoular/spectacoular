@@ -373,7 +373,12 @@ class MeasurementControl:
 
 
 class PhantomControl(MeasurementControl):
-    def __init__(self, h5path=Path(__file__).parent / "data", **kwargs):
+    def __init__(
+        self,
+        h5path=Path(__file__).parent / "data",
+        initial_file="rotating.h5",
+        **kwargs,
+    ):
         self.sfreq = 25600
         self.duration = 10
         self.num_samples = self.duration * self.sfreq
@@ -388,7 +393,7 @@ class PhantomControl(MeasurementControl):
 
         self.select_file = Select(
             title="Select Source Case",
-            value="rotating.h5",
+            value=initial_file,
             options=[
                 ("rotating.h5", "Rotating Source"),
                 ("calib.h5", "Calibration Signal"),
