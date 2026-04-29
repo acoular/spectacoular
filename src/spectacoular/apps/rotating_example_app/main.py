@@ -30,7 +30,7 @@ from bokeh.server.server import Server
 doc = curdoc()
 # build processing chain
 micgeofile = Path(ac.__file__).parent / "xml" / "array_56.xml"
-tdfile = Path(__file__).parent.parent / "rotating_source.h5"
+tdfile = Path(__file__).parent / "rotating_source.h5"
 ts = sp.MaskedTimeSamples(file=tdfile)
 
 mg = sp.MicGeom(file=micgeofile)

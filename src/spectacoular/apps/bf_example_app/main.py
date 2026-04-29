@@ -53,7 +53,7 @@ ts = sp.MaskedTimeSamples(
 )
 cal = sp.Calib(
     source=ts,
-    file=Path(__file__).parent.parent / "example_calib.xml",
+    file=Path(__file__).parent / "example_calib.xml",
     invalid_channels=ts.invalid_channels,
 )
 mg = sp.MicGeom(
