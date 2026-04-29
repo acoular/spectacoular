@@ -65,7 +65,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
     time_delay = Float(desc="Time interval between individual blocks of data")
 
     #: Indicates if samples are collected, helper trait to break result loop
-    collectsamples = Bool(True, desc="Indicates if result function is running")
+    collect_samples = Bool(True, desc="Indicates if result function is running")
 
     trait_widget_mapper = {
         "file": TextInput,
@@ -118,7 +118,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
         if self.num_samples == 0:
             raise IOError("no samples available")
         i = 0
-        while i < self.num_samples and self.collectsamples:
+        while i < self.num_samples and self.collect_samples:
             yield self.data[i : i + num]
             sleep(slp_time)
             i += num
