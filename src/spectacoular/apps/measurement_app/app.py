@@ -4,8 +4,8 @@ import spectacoular as sp
 from threading import Event
 from functools import partial
 from datetime import datetime
-from threads import SamplesThread, EventThread
-from layout import toggle_labels, plot_colors, button_height
+from .threads import SamplesThread, EventThread
+from .layout import toggle_labels, plot_colors, button_height
 from acoular import MaskedTimeOut
 from pathlib import Path
 import numpy as np

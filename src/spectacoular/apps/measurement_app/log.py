@@ -1,6 +1,6 @@
 import logging
 import importlib
-from layout import COLOR
+from .layout import COLOR
 from collections import deque
 
 # # Create Bokeh TextAreaInput widget for log display
