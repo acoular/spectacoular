@@ -31,7 +31,7 @@ from bokeh.models.widgets import (
 )
 from bokeh.models.widgets.inputs import NumericInput
 from bokeh.palettes import Viridis256
-from bokeh.plotting import curdoc, figure
+from bokeh.plotting import figure
 from .cam import CameraComponent
 from .layout import COLOR
 from .log import LogHandler
@@ -89,7 +89,6 @@ parser.add_argument(
     help="adds control tabs to measurement app",
 )
 args, _ = parser.parse_known_args()
-
 
 
 def server_doc(doc):
@@ -167,7 +166,6 @@ def server_doc(doc):
         )
         use_sinus = True
 
-
     # =============================================================================
     # DEFINE FIGURES
     # =============================================================================
@@ -217,7 +215,6 @@ def server_doc(doc):
         }
     )
 
-
     # =============================================================================
     # DEFINE GLYPHS
     # =============================================================================
@@ -245,7 +242,10 @@ def server_doc(doc):
     )
     mics_beamf_fig.add_layout(
         ColorBar(
-            color_mapper=beamf_color_mapper, location=(0, 0), title="dB", title_standoff=10
+            color_mapper=beamf_color_mapper,
+            location=(0, 0),
+            title="dB",
+            title_standoff=10,
         ),
         "right",
     )
@@ -277,7 +277,6 @@ def server_doc(doc):
         alpha=1.0, color="black", fill_alpha=0, line_width=2, source=grid_data
     )  # line_color="#213447")
 
-
     # =============================================================================
     # DEFINE WIDGETS
     # =============================================================================
@@ -307,10 +306,8 @@ def server_doc(doc):
         label="All Valid", button_type="success", sizing_mode="stretch_width"
     )
 
-
     def _all_mics_valid(event):
         mics.invalid_channels = []
-
 
     all_mics_valid.on_click(_all_mics_valid)
 
@@ -344,10 +341,8 @@ def server_doc(doc):
         label="All Valid", button_type="success", sizing_mode="stretch_width"
     )
 
-
     def _all_valid(event):
         control.beamf.source.source.source.source.source.invalid_channels = []
-
 
     all_bf_valid.on_click(_all_valid)
 
@@ -374,7 +369,6 @@ def server_doc(doc):
     # DEFINE CALLBACKS
     # =============================================================================
 
-
     def update_app():  # only update figure when tab is active
         if tabs.active == 0:
             update_amp_bar_plot()
@@ -386,7 +380,6 @@ def server_doc(doc):
         if use_sinus:
             control.update_buffer_bar()
 
-
     def update_amp_bar_plot():
         if control.disp.cdsource.data["data"].size > 0:
             levels = ac.L_p(control.disp.cdsource.data["data"][0])
@@ -394,7 +387,6 @@ def server_doc(doc):
             amp_cds.data["colors"] = np.where(
                 levels < clip_level.value, control.modecolor, control.clipcolor
             )
-
 
     def update_mic_geom_plot():
         if mics.num_mics > 0 and control.disp.cdsource.data["data"].size > 0:
@@ -410,7 +402,6 @@ def server_doc(doc):
                 levels < clip_level.value, control.modecolor, control.clipcolor
             )
 
-
     def update_beamforming_plot():
         if control.beamf.cdsource.data["data"].size > 0:
             beamf_cds.data["level"] = [
@@ -421,7 +412,6 @@ def server_doc(doc):
                 beamf_color_mapper.high = maxValue
                 beamf_color_mapper.low = maxValue - dynamic_range.value
 
-
     def update_view(arg):
         if arg:
             control._view_callback_id = doc.add_periodic_callback(
@@ -431,9 +421,7 @@ def server_doc(doc):
             [thread.join() for thread in control._disp_threads]
             doc.remove_periodic_callback(control._view_callback_id)
 
-
     control.display_toggle.on_click(update_view)
-
 
     def update_channel_labels(attr, old, new):
         log.logger.debug("update_channel_labels")
@@ -456,30 +444,24 @@ def server_doc(doc):
             (i, j) for i, j in zip(_get_channel_labels(control.source, "Index"), labels)
         ]
 
-
     update_channel_labels(None, None, None)
     labelSelect.on_change("value", update_channel_labels)
     control.source.on_trait_change(
         lambda: update_channel_labels(None, None, None), "num_channels"
     )
 
-
     def dynamic_slider_callback(attr, old, new):
         if not auto_level_toggle.active:
             beamf_color_mapper.high = bf_max_level.value
             beamf_color_mapper.low = bf_max_level.value - dynamic_range.value
 
-
     dynamic_range.on_change("value", dynamic_slider_callback)
     bf_max_level.on_change("value", dynamic_slider_callback)
-
 
     def snapshot_avg_callback(attr, old, new):
         control.beamf.source.num_per_average = args.blocksize * new
 
-
     snapshot_avg.on_change("value", snapshot_avg_callback)
-
 
     def update_bf_image_axis():
         dx = grid.x_max - grid.x_min
@@ -490,7 +472,6 @@ def server_doc(doc):
         bf_image.glyph.dh = dy
         bf_image.glyph.update()
 
-
     def update_grid():
         """update grid data source when grid settings change"""
         grid_data.data = {
@@ -500,27 +481,21 @@ def server_doc(doc):
             "height": [grid.y_max - grid.y_min],
         }
 
-
     def update_bf_plot(attr, old, new):
         update_bf_image_axis()
         update_grid()
-
 
     def clear_beamforming_image(arg):
         if not arg:
             beamf_cds.data["level"] = []
             control.beamf.cdsource.data["data"] = np.array([])
 
-
     control.beamf_toggle.on_click(clear_beamforming_image)
-
 
     def bf_alpha_callback(attr, old, new):
         bf_image.glyph.global_alpha = new
 
-
     bf_alpha.on_change("value", bf_alpha_callback)
-
 
     rgWidgets["x_min"].on_change("value", update_bf_plot)
     rgWidgets["x_max"].on_change("value", update_bf_plot)
@@ -622,7 +597,8 @@ def server_doc(doc):
 
 if __name__ == "__main__":
     from bokeh.server.server import Server
-    server = Server({"/" : server_doc})
+
+    server = Server({"/": server_doc})
     server.start()
     print("Opening Measurement App on http://localhost:5006/")
     server.io_loop.add_callback(server.show, "/")
