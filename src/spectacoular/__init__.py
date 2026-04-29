@@ -64,7 +64,7 @@ from .lprocess import (
 )
 from .consumer import TimeBandsConsumer, TimeConsumer
 from .layouts import MicGeomComponent
-from .version import __author__, __date__, __version__
+from .version import __author__, __version__
 
 __all__ = [
     # Acoular
