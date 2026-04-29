@@ -64,7 +64,6 @@ from .lprocess import (
 )
 from .consumer import TimeBandsConsumer, TimeConsumer
 from .layouts import MicGeomComponent
-from .version import __author__, __date__, __version__
 
 __all__ = [
     # Acoular
@@ -94,7 +93,6 @@ __all__ = [
     "RectGrid",
     "RectGrid3D",
     "SampleSplitter",
-    "SoundDeviceSamplesGenerator",
     "SpatialInterpolator",
     "SpatialInterpolatorConstantRotation",
     "SpatialInterpolatorRotation",
@@ -120,9 +118,6 @@ __all__ = [
     "TimeSamplesPhantom",
     "TimeSamplesPresenter",
     "ToggleMapper",
-    "__author__",
-    "__date__",
-    "__version__",
     "add_bokeh_attr",
     "get_widgets",
     "set_calc_button_callback",

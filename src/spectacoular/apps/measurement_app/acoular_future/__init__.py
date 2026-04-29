@@ -1,0 +1,11 @@
+# coding=UTF-8
+# ------------------------------------------------------------------------------
+# Copyright (c) 2019, Acoular Development Team.
+# ------------------------------------------------------------------------------
+
+"""
+Plugin classes for acoular to be used with spectacoular
+"""
+
+from .spectra import CSMInOut, PowerSpectraSetCSM  # noqa: F401
+from .tbeamform import BeamformerFreqTime  # noqa: F401

@@ -1,3 +1,6 @@
+[![PyPI](https://img.shields.io/pypi/pyversions/spectacoular.svg)](https://pypi.org/project/spectacoular)
+[![PyPI](https://img.shields.io/pypi/v/spectacoular.svg)](https://pypi.org/project/spectacoular)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/5242826.svg)](https://zenodo.org/doi/10.5281/zenodo.5242826)
 
 ![Poster](https://github.com/acoular/spectacoular/blob/master/docs/_static/poster.png)
 

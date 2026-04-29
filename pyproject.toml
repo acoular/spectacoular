@@ -83,12 +83,12 @@ dev = [
 ]
 
 [project.scripts]
-micgeom_app = "apps.micgeom_app:main"
-msm_app = "apps.msm_app:main"
-result_explorer = "apps.result_explorer:main"
-rotating_app = "apps.rotating_app:main"
-slm_app = "apps.slm_app:main"
-timesamples_app = "apps.timesamples_app:main"
+micgeom_app = "spectacoular.apps.micgeom_app:main"
+msm_app = "spectacoular.apps.measurement_app:main"
+bf_example_app = "spectacoular.apps.bf_example_app:main"
+rotating_example_app = "spectacoular.apps.rotating_example_app:main"
+level_meter_app = "spectacoular.apps.level_meter_app:main"
+data_viewer_app = "spectacoular.apps.data_viewer_app:main"
 
 [project.urls]
 homepage = "https://acoular.github.io/spectacoular/"
@@ -102,11 +102,8 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 path = "src/spectacoular/version.py"
 
-[tool.hatch.build.targets.sdist]
-include = ["spectacoular", "apps"]
-
 [tool.hatch.build.targets.wheel]
-packages = ["src/spectacoular", "src/apps"]
+packages = ["src/spectacoular"]
 
 
 [[tool.uv.index]]

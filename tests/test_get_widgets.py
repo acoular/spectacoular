@@ -16,6 +16,8 @@ def get_all_classes(hastraits_only=False, module="acoular"):
     for module_info in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
         if module_info.name.endswith("traitsviews"):
             continue
+        if ".apps." in module_info.name:
+            continue
         module = importlib.import_module(module_info.name)
         # skip traitsviews module
         for _, cls in inspect.getmembers(module, inspect.isclass):

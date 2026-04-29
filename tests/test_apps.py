@@ -1,6 +1,3 @@
-import sys
-from pathlib import Path
-import spectacoular
 import pytest
 import importlib
 from bokeh.server.server import Server
@@ -8,17 +5,13 @@ from bokeh.application import Application
 from bokeh.application.handlers.function import FunctionHandler
 import os
 
-sys.path.append(
-    str(Path(spectacoular.__file__).parent.parent / "apps")
-)  # Add the parent directory to sys.path
-
 
 @pytest.fixture
 def bokeh_server(request):
     # Dynamically import the server_doc based on the app name
     app_name = request.param  # Parameterized fixture
     try:
-        app_module = importlib.import_module(f"{app_name}.main")
+        app_module = importlib.import_module(f"spectacoular.apps.{app_name}.main")
         server_doc = getattr(app_module, "server_doc")
     except (ModuleNotFoundError, AttributeError) as e:
         pytest.fail(f"Failed to import server_doc from {app_name}.main: {e}")
@@ -54,15 +47,15 @@ def bokeh_server(request):
     "bokeh_server",
     [
         pytest.param(
-            "SLM",
+            "level_meter_app",
             marks=pytest.mark.skipif(
                 os.name == "nt", reason="Test is not supported on Windows."
             ),
         ),
-        "MicGeomExample",
-        "FreqBeamformingExample",
-        "RotatingExample",
-        "TimeSamplesExample",
+        "micgeom_app",
+        "bf_example_app",
+        "rotating_example_app",
+        "data_viewer_app",
     ],
     indirect=True,
 )
