@@ -83,12 +83,12 @@ dev = [
 ]
 
 [project.scripts]
-micgeom_app = "spectacoular.apps.micgeom_app:main"
-msm_app = "spectacoular.apps.msm_app:main"
-result_explorer = "spectacoular.apps.result_explorer:main"
-rotating_app = "spectacoular.apps.rotating_app:main"
-slm_app = "spectacoular.apps.slm_app:main"
-timesamples_app = "spectacoular.apps.timesamples_app:main"
+micgeom_app = "spectacoular.apps.micgeom:main"
+msm_app = "spectacoular.apps.measurement:main"
+bf_example_app = "spectacoular.apps.bf_example:main"
+rotating_example_app = "spectacoular.apps.rotating_example:main"
+level_meter_app = "spectacoular.apps.level_meter:main"
+data_viewer_app = "spectacoular.apps.data_viewer:main"
 
 [project.urls]
 homepage = "https://acoular.github.io/spectacoular/"
