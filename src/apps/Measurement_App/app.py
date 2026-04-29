@@ -208,7 +208,7 @@ class MeasurementControl:
 
     def displaytoggle_handler(self, arg):
         if arg:
-            self.source.collectsamples = True
+            self.source.collect_samples = True
             dispEvent = Event()
             dispEventThread = EventThread(
                 pre_callback=partial(
@@ -235,7 +235,7 @@ class MeasurementControl:
                 thread.start()
             self.logger.info("Display...")
         if not arg:
-            self.source.collectsamples = False
+            self.source.collect_samples = False
             for thread in self._disp_threads:
                 thread.join()
             self._disp_threads = []
