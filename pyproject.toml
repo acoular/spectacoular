@@ -6,7 +6,7 @@
 name = "spectacoular"
 dynamic = ["version"]
 description = "Library for SpectAcoular interactive applications with Acoular"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.11,<3.15"
 authors = [
     {name = "Acoular Development Team", email = "info@acoular.org"},
 ]
@@ -24,10 +24,10 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Physics",
     "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     'acoular>=26.01',
@@ -82,14 +82,13 @@ dev = [
     {include-group = "tests"},
 ]
 
-# app shortcuts
 [project.scripts]
-slm_app = "spectacoular.apps.slm_app:main"
-result_explorer = "spectacoular.apps.result_explorer:main"
-micgeom_app = "spectacoular.apps.micgeom_app:main"
-timesamples_app = "spectacoular.apps.timesamples_app:main"
-msm_app = "spectacoular.apps.msm_app:main"
-rotating_app = "spectacoular.apps.rotating_app:main"
+micgeom_app = "apps.micgeom_app:main"
+msm_app = "apps.msm_app:main"
+result_explorer = "apps.result_explorer:main"
+rotating_app = "apps.rotating_app:main"
+slm_app = "apps.slm_app:main"
+timesamples_app = "apps.timesamples_app:main"
 
 [project.urls]
 homepage = "https://acoular.github.io/spectacoular/"
@@ -101,13 +100,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "spectacoular/version.py"
+path = "src/spectacoular/version.py"
 
 [tool.hatch.build.targets.sdist]
 include = ["spectacoular", "apps"]
 
 [tool.hatch.build.targets.wheel]
-include = ["spectacoular", "apps"]
+packages = ["src/spectacoular", "src/apps"]
+
 
 [[tool.uv.index]]
 name = "pypi"
