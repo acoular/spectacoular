@@ -94,7 +94,6 @@ __all__ = [
     "RectGrid",
     "RectGrid3D",
     "SampleSplitter",
-    "SoundDeviceSamplesGenerator",
     "SpatialInterpolator",
     "SpatialInterpolatorConstantRotation",
     "SpatialInterpolatorRotation",
