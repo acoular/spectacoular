@@ -47,15 +47,15 @@ def bokeh_server(request):
     "bokeh_server",
     [
         pytest.param(
-            "level_meter",
+            "level_meter_app",
             marks=pytest.mark.skipif(
                 os.name == "nt", reason="Test is not supported on Windows."
             ),
         ),
-        "micgeom",
-        "bf_example",
-        "rotating_example",
-        "data_viewer",
+        "micgeom_app",
+        "bf_example_app",
+        "rotating_example_app",
+        "data_viewer_app",
     ],
     indirect=True,
 )
