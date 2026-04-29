@@ -224,7 +224,7 @@ def server_doc(doc):
     camera = CameraComponent(doc=doc, figure=mics_beamf_fig)
 
     # Amplitude Bar Plot
-    amp_bar = amp_fig.vbar(
+    amp_fig.vbar(
         x="channels", width=0.5, bottom=0, top="level", color="colors", source=amp_cds
     )
 
