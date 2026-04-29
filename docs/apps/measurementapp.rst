@@ -29,8 +29,6 @@ in the command line or by navigating to the `spectacoular/apps` directory. Then,
 .. code-block:: console
 
     $ bokeh serve --show  Measurement_App --args --device=phantom --blocksize=256
-    
-Alternatively one can start the shell script named `start_phantom.sh`
 
 
 Serving the Application with an UMA16 microphone array:
@@ -48,8 +46,8 @@ Alternatively, navigate to the `spectacoular/apps` folder and type the following
 .. code-block:: console
 
     $ bokeh serve --show Measurement_App --args --device=sounddevice --blocksize=256
-    
-Alternatively one can start the shell script named `start_sounddevice.sh`. In the browser window, one can now select the UMA16 as the input device (named as *nanoSHARC micArray16*).
+
+In the browser window, one can now select the UMA16 as the input device (named as *nanoSHARC micArray16*).
 For beamforming go to the *Microphone Geometry* tab and select the micrphone geometry *minidsp_uma16.xml*. Then, start the audio stream by pressing the *start display* button. Beamforming can be performed by pressing the *start beamforming* button.
 
 Serving this application in phantom mode produces the following interactive interface in your browser:
