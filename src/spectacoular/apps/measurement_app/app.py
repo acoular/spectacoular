@@ -956,7 +956,7 @@ class Calibration:
     def _save_calib_callback(self):
         if not self.cal_widgets["file"].value:
             fname = (
-                Path("Measurement_App") / "metadata" / f"calibdata_{current_time()}.xml"
+                Path("measurement_app") / "metadata" / f"calibdata_{current_time()}.xml"
             )
             self.cal_widgets["file"].value = fname
         else:

@@ -13,14 +13,21 @@ an XML file using the Acoular package and Bokeh for visualization.
 .. bokeh-plot:: ../examples/basic_mic_geom_plot.py
    :source-position: none
 
+.. note::
+    This example creates a standalone Bokeh document and can be run directly with Python.
+    It does not require a Bokeh server.
 
 """
 
 # %%
-# First, we import the necessary modules (`acoular <https://www.acoular.org/>`_ and `pathlib <https://docs.python.org/3/library/pathlib.html>`_).
+# First, we import the necessary modules.
 
 import acoular as ac
+
 from pathlib import Path
+from bokeh.io import show
+from bokeh.models import ColumnDataSource
+from bokeh.plotting import figure
 
 # %%
 # Next, we set up the microphone geometry by using Acoular's :class:`~acoular.microphones.MicGeom` class.
@@ -40,8 +47,6 @@ mics = ac.MicGeom(file=Path(ac.__file__).parent / "xml" / "tub_vogel64.xml")
 # %%
 # Now, let's create a Bokeh :class:`~bokeh.plotting.figure` to visualize the microphone positions.
 
-from bokeh.plotting import figure  # noqa: E402
-
 figure = figure(
     title="Microphone Geometry",
     tools="hover,zoom_in,zoom_out,reset,lasso_select",
@@ -54,8 +59,6 @@ figure = figure(
 # The convenient way to provide data to a Bokeh :class:`~bokeh.plotting.Plot` is to use a
 # :class:`~bokeh.models.ColumnDataSource`, which is a data structure that allows us to easily update
 # the data in the plot. Since we create a 2D plot, we only need the x and y coordinates of the microphones.
-
-from bokeh.models import ColumnDataSource  # noqa: E402
 
 source = ColumnDataSource(data={"x": mics.pos_total[0], "y": mics.pos_total[1]})
 
@@ -80,6 +83,4 @@ figure.circle(
 # Finally, we can show the plot using Bokeh's :func:`~bokeh.io.show` function. This will open a new
 # browser window and display the plot with the microphone positions.
 #
-from bokeh.io import show  # noqa: E402
-
 show(figure)  # Show the plot in a new browser window (standalone HTML)

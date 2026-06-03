@@ -2,7 +2,11 @@
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
 """
-Example that demonstrates different beamforming algorithms
+Frequency-domain beamforming application.
+
+Start from an installed package with:
+
+    bf_example_app --show
 """
 
 from pathlib import Path
@@ -408,13 +412,26 @@ def integrate_result(attr, old, new):
                     sectordata.data["y"][i] + sectordata.data["height"][i] / 2,
                 ]
             )
-            print(sector)
+            sector[0] = np.clip(sector[0], rg.x_min, rg.x_max)
+            sector[2] = np.clip(sector[2], rg.x_min, rg.x_max)
+            sector[1] = np.clip(sector[1], rg.y_min, rg.y_max)
+            sector[3] = np.clip(sector[3], rg.y_min, rg.y_max)
+            if sector[0] >= sector[2] or sector[1] >= sector[3]:
+                continue
             specamp = ac.L_p(bv.source.integrate(sector))
             specamp[specamp < -300] = np.nan
             famp.append(specamp)
             ffreq.append(ps.fftfreq())
             colors.append(COLORS[i])
-        freqdata.data.update(amp=famp, freqs=ffreq, colors=colors)
+        if famp:
+            freqdata.data = {"amp": famp, "freqs": ffreq, "colors": colors}
+        else:
+            frLine.glyph.line_alpha = 0.0
+            freqdata.data = {
+                "freqs": [np.array(f_ticks)],
+                "amp": [np.array([0] * len(f_ticks))],
+                "colors": ["white"],
+            }
     else:
         frLine.glyph.line_alpha = 0.0  # make transparent if no integration sector exist
         freqdata.data = {
@@ -455,6 +472,7 @@ Depending on the method, this may take some time. You may also want to change th
 instruction_sector_integration = Div(
     text="""<p><b>Integrate over Source Map Region:</b></p> <b>Select the "Box Edit Tool"</b> in the upper right corner of the source map figure after calculating the source map.
 <b>Hold down the shift key to draw an integration sector</b> in the Source Map. A sector-integrated spectrum should appear. One can <b>remove the sector by pressing the Backspace key</b>.
+If the rectangle extends beyond the source-map grid, it is clipped to the valid grid bounds automatically.
 """
 )
 
@@ -493,7 +511,7 @@ layout = column(
 # make Document
 def server_doc(doc):
     doc.add_root(layout)
-    doc.title = "FreqBeamformingExample"
+    doc.title = "Frequency Domain Beamforming App"
 
 
 if __name__ == "__main__":

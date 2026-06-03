@@ -2,8 +2,11 @@
 # Copyright (c) 2007-2020, Acoular Development Team.
 # ------------------------------------------------------------------------------
 """
-app can be started with:
-bokeh serve --show SLM
+Sound level meter application.
+
+Start from an installed package with:
+
+    level_meter_app --show
 """
 
 import threading
@@ -670,7 +673,7 @@ layout.on_change("active", layout_callback)
 
 def server_doc(doc):
     doc.add_root(row(Spacer(width_policy="max"), layout, Spacer(width_policy="max")))
-    doc.title = "SLM / Sound Analyzer"
+    doc.title = "Sound Level Meter App"
 
 
 if __name__ == "__main__":
