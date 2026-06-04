@@ -1,6 +1,7 @@
 # Exclude a variety of commonly ignored directories.
 src = ["src"]
-extend-exclude = ["docs/_build", "docs/auto_examples", "cache"]
+include = ["src/spectacoular/*.py"]
+extend-exclude = ["docs/_build", "docs/auto_examples", "cache", "src/spectacoular/apps"]
 line-length = 120
 
 [lint]

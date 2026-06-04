@@ -114,9 +114,7 @@ def validate_mapping_is_allowed(obj, traitname, widget_type):
     allowed_trait_types = ALLOWED_WIDGET_TRAIT_MAPPINGS.get(widget_type)
     given_trait_type = obj.trait(traitname).trait_type
     if allowed_trait_types:
-        is_allowed_instance = any(
-            isinstance(given_trait_type, allowed_type) for allowed_type in allowed_trait_types
-        )
+        is_allowed_instance = any(isinstance(given_trait_type, allowed_type) for allowed_type in allowed_trait_types)
         is_allowed_type = given_trait_type in allowed_trait_types
         if not (is_allowed_instance or is_allowed_type):
             msg = (
