@@ -3,17 +3,15 @@ Reference Manual
 
 The following modules are part of SpectAcoular:
 
-.. currentmodule:: spectacoular
+.. toctree::
+   :maxdepth: 1
 
-.. autosummary::
-   :toctree: generated/
-
-   bokehview
-   factory
-   consumer
-   lprocess
-   dprocess
-   controller
-   layouts
+   spectacoular.bokehview
+   spectacoular.factory
+   spectacoular.consumer
+   spectacoular.lprocess
+   spectacoular.dprocess
+   spectacoular.controller
+   spectacoular.layouts
 
 
