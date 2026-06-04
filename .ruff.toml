@@ -41,3 +41,7 @@ quote-style = "single"
 docstring-code-format = true
 docstring-code-line-length = 120
 
+[lint.per-file-ignores]
+"src/spectacoular/__init__.py" = ["ALL"]
+"src/spectacoular/version.py" = ["ALL"]
+
