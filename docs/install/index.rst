@@ -38,6 +38,19 @@ We strongly encourage the use of virtual environments. An environment ``my-env``
 
             $ source my-env/bin/activate
 
+    .. tab-item:: ``mamba``
+        :sync: mamba
+
+        .. code-block:: console
+
+            $ mamba create -n my-env
+
+        and activate the environment with:
+
+        .. code-block:: console
+
+            $ mamba activate my-env
+
 Installation
 ------------
 To install SpectAcoular, run the following in your terminal or command prompt:
@@ -58,6 +71,13 @@ To install SpectAcoular, run the following in your terminal or command prompt:
         .. code-block:: console
 
             $ pip install -U spectacoular
+
+    .. tab-item:: ``mamba``
+        :sync: mamba
+
+        .. code-block:: console
+
+            $ mamba install -c acoular spectacoular
 
 Dependencies
 ------------
@@ -85,7 +105,7 @@ Optional dependencies are only required for some applications and features, main
    * - `sounddevice <https://python-sounddevice.readthedocs.io/>`_
      - Audio input via PortAudio-based hardware.
 
-When installing SpectAcoular from PyPI, SpectAcoular and all optional dependencies can be installed with the ``full`` extra:
+SpectAcoular and its optional dependencies can be installed with one of the following commands:
 
 .. tab-set::
     :sync-group: tool
@@ -104,6 +124,13 @@ When installing SpectAcoular from PyPI, SpectAcoular and all optional dependenci
 
             $ pip install -U 'spectacoular[full]'
 
+    .. tab-item:: ``mamba``
+        :sync: mamba
+
+        .. code-block:: console
+
+            $ mamba install -c acoular spectacoular opencv python-sounddevice
+
 Verify your installation
 ------------------------
 After installation, you can verify that SpectAcoular is working by starting one of the included applications:
@@ -120,6 +147,13 @@ After installation, you can verify that SpectAcoular is working by starting one 
 
     .. tab-item:: ``pip``
         :sync: pip
+
+        .. code-block:: console
+
+            $ micgeom_app --show
+
+    .. tab-item:: ``mamba``
+        :sync: mamba
 
         .. code-block:: console
 

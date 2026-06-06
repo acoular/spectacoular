@@ -1,5 +1,6 @@
 .. _installation of uv: https://docs.astral.sh/uv/#installation
 .. _installation of pip: https://pip.pypa.io/en/stable/installation
+.. _installation of mamba: https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html
 
 .. tab-set::
     :sync-group: tool
@@ -19,3 +20,11 @@
 
         This method requires Python and an `installation of pip`_.
         Choose this for a traditional Python experience.
+
+    .. tab-item:: ``mamba``
+        :sync: mamba
+
+        "The fast cross-platform package manager."
+
+        This method only requires an `installation of mamba`_ itself.
+        Choose this if you rely on Anaconda and want a fast experience.
