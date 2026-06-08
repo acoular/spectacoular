@@ -1,9 +1,10 @@
-import pytest
 import importlib
-from bokeh.server.server import Server
+import os
+
+import pytest
 from bokeh.application import Application
 from bokeh.application.handlers.function import FunctionHandler
-import os
+from bokeh.server.server import Server
 
 
 @pytest.fixture
@@ -12,7 +13,7 @@ def bokeh_server(request):
     app_name = request.param  # Parameterized fixture
     try:
         app_module = importlib.import_module(f'spectacoular.apps.{app_name}.main')
-        server_doc = getattr(app_module, 'server_doc')
+        server_doc = app_module.server_doc
     except (ModuleNotFoundError, AttributeError) as e:
         pytest.fail(f'Failed to import server_doc from {app_name}.main: {e}')
 

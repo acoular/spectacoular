@@ -13,7 +13,6 @@
     TimeSamplesPresenter
 """
 
-import numpy as np
 from acoular import (
     BeamformerBase,
     L_p,
@@ -22,11 +21,13 @@ from acoular import (
     PointSpreadFunction,
     TimeSamples,
 )
+
+from .factory import BaseSpectacoular
+
+import numpy as np
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import DataTable, NumericInput
 from traits.api import Bool, Float, Instance, Int, List, Trait, observe
-
-from .factory import BaseSpectacoular
 
 
 class BasePresenter(BaseSpectacoular):

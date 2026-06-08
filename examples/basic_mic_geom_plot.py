@@ -19,8 +19,9 @@ an XML file using the Acoular package and Bokeh for visualization.
 # %%
 # First, we import the necessary modules (`acoular <https://www.acoular.org/>`_ and `pathlib <https://docs.python.org/3/library/pathlib.html>`_).
 
-import acoular as ac
 from pathlib import Path
+
+import acoular as ac
 
 # %%
 # Next, we set up the microphone geometry by using Acoular's :class:`~acoular.microphones.MicGeom` class.

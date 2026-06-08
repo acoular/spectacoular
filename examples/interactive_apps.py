@@ -45,9 +45,10 @@ To start the Bokeh server, one can run the following command in the terminal:
 #
 # Let's begin by importing Acoular and setting up the simulation pipeline for the three sources example.
 
+from pathlib import Path
+
 import acoular as ac
 import spectacoular as sp
-from pathlib import Path
 
 mg = ac.MicGeom(file=Path(ac.__file__).parent / 'xml' / 'array_64.xml')
 
@@ -93,10 +94,9 @@ grid_grid = gridplot(list(sp.get_widgets(rg).values()), ncols=2, width=150)
 # The :class:`~bokeh.models.Image` glyph requires us to specify the x and y coordinate sof the bottom
 # left grid corner, the width and height of the grid, and the sound pressure to be displayed.
 
-from bokeh.plotting import figure  # noqa: E402
 from bokeh.models import ColumnDataSource, LinearColorMapper  # noqa: E402
 from bokeh.palettes import viridis  # noqa: E402
-
+from bokeh.plotting import figure  # noqa: E402
 
 source_plot = figure(title='Acoular Three Sources', tools='hover,reset,pan,wheel_zoom')
 
@@ -168,8 +168,8 @@ bf_presenter.set_widgets(freq=freq_slider)
 # document, which allows for interaction with the widgets and the figure in a web browser.
 #
 
-from bokeh.layouts import column, row  # noqa: E402
 from bokeh.io import curdoc  # noqa: E402
+from bokeh.layouts import column, row  # noqa: E402
 
 widget_layout = column(freq_slider, grid_grid)
 layout = row(widget_layout, source_plot)

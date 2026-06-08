@@ -26,9 +26,11 @@ using the SpectAcoular package.
 # Similar to the :ref:`basic_mic_geom_plot`, we will first import the necessary modules and set up
 # the microphone geometry plot.
 
+from pathlib import Path
+
 import acoular as ac
 import spectacoular as sp
-from pathlib import Path
+
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
 
@@ -93,8 +95,8 @@ numeric_widgets = mics.get_widgets(
 # :class:`~bokeh.models.DataTable` widget. In addition, we will use the
 # :class:`~bokeh.models.NumberEditor` to allow the user to edit the values in the table.
 
+from bokeh.models import NumberEditor, TableColumn  # noqa: E402
 from bokeh.models.widgets import DataTable  # noqa: E402
-from bokeh.models import TableColumn, NumberEditor  # noqa: E402
 
 editor = NumberEditor()
 pos_table = [
@@ -123,7 +125,6 @@ data_table_widget = mics.get_widgets(
 
 from bokeh.models import PointDrawTool  # noqa: E402
 
-
 draw_tool = PointDrawTool(renderers=[glyph], empty_value=0.0)
 
 figure.add_tools(draw_tool)
@@ -133,8 +134,8 @@ figure.toolbar.active_tap = draw_tool
 # %%
 # Let's create a layout that contains the figure and the widgets.
 
-from bokeh.layouts import column, row  # noqa: E402
 from bokeh.io import show  # noqa: E402
+from bokeh.layouts import column, row  # noqa: E402
 
 widget_column = column(*numeric_widgets.values(), *data_table_widget.values(), width=400)
 layout = row(figure, widget_column)

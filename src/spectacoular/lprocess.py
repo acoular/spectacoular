@@ -18,8 +18,12 @@ from datetime import UTC, datetime
 from time import sleep, time
 
 import acoular as ac
-import numpy as np
 from acoular.deprecation import deprecated_alias
+
+from .dprocess import BasePresenter
+from .factory import BaseSpectacoular
+
+import numpy as np
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import (
     DataTable,
@@ -40,9 +44,6 @@ from traits.api import (
     cached_property,
     on_trait_change,
 )
-
-from .dprocess import BasePresenter
-from .factory import BaseSpectacoular
 
 invch_columns = [
     TableColumn(field='invalid_channels', title='invalid_channels', editor=NumberEditor()),

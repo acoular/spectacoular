@@ -2,10 +2,12 @@
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
 
-import spectacoular as sp
-import inspect
 import importlib
+import inspect
 import pkgutil
+
+import spectacoular as sp
+
 import pytest
 from traits.api import HasTraits
 
@@ -47,7 +49,7 @@ if False:  # TODO: must be fixed in a future release. Commented out for now to p
 
 @pytest.mark.parametrize('cls', acoular_classes)
 def test_get_widgets(cls):
-    """test that get_widgets can be called"""
+    """Test that get_widgets can be called"""
     if inspect.isabstract(cls):
         pytest.skip(f'{cls} is an abstract base class.')
     # test if class can be imported from SpectAcoular and has get_widgets method and trait_widget_mapper

@@ -1070,15 +1070,12 @@ class DataTableMapper(TraitWidgetMapper):
     def create_columns(self):
         """Create a single ``TableColumn`` and add it to the widget."""
         if not self.widget.columns:
-            if isinstance(self.traittype, (List, Tuple)):
+            if isinstance(self.traittype, (List, Tuple)) or self.traitvalue.ndim == 1:
                 num_cols = 1
-            else:  # array
-                if self.traitvalue.ndim == 1:
-                    num_cols = 1
-                else:
-                    num_cols = self.traitvalue.shape[1]
-                    if self.transposed:
-                        num_cols = self.traitvalue.shape[0]
+            else:
+                num_cols = self.traitvalue.shape[1]
+                if self.transposed:
+                    num_cols = self.traitvalue.shape[0]
             self.widget.columns = [TableColumn(field=f'{c}', title=f'{c}') for c in range(num_cols)]
             self._set_celleditor()
 
