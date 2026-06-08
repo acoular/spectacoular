@@ -43,7 +43,7 @@ parser.add_argument(
     "--device",
     type=str,
     default="phantom",
-    choices=["phantom", "calib", "sounddevice", "tornado", "typhoon", "apollo"],
+    choices=["phantom", "calib", "sounddevice"],
     help="Connected device.",
 )
 parser.add_argument(
@@ -63,30 +63,6 @@ parser.add_argument(
     type=str,
     default=None,
     help="Name of microphone geometry file inside mics_dir",
-)
-parser.add_argument(
-    "--config_dir",
-    default=Path(__file__).resolve().parent / "config_files",
-    help="Directory containing config files for setting up SINUS Messtechnik Devices",
-)
-parser.add_argument(
-    "--config_name",
-    default=None,
-    help="Name of config file for setting up SINUS Messtechnik Devices",
-)
-parser.add_argument(
-    "--inventory_no",
-    type=str,
-    default="TA181",
-    help="Inventory number of the Apollo device. (Not required for other devices)",
-)
-parser.add_argument(
-    "--sinus_channel_control",
-    type=str,
-    nargs="*",  # Allows for zero or more arguments
-    default=[],  # Default is an empty list
-    choices=["AnalogInput", "AnalogOutput", "Device", "ADCToDAC", "TEDS"],
-    help="adds control tabs to measurement app",
 )
 args, _ = parser.parse_known_args()
 
@@ -119,8 +95,6 @@ def server_doc(doc):
     # =============================================================================
     # load device
     # =============================================================================
-    use_sinus = False
-
     if args.device == "sounddevice":
         from .app import SoundDeviceControl
 
@@ -147,24 +121,6 @@ def server_doc(doc):
             steer=ac.SteeringVector(grid=grid, mics=mics),
             initial_file="calib.h5" if args.device == "calib" else "rotating.h5",
         )
-    else:
-        from .app import SinusControl
-
-        grid = sp.RectGrid(
-            x_min=-0.75, x_max=0.75, y_min=-0.5, y_max=0.5, z=1.3, increment=0.015
-        )
-        control = SinusControl(
-            sinus_channel_control=args.sinus_channel_control,
-            doc=doc,
-            logger=log.logger,
-            blocksize=args.blocksize,
-            steer=ac.SteeringVector(grid=grid, mics=mics),
-            device=args.device,
-            config_dir=args.config_dir,
-            config_name=args.config_name,
-            inventory_no=args.inventory_no,
-        )
-        use_sinus = True
 
     # =============================================================================
     # DEFINE FIGURES
@@ -349,8 +305,6 @@ def server_doc(doc):
     # set up widgets for Amplitude Bar
     clip_level = NumericInput(value=120, title="Clip Level/dB", width=100)
     label_options = ["Number", "Index"]
-    if use_sinus:
-        label_options.insert(0, "Physical")
     labelSelect = Select(
         title="Select Channel Labeling:", value=label_options[0], options=label_options
     )
@@ -377,8 +331,6 @@ def server_doc(doc):
                 update_beamforming_plot()
             else:
                 update_mic_geom_plot()
-        if use_sinus:
-            control.update_buffer_bar()
 
     def update_amp_bar_plot():
         if control.disp.cdsource.data["data"].size > 0:
@@ -575,9 +527,6 @@ def server_doc(doc):
         mics_bf_tab,
         calibration.get_tab(),
     ]
-    if use_sinus:
-        for t in control.get_tab():
-            control_tabs.append(t)
 
     tabs = Tabs(tabs=control_tabs, sizing_mode="inherit", width=1700, height=800)
 
