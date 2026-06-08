@@ -11,8 +11,8 @@ from pathlib import Path
 import numpy as np
 from time import sleep
 
-from bokeh.models import TabPanel as Panel, CustomJS, ColumnDataSource
-from bokeh.layouts import column, Spacer, row, layout
+from bokeh.models import TabPanel as Panel, CustomJS
+from bokeh.layouts import column, Spacer, row
 from bokeh.models.widgets import (
     Toggle,
     TextInput,
@@ -24,10 +24,7 @@ from bokeh.models.widgets import (
     TableColumn,
     NumberEditor,
     NumericInput,
-    Slider,
 )
-from bokeh.plotting import figure
-from bokeh.models.ranges import Range1d
 
 try:
     import sounddevice as sd
