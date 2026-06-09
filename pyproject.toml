@@ -50,11 +50,6 @@ full = [
     "sounddevice",
 ]
 
-tapy = [
-    "spectacoular[full]",
-    "tapy"
-]
-
 [dependency-groups]
 docs = [
     "ipython",
@@ -117,11 +112,6 @@ name = "testpypi"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
-
-
-[tool.uv.sources]
-# for a different branch use: uv add git+ssh://git@git.tu-berlin.de/akustik/tapy.git --branch=main
-tapy = { git = "ssh://git@git.tu-berlin.de/akustik/tapy.git", branch = "dev" }
 
 
 [tool.pytest.ini_options]
