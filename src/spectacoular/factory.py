@@ -64,18 +64,29 @@ NUMERIC_TYPES = (Int, int, Float, float, CInt, CFloat)
 # Complex, complex) # Complex Numbers Missing at the Moment
 
 ALLOWED_WIDGET_TRAIT_MAPPINGS = {
-    NumericInput: NUMERIC_TYPES + (TraitCompound, Any, Delegate, Union),  # (Trait,Property,Delegate)
-    Toggle: (Bool,) + (TraitCompound, Any, Delegate, Union),
-    Select: (Enum, TraitEnum, Map, TraitMap, BaseStr, BaseFile, Union)
-    + NUMERIC_TYPES,  # Also allow numeric and string types for predefined options.
-    Slider: (Range, Union) + NUMERIC_TYPES,
+    NumericInput: (*NUMERIC_TYPES, TraitCompound, Any, Delegate, Union),  # (Trait,Property,Delegate)
+    Toggle: (Bool, TraitCompound, Any, Delegate, Union),
+    Select: (
+        Enum,
+        TraitEnum,
+        Map,
+        TraitMap,
+        BaseStr,
+        BaseFile,
+        Union,
+        *NUMERIC_TYPES,
+    ),  # Also allow numeric and string types for predefined options.
+    Slider: (Range, Union, *NUMERIC_TYPES),
     DataTable: (Array, CArray, List, Tuple, Union),
     TextInput: (
         BaseStr,
         Str,
         BaseFile,
-    )
-    + (TraitCompound, Any, Delegate, Union),
+        TraitCompound,
+        Any,
+        Delegate,
+        Union,
+    ),
     MultiSelect: (List, Union),
 }
 
@@ -147,25 +158,22 @@ def widget_mapper_factory(obj, traitname, widget_type):
     None.
 
     """
-    # validation
     validate_mapping_is_allowed(obj, traitname, widget_type)
-    # factory
-    if widget_type is NumericInput:
-        return NumericInputMapper(obj, traitname)
-    if widget_type is Toggle:
-        return ToggleMapper(obj, traitname)
-    if widget_type is TextInput:
-        return TextInputMapper(obj, traitname)
-    if widget_type is Select:
-        return SelectMapper(obj, traitname)
-    if widget_type is Slider:
-        return SliderMapper(obj, traitname)
-    if widget_type is DataTable:
-        return DataTableMapper(obj, traitname)
-    if widget_type is MultiSelect:
-        return MultiSelectMapper(obj, traitname)
-    msg = f'mapping for widget type {widget_type} does not exist!'
-    raise NotImplementedError(msg)
+
+    mapper_types = {
+        NumericInput: NumericInputMapper,
+        Toggle: ToggleMapper,
+        TextInput: TextInputMapper,
+        Select: SelectMapper,
+        Slider: SliderMapper,
+        DataTable: DataTableMapper,
+        MultiSelect: MultiSelectMapper,
+    }
+    mapper_type = mapper_types.get(widget_type)
+    if mapper_type is None:
+        msg = f'mapping for widget type {widget_type} does not exist!'
+        raise NotImplementedError(msg)
+    return mapper_type(obj, traitname)
 
 
 def get_widgets(self, trait_widget_mapper=None, trait_widget_args=None):
@@ -879,7 +887,7 @@ class SelectMapper(TraitWidgetMapper):
             options = [self.traitvalue]
         else:
             msg = f'Unknown trait type {self.traittype}'
-            raise ValueError(msg)
+            raise TypeError(msg)
         self._validate_options(options)
         return options
 
@@ -1057,10 +1065,10 @@ class DataTableMapper(TraitWidgetMapper):
         """
         self.widget = widget
         if isinstance(self.traittype, List):
-            value = list(self.widget.source.data.values())[0]
+            value = next(iter(self.widget.source.data.values()))
             setattr(self.obj, self.traitname, value)
         elif isinstance(self.traittype, Tuple):
-            value = tuple(list(self.widget.source.data.values())[0])
+            value = tuple(next(iter(self.widget.source.data.values())))
             setattr(self.obj, self.traitname, value)
         else:
             value = np.array(list(self.widget.source.data.values())).T
@@ -1180,7 +1188,7 @@ class DataTableMapper(TraitWidgetMapper):
             def callback(attr, old, new):
                 del attr, old
                 current_value = getattr(self.obj, self.traitname)
-                new_value = list(new.values())[0]
+                new_value = next(iter(new.values()))
                 if current_value != new_value:
                     setattr(self.obj, self.traitname, new_value)
         elif isinstance(self.traittype, Tuple):
@@ -1188,7 +1196,7 @@ class DataTableMapper(TraitWidgetMapper):
             def callback(attr, old, new):
                 del attr, old
                 current_value = getattr(self.obj, self.traitname)
-                new_value = tuple(list(new.values())[0])
+                new_value = tuple(next(iter(new.values())))
                 if current_value != new_value:
                     setattr(self.obj, self.traitname, new_value)
         else:  # array type
