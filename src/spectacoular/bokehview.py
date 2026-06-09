@@ -47,6 +47,9 @@ from acoular import (
     Trigger,
     WriteH5,
 )
+
+from .factory import get_widgets, set_widgets
+
 from bokeh.models.widgets import (
     DataTable,
     MultiSelect,
@@ -58,8 +61,6 @@ from bokeh.models.widgets import (
     TextInput,
     Toggle,
 )
-
-from .factory import get_widgets, set_widgets
 
 
 def add_bokeh_attr(cls, trait_widget_mapper, trait_widget_args):

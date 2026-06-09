@@ -3,6 +3,10 @@
 from pathlib import Path
 
 import acoular as ac
+
+from .dprocess import MicGeomPresenter
+from .factory import BaseSpectacoular, get_widgets
+
 import bokeh
 import numpy as np
 from bokeh.plotting import figure
@@ -16,9 +20,6 @@ from traits.api import (
     cached_property,
     observe,
 )
-
-from .dprocess import MicGeomPresenter
-from .factory import BaseSpectacoular, get_widgets
 
 
 def get_mic_files():

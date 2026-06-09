@@ -12,8 +12,9 @@
 
 import threading
 
-import numpy as np
 from acoular import TimeOut
+
+import numpy as np
 from bokeh.models import ColumnDataSource
 from traits.api import (
     Array,

@@ -45,11 +45,12 @@ To start the Bokeh server, one can run the following command in the terminal:
 #
 # Let's begin by importing Acoular and setting up the simulation pipeline for the three sources example.
 
-import acoular as ac
-import spectacoular as sp
 from pathlib import Path
 
-mg = ac.MicGeom(file=Path(ac.__file__).parent / "xml" / "array_64.xml")
+import acoular as ac
+import spectacoular as sp
+
+mg = ac.MicGeom(file=Path(ac.__file__).parent / 'xml' / 'array_64.xml')
 
 # create time data source
 three_sources = ac.demo.create_three_sources(mg)
@@ -65,7 +66,7 @@ rg = ac.RectGrid(x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=-0.3, increment
 
 # set up the beamformer
 bb = ac.BeamformerBase(
-    freq_data=ac.PowerSpectra(source=three_sources, block_size=128, window="Hanning"),
+    freq_data=ac.PowerSpectra(source=three_sources, block_size=128, window='Hanning'),
     steer=ac.SteeringVector(grid=rg, mics=mg),
 )
 
@@ -93,38 +94,35 @@ grid_grid = gridplot(list(sp.get_widgets(rg).values()), ncols=2, width=150)
 # The :class:`~bokeh.models.Image` glyph requires us to specify the x and y coordinate sof the bottom
 # left grid corner, the width and height of the grid, and the sound pressure to be displayed.
 
-from bokeh.plotting import figure  # noqa: E402
 from bokeh.models import ColumnDataSource, LinearColorMapper  # noqa: E402
 from bokeh.palettes import viridis  # noqa: E402
+from bokeh.plotting import figure  # noqa: E402
 
-
-source_plot = figure(title="Acoular Three Sources", tools="hover,reset,pan,wheel_zoom")
+source_plot = figure(title='Acoular Three Sources', tools='hover,reset,pan,wheel_zoom')
 
 cds = ColumnDataSource(
     data={
-        "bfdata": [res],
-        "x": [rg.x_min],
-        "y": [rg.y_min],
-        "dw": [rg.x_max - rg.x_min],
-        "dh": [rg.y_max - rg.y_min],
+        'bfdata': [res],
+        'x': [rg.x_min],
+        'y': [rg.y_min],
+        'dw': [rg.x_max - rg.x_min],
+        'dh': [rg.y_max - rg.y_min],
     }
 )
 
-color_mapper = LinearColorMapper(
-    palette=viridis(100), low=res.max() - 20, high=res.max()
-)
+color_mapper = LinearColorMapper(palette=viridis(100), low=res.max() - 20, high=res.max())
 
 
 source_plot.image(
     color_mapper=color_mapper,
-    image="bfdata",
-    x="x",
-    y="y",
-    dw="dw",
-    dh="dh",
+    image='bfdata',
+    x='x',
+    y='y',
+    dw='dw',
+    dh='dh',
     alpha=0.9,
-    anchor="bottom_left",
-    origin="bottom_left",
+    anchor='bottom_left',
+    origin='bottom_left',
     source=cds,
 )
 
@@ -161,9 +159,7 @@ freqs = bb.freq_data.fftfreq()
 df = int(bb.freq_data.sample_freq / bb.freq_data.block_size)
 
 
-freq_slider = Slider(
-    title="f/Hz", value=bf_presenter.freq, start=freqs[1], end=freqs[-1], step=df
-)
+freq_slider = Slider(title='f/Hz', value=bf_presenter.freq, start=freqs[1], end=freqs[-1], step=df)
 
 bf_presenter.set_widgets(freq=freq_slider)
 
@@ -172,8 +168,8 @@ bf_presenter.set_widgets(freq=freq_slider)
 # document, which allows for interaction with the widgets and the figure in a web browser.
 #
 
-from bokeh.layouts import column, row  # noqa: E402
 from bokeh.io import curdoc  # noqa: E402
+from bokeh.layouts import column, row  # noqa: E402
 
 widget_layout = column(freq_slider, grid_grid)
 layout = row(widget_layout, source_plot)
