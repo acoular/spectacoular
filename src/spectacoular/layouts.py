@@ -52,9 +52,9 @@ class MicGeomComponent(BaseSpectacoular):
 
     widgets = Property()
 
-    allow_point_draw = Bool(False)
+    allow_point_draw = Bool(default_value=False)
 
-    mirror_view = Bool(False)
+    mirror_view = Bool(default_value=False)
 
     mic_size = Int(10)
 
