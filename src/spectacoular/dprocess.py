@@ -13,6 +13,9 @@
     TimeSamplesPresenter
 """
 
+from typing import ClassVar
+
+import numpy as np
 from acoular import (
     BeamformerBase,
     L_p,
@@ -23,8 +26,6 @@ from acoular import (
 )
 
 from .factory import BaseSpectacoular
-
-import numpy as np
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import DataTable, NumericInput
 from traits.api import Bool, Float, Instance, Int, List, Trait, observe
@@ -49,7 +50,7 @@ class BasePresenter(BaseSpectacoular):
     cdsource = Instance(ColumnDataSource, args=())
 
     auto_update = Bool(
-        False,
+        default_value=False,
         desc='If True, the presenter will update the data source when the digest changes.',
     )
 
@@ -168,12 +169,12 @@ class BeamformerPresenter(BasePresenter):
     #: Trait to set the band center frequency to be considered.
     freq = Float(None, desc='Band center frequency. ')
 
-    trait_widget_mapper = {
+    trait_widget_mapper: ClassVar[dict[str, type]] = {
         'num': NumericInput,
         'freq': NumericInput,
     }
 
-    trait_widget_args = {
+    trait_widget_args: ClassVar[dict[str, dict[str, bool]]] = {
         'num': {'disabled': False},
         'freq': {'disabled': False},
     }
@@ -262,11 +263,11 @@ class TimeSamplesPresenter(BasePresenter):
     # Number of samples to appear in the plot, best practice is to use the width of the plot
     _numsubsamples = Int(-1)
 
-    trait_widget_mapper = {
+    trait_widget_mapper: ClassVar[dict[str, type]] = {
         'channels': DataTable,
     }
 
-    trait_widget_args = {
+    trait_widget_args: ClassVar[dict[str, dict[str, bool]]] = {
         'channels': {'disabled': False},
     }
 
