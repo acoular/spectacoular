@@ -125,7 +125,14 @@ filterwarnings = [
 
 [tool.ruff]
 extend = ".venv/share/ruff/ruff.acoular.toml"
-extend-exclude = ["docs/_build", "docs/auto_examples", "src/spectacoular/apps"]
+extend-exclude = [
+    "docs/_build",
+    "docs/auto_examples",
+    "docs/conf.py",
+    "examples",
+    "tests",
+    "src/spectacoular/apps",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "src/spectacoular/__init__.py" = ["ALL"]
