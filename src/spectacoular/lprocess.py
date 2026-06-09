@@ -15,7 +15,9 @@ Some of these classes might move to the Acoular module in the future.
 """
 
 from datetime import UTC, datetime
+from pathlib import Path
 from time import sleep, time
+from typing import ClassVar
 
 import acoular as ac
 from acoular.deprecation import deprecated_alias
@@ -63,9 +65,9 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
     time_delay = Float(desc='Time interval between individual blocks of data')
 
     #: Indicates if samples are collected, helper trait to break result loop
-    collect_samples = Bool(True, desc='Indicates if result function is running')
+    collect_samples = Bool(default_value=True, desc='Indicates if result function is running')
 
-    trait_widget_mapper = {
+    trait_widget_mapper: ClassVar[dict[str, type]] = {
         'file': TextInput,
         'basename': TextInput,
         'start': NumericInput,
@@ -76,7 +78,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
         'num_channels': NumericInput,
         'time_delay': NumericInput,
     }
-    trait_widget_args = {
+    trait_widget_args: ClassVar[dict[str, dict[str, object]]] = {
         'file': {'disabled': False},
         'basename': {'disabled': True},
         'start': {'disabled': False, 'mode': 'int'},
@@ -188,7 +190,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     # internal identifier
     digest = Property(depends_on=['source.digest', '__class__'])
 
-    trait_widget_mapper = {
+    trait_widget_mapper: ClassVar[dict[str, type]] = {
         'file': TextInput,
         'magnitude': NumericInput,
         'buffer_size': NumericInput,
@@ -196,7 +198,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
         'delta': NumericInput,
     }
 
-    trait_widget_args = {
+    trait_widget_args: ClassVar[dict[str, dict[str, object]]] = {
         'file': {'disabled': False},
         'magnitude': {'disabled': False, 'mode': 'float'},
         'buffer_size': {'disabled': False, 'mode': 'int'},
@@ -229,7 +231,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
         """Save the current calibration factors as an XML file."""
         self.create_filename()
 
-        with open(self.name, 'w') as f:
+        with Path(self.name).open('w') as f:
             f.write(f'<?xml version="1.0" encoding="utf-8"?>\n<Calib name="{self.name}">\n')
             for i in range(self.num_channels):
                 channel_string = str(i + 1)
@@ -321,11 +323,11 @@ if ac.config.have_sounddevice:
         # current frame played back
         # currentframe = Int()
 
-        trait_widget_mapper = {
+        trait_widget_mapper: ClassVar[dict[str, type]] = {
             'channels': DataTable,
         }
 
-        trait_widget_args = {
+        trait_widget_args: ClassVar[dict[str, dict[str, object]]] = {
             'channels': {'disabled': False, 'columns': columns},
         }
 
