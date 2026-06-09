@@ -15,7 +15,6 @@
 
 from typing import ClassVar
 
-import numpy as np
 from acoular import (
     BeamformerBase,
     L_p,
@@ -26,6 +25,8 @@ from acoular import (
 )
 
 from .factory import BaseSpectacoular
+
+import numpy as np
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import DataTable, NumericInput
 from traits.api import Bool, Float, Instance, Int, List, Trait, observe
