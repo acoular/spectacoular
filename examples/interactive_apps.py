@@ -56,7 +56,10 @@ from bokeh.models.widgets import Slider
 from bokeh.palettes import viridis
 from bokeh.plotting import figure
 
-mg = ac.MicGeom(file=Path(ac.__file__).parent / "xml" / "array_64.xml")
+import acoular as ac
+import spectacoular as sp
+
+mg = ac.MicGeom(file=Path(ac.__file__).parent / 'xml' / 'array_64.xml')
 
 # create time data source
 three_sources = ac.demo.create_three_sources(mg)
@@ -72,7 +75,7 @@ rg = ac.RectGrid(x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=-0.3, increment
 
 # set up the beamformer
 bb = ac.BeamformerBase(
-    freq_data=ac.PowerSpectra(source=three_sources, block_size=128, window="Hanning"),
+    freq_data=ac.PowerSpectra(source=three_sources, block_size=128, window='Hanning'),
     steer=ac.SteeringVector(grid=rg, mics=mg),
 )
 
@@ -102,29 +105,27 @@ source_plot = figure(title="Acoular Three Sources", tools="hover,reset,pan,wheel
 
 cds = ColumnDataSource(
     data={
-        "bfdata": [res],
-        "x": [rg.x_min],
-        "y": [rg.y_min],
-        "dw": [rg.x_max - rg.x_min],
-        "dh": [rg.y_max - rg.y_min],
+        'bfdata': [res],
+        'x': [rg.x_min],
+        'y': [rg.y_min],
+        'dw': [rg.x_max - rg.x_min],
+        'dh': [rg.y_max - rg.y_min],
     }
 )
 
-color_mapper = LinearColorMapper(
-    palette=viridis(100), low=res.max() - 20, high=res.max()
-)
+color_mapper = LinearColorMapper(palette=viridis(100), low=res.max() - 20, high=res.max())
 
 
 source_plot.image(
     color_mapper=color_mapper,
-    image="bfdata",
-    x="x",
-    y="y",
-    dw="dw",
-    dh="dh",
+    image='bfdata',
+    x='x',
+    y='y',
+    dw='dw',
+    dh='dh',
     alpha=0.9,
-    anchor="bottom_left",
-    origin="bottom_left",
+    anchor='bottom_left',
+    origin='bottom_left',
     source=cds,
 )
 
@@ -159,9 +160,7 @@ freqs = bb.freq_data.fftfreq()
 df = int(bb.freq_data.sample_freq / bb.freq_data.block_size)
 
 
-freq_slider = Slider(
-    title="f/Hz", value=bf_presenter.freq, start=freqs[1], end=freqs[-1], step=df
-)
+freq_slider = Slider(title='f/Hz', value=bf_presenter.freq, start=freqs[1], end=freqs[-1], step=df)
 
 bf_presenter.set_widgets(freq=freq_slider)
 

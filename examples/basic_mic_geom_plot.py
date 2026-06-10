@@ -22,12 +22,12 @@ an XML file using the Acoular package and Bokeh for visualization.
 # %%
 # First, we import the necessary modules.
 
-import acoular as ac
-
 from pathlib import Path
 from bokeh.io import show
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
+
+import acoular as ac
 
 # %%
 # Next, we set up the microphone geometry by using Acoular's :class:`~acoular.microphones.MicGeom` class.
@@ -37,7 +37,7 @@ from bokeh.plotting import figure
 # we use the :class:`~pathlib.Path` object to dynamically construct the path relative to the
 # Acoular package location.
 
-mics = ac.MicGeom(file=Path(ac.__file__).parent / "xml" / "tub_vogel64.xml")
+mics = ac.MicGeom(file=Path(ac.__file__).parent / 'xml' / 'tub_vogel64.xml')
 
 # %%
 # The :class:`~acoular.microphones.MicGeom` class stores the microphone positions in an attribute
@@ -48,9 +48,9 @@ mics = ac.MicGeom(file=Path(ac.__file__).parent / "xml" / "tub_vogel64.xml")
 # Now, let's create a Bokeh :class:`~bokeh.plotting.figure` to visualize the microphone positions.
 
 figure = figure(
-    title="Microphone Geometry",
-    tools="hover,zoom_in,zoom_out,reset,lasso_select",
-    sizing_mode="stretch_width",
+    title='Microphone Geometry',
+    tools='hover,zoom_in,zoom_out,reset,lasso_select',
+    sizing_mode='stretch_width',
     match_aspect=True,
 )
 
@@ -69,11 +69,11 @@ source = ColumnDataSource(data={"x": mics.pos_total[0], "y": mics.pos_total[1]})
 # In this case, we will use the :meth:`~bokeh.plotting.figure.circle` method to create a
 # :class:`~bokeh.models.glyphs.Circle` to represent the microphones.
 figure.circle(
-    x="x",
-    y="y",
+    x='x',
+    y='y',
     radius=0.02,
-    line_color="black",
-    fill_color="#1F77B4",
+    line_color='black',
+    fill_color='#1F77B4',
     fill_alpha=0.4,
     source=source,
 )

@@ -27,6 +27,8 @@ using the SpectAcoular package.
 # Similar to the :ref:`basic_mic_geom_plot`, we will first import the necessary modules and set up
 # the microphone geometry plot.
 
+from pathlib import Path
+
 import acoular as ac
 import spectacoular as sp
 
@@ -39,23 +41,23 @@ from bokeh.plotting import figure
 
 # set up the figure
 figure = figure(
-    title="Microphone Geometry",
-    tools="hover,zoom_in,zoom_out,reset,lasso_select",
+    title='Microphone Geometry',
+    tools='hover,zoom_in,zoom_out,reset,lasso_select',
     match_aspect=True,
 )
 
 # set up the microphone geometry
-default_xml_file = Path(ac.__file__).parent / "xml" / "tub_vogel64.xml"
+default_xml_file = Path(ac.__file__).parent / 'xml' / 'tub_vogel64.xml'
 mics = sp.MicGeom(file=default_xml_file)
 
 # add circles to the figure to represent the microphones
-cds = ColumnDataSource(data={"x": mics.pos_total[0], "y": mics.pos_total[1]})
+cds = ColumnDataSource(data={'x': mics.pos_total[0], 'y': mics.pos_total[1]})
 glyph = figure.circle(
-    x="x",
-    y="y",
+    x='x',
+    y='y',
     radius=0.02,
-    line_color="black",
-    fill_color="#1F77B4",
+    line_color='black',
+    fill_color='#1F77B4',
     fill_alpha=0.4,
     source=cds,
 )
@@ -80,10 +82,10 @@ glyph = figure.circle(
 # most of Acoular's classes.
 
 numeric_widgets = mics.get_widgets(
-    {"aperture": NumericInput, "num_mics": NumericInput},
+    {'aperture': NumericInput, 'num_mics': NumericInput},
     {
-        "aperture": {"title": "Aperture/m", "disabled": True},
-        "num_mics": {"title": "Number of Mics", "disabled": True},
+        'aperture': {'title': 'Aperture/m', 'disabled': True},
+        'num_mics': {'title': 'Number of Mics', 'disabled': True},
     },
 )
 
@@ -95,21 +97,21 @@ numeric_widgets = mics.get_widgets(
 
 editor = NumberEditor()
 pos_table = [
-    TableColumn(field="x", title="x/m", editor=editor),
-    TableColumn(field="y", title="y/m", editor=editor),
-    TableColumn(field="z", title="z/m", editor=editor),
+    TableColumn(field='x', title='x/m', editor=editor),
+    TableColumn(field='y', title='y/m', editor=editor),
+    TableColumn(field='z', title='z/m', editor=editor),
 ]
 
 # get the widgets for the MicGeom instance
 data_table_widget = mics.get_widgets(
-    {"pos_total": DataTable},
+    {'pos_total': DataTable},
     {
-        "pos_total": {
-            "height": 450,
-            "transposed": True,
-            "columns": pos_table,
-            "source": cds,
-            "editable": True,
+        'pos_total': {
+            'height': 450,
+            'transposed': True,
+            'columns': pos_table,
+            'source': cds,
+            'editable': True,
         }
     },
 )

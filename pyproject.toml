@@ -64,7 +64,7 @@ docs = [
     "sphinx_gallery",
 ]
 
-lint = ["ruff==0.14.2"]
+lint = ["acoular-ruff @ git+https://github.com/acoular/ci.git@ruff-v1.0"]
 
 tests = [
     "diff_cover",
@@ -124,3 +124,19 @@ filterwarnings = [
     # Suppress warnings about unclosed files in tables at the end of the tests
     "ignore:Closing remaining open file*:tables.exceptions.UnclosedFileWarning",
 ]
+
+
+[tool.ruff]
+extend = ".venv/share/ruff/ruff.acoular.toml"
+extend-exclude = [
+    "docs/_build",
+    "docs/auto_examples",
+    "docs/conf.py",
+    "examples",
+    "tests",
+    "src/spectacoular/apps",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/spectacoular/__init__.py" = ["ALL"]
+"src/spectacoular/version.py" = ["ALL"]
