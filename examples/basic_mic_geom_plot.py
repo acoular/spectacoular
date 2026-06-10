@@ -63,7 +63,7 @@ figure = figure(
 # data in the plot easily. Since we create a 2D plot, we only need the *x*
 # and *y* coordinates of the microphones.
 
-source = ColumnDataSource(data={"x": mics.pos_total[0], "y": mics.pos_total[1]})
+source = ColumnDataSource(data={'x': mics.pos_total[0], 'y': mics.pos_total[1]})
 
 # %%
 # In addition, we need to decide which

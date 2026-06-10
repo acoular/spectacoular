@@ -130,15 +130,11 @@ figure.toolbar.active_tap = draw_tool
 # %%
 # Let's create a layout that contains the figure and the widgets.
 
-widget_column = column(
-    *numeric_widgets.values(), *data_table_widget.values(), width=400
-)
+widget_column = column(*numeric_widgets.values(), *data_table_widget.values(), width=400)
 layout = row(figure, widget_column)
 show(layout)  # Show the plot in a new browser window
 
 # %%
 # The following code is for Bokeh server apps only.
 
-curdoc().add_root(
-    layout
-)  # Add the layout to the current document for Bokeh server apps
+curdoc().add_root(layout)  # Add the layout to the current document for Bokeh server apps

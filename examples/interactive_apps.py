@@ -98,7 +98,7 @@ grid_grid = gridplot(list(sp.get_widgets(rg).values()), ncols=2, width=150)
 # *y* coordinates of the bottom-left grid corner, the width and height of
 # the grid, and the sound pressure to be displayed.
 
-source_plot = figure(title="Acoular Three Sources", tools="hover,reset,pan,wheel_zoom")
+source_plot = figure(title='Acoular Three Sources', tools='hover,reset,pan,wheel_zoom')
 
 cds = ColumnDataSource(
     data={
