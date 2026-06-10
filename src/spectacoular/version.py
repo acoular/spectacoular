@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
-__author__ = "Acoular Development Team"
-__version__ = "26.04"
+__author__ = 'Acoular Development Team'
+__version__ = '26.04'
