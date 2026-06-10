@@ -10,38 +10,25 @@ The documentation for the SpectAcoular package is available at [https://acoular.
 
 ## Quick Start
 
-To install **SpectAcoular**, one can use the Anaconda Python distribution or the Python package manager `pip`. The following instructions describe how to install SpectAcoular using the Anaconda Python distribution.
-In the command line, type:
+Install **SpectAcoular** with `uv`:
 
 ```console
-$ conda install -c acoular spectacoular
+$ uv venv
+$ uv pip install spectacoular
 ```
 
-This will install SpectAcoular in your Anaconda Python environment and make the SpectAcoular library available from Python. In addition, this will install all dependencies (those other packages mentioned above) if they are not already present on your system.
-
-Alternatively, one can use `pip` to install SpectAcoular. In the command line, type:
+To install optional dependencies needed for live-audio and measurement applications, use:
 
 ```console
-$ pip install spectacoular
+$ uv pip install 'spectacoular[full]'
 ```
 
-Note that for some pre-built applications, additional optional packages are required:
-
-- `python-sounddevice` (for sound output)
-- `opencv` (for image display)
-
-When using pip, one can install the optional packages by specifying the `full` option:
+To verify your installation, start one of the included applications:
 
 ```console
-$ pip install spectacoular[full]
+$ uv run micgeom_app --show
 ```
 
-If you use conda, optional packages are not included and need to be installed separately. To verify your installation, you can run one of the pre-built interactive applications (e.g. MicGeomExample app). To do so, type the following command in a dedicated console (e.g. shell):
+A browser window or tab should open with the microphone geometry application.
 
-```console
-$ micgeom_app
-```
-
-A new window should appear in the browser running the application.
-
-    
+For more detailed installation instructions, see the [installation guide](https://acoular.github.io/spectacoular/install/index.html).

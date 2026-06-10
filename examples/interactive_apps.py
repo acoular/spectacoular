@@ -26,11 +26,11 @@ in an update of the plot, since the HTML document is static and does not allow f
 the Python code. Instead, it is necessary to run a Bokeh server application hosting the Python code
 to which the client can listen for updates of the data.
 
-To start the Bokeh server, one can run the following command in the terminal:
+To start the Bokeh server, run the following command in the terminal:
 
-.. code-block:: bash
+.. code-block:: console
 
-    bokeh serve --show spectacoular/examples/interactive_apps.py
+    $ bokeh serve --show examples/interactive_apps.py
 
 
 .. bokeh-plot:: ../examples/interactive_apps.py
@@ -43,9 +43,18 @@ To start the Bokeh server, one can run the following command in the terminal:
 # Create three sources example
 # -----------------------------
 #
-# Let's begin by importing Acoular and setting up the simulation pipeline for the three sources example.
+# Let's begin with the necessary imports and setting up the simulation pipeline for the three sources example.
 
 from pathlib import Path
+
+import acoular as ac
+import spectacoular as sp
+from bokeh.io import curdoc
+from bokeh.layouts import column, gridplot, row
+from bokeh.models import ColumnDataSource, LinearColorMapper
+from bokeh.models.widgets import Slider
+from bokeh.palettes import viridis
+from bokeh.plotting import figure
 
 import acoular as ac
 import spectacoular as sp
@@ -80,8 +89,6 @@ res = ac.L_p(bb.synthetic(f=4000, num=3)).T
 # To enable interactive changes to the beamforming result, we will create some widgets based on the
 # existing processing chain, arranged in a grid layout.
 
-from bokeh.layouts import gridplot  # noqa: E402
-
 grid_grid = gridplot(list(sp.get_widgets(rg).values()), ncols=2, width=150)
 
 
@@ -91,14 +98,10 @@ grid_grid = gridplot(list(sp.get_widgets(rg).values()), ncols=2, width=150)
 #
 # To visualize the beamforming result, we will create figure and use Bokeh's
 # :class:`~bokeh.models.Image` glyph, which allows us to display 2D source mappings.
-# The :class:`~bokeh.models.Image` glyph requires us to specify the x and y coordinate sof the bottom
+# The :class:`~bokeh.models.Image` glyph requires us to specify the *x* and *y* coordinates of the bottom
 # left grid corner, the width and height of the grid, and the sound pressure to be displayed.
 
-from bokeh.models import ColumnDataSource, LinearColorMapper  # noqa: E402
-from bokeh.palettes import viridis  # noqa: E402
-from bokeh.plotting import figure  # noqa: E402
-
-source_plot = figure(title='Acoular Three Sources', tools='hover,reset,pan,wheel_zoom')
+source_plot = figure(title="Acoular Three Sources", tools="hover,reset,pan,wheel_zoom")
 
 cds = ColumnDataSource(
     data={
@@ -153,8 +156,6 @@ bf_presenter = sp.BeamformerPresenter(
 # However, this time, we will take a different approach and assign an existing widget to the `freq`
 # trait via the :func:`~spectacoular.factory.set_widgets` function.
 
-from bokeh.models.widgets import Slider  # noqa: E402
-
 freqs = bb.freq_data.fftfreq()
 df = int(bb.freq_data.sample_freq / bb.freq_data.block_size)
 
@@ -167,9 +168,6 @@ bf_presenter.set_widgets(freq=freq_slider)
 # To handle interaction, we will use the Bokeh `curdoc()` function to add the layout to the current
 # document, which allows for interaction with the widgets and the figure in a web browser.
 #
-
-from bokeh.io import curdoc  # noqa: E402
-from bokeh.layouts import column, row  # noqa: E402
 
 widget_layout = column(freq_slider, grid_grid)
 layout = row(widget_layout, source_plot)

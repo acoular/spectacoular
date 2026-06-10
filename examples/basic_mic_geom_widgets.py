@@ -16,7 +16,8 @@ using the SpectAcoular package.
 
 
 .. note::
-    For full interactivity, this example should be run as a Bokeh server application.
+    This example can be rendered as a standalone Bokeh document, but full interactivity
+    with Python callbacks requires running it as a Bokeh server application.
 
 """
 # %%
@@ -31,7 +32,11 @@ from pathlib import Path
 import acoular as ac
 import spectacoular as sp
 
-from bokeh.models import ColumnDataSource
+from pathlib import Path
+from bokeh.io import curdoc, show
+from bokeh.layouts import column, row
+from bokeh.models import ColumnDataSource, NumberEditor, PointDrawTool, TableColumn
+from bokeh.models.widgets import DataTable, NumericInput
 from bokeh.plotting import figure
 
 # set up the figure
@@ -63,12 +68,9 @@ glyph = figure.circle(
 # --------------------------
 #
 # The :class:`~acoular.microphones.MicGeom` class provides several attributes, known as traits, that can be used to
-# either provide additional information about the microphone array or to modify the geometry.
-#
-print(mics.traits().keys())
-
-# Out:
-# ['num_mics', 'center', 'aperture', 'file', 'pos_total', 'pos',  ...]
+# either provide additional information about the microphone array or to modify the geometry. In this example,
+# we focus on the most relevant ones for widget creation: :attr:`~acoular.microphones.MicGeom.num_mics`,
+# :attr:`~acoular.microphones.MicGeom.aperture`, and :attr:`~acoular.microphones.MicGeom.pos_total`.
 
 # %%
 # Let's say we want to know about the number of microphones (:attr:`~acoular.microphones.MicGeom.num_mics`) and
@@ -78,8 +80,6 @@ print(mics.traits().keys())
 # Defining each trait to widget mapping individually can become cumbersome, and not all
 # widgets are suitable for all traits. Therefore, SpectAcoular provides default widget mapping for
 # most of Acoular's classes.
-
-from bokeh.models.widgets import NumericInput  # noqa: E402
 
 numeric_widgets = mics.get_widgets(
     {'aperture': NumericInput, 'num_mics': NumericInput},
@@ -94,9 +94,6 @@ numeric_widgets = mics.get_widgets(
 # and to display the coodinates in a table format. Both can be achieved by using Bokeh's
 # :class:`~bokeh.models.DataTable` widget. In addition, we will use the
 # :class:`~bokeh.models.NumberEditor` to allow the user to edit the values in the table.
-
-from bokeh.models import NumberEditor, TableColumn  # noqa: E402
-from bokeh.models.widgets import DataTable  # noqa: E402
 
 editor = NumberEditor()
 pos_table = [
@@ -123,8 +120,6 @@ data_table_widget = mics.get_widgets(
 # Finally, we want to allow the user to add or remove microphones from the microphone array.
 # Therefore, we will use the :class:`~bokeh.models.tools.PointDrawTool`.
 
-from bokeh.models import PointDrawTool  # noqa: E402
-
 draw_tool = PointDrawTool(renderers=[glyph], empty_value=0.0)
 
 figure.add_tools(draw_tool)
@@ -134,16 +129,15 @@ figure.toolbar.active_tap = draw_tool
 # %%
 # Let's create a layout that contains the figure and the widgets.
 
-from bokeh.io import show  # noqa: E402
-from bokeh.layouts import column, row  # noqa: E402
-
-widget_column = column(*numeric_widgets.values(), *data_table_widget.values(), width=400)
+widget_column = column(
+    *numeric_widgets.values(), *data_table_widget.values(), width=400
+)
 layout = row(figure, widget_column)
 show(layout)  # Show the plot in a new browser window
 
 # %%
 # The following code is for Bokeh server apps only.
 
-from bokeh.io import curdoc  # noqa: E402
-
-curdoc().add_root(layout)  # Add the layout to the current document for Bokeh server apps
+curdoc().add_root(
+    layout
+)  # Add the layout to the current document for Bokeh server apps

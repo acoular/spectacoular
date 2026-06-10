@@ -23,6 +23,7 @@ We welcome your feedback, suggestions, or reports of success using SpectAcoular 
    install/index.rst
    user_guide/index.rst
    api_ref/index_apiref.rst
+   news/index.rst
 
 
 

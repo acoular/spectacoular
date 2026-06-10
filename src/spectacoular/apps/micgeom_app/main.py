@@ -198,7 +198,7 @@ def server_doc(doc):
     layout_dom = layout([[mic_layout.figure, psf_figure, control]])
 
     doc.add_root(layout_dom)
-    doc.title = "MicGeomExample"
+    doc.title = "Microphone Geometry App"
 
 
 if __name__ == "__main__":

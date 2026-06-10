@@ -574,13 +574,17 @@ class Calibration:
         return self.doc.add_next_tick_callback(self._calibtable_callback)
 
     def _save_calib_callback(self):
-        if not self.cal_widgets["file"].value:
+        file_value = self.cal_widgets["file"].value
+        if not file_value:
             fname = (
-                Path("Measurement_App") / "metadata" / f"calibdata_{current_time()}.xml"
+                Path("measurement_app") / "metadata" / f"calibdata_{current_time()}.xml"
             )
-            self.cal_widgets["file"].value = fname
         else:
-            fname = self.cal_widgets["file"].value
+            fname = Path(file_value)
+
+        fname.parent.mkdir(parents=True, exist_ok=True)
+        self.cal_widgets["file"].value = str(fname)
+        self.control.calib.file = str(fname)
         self.control.calib.save()
 
     def get_widgets(self):

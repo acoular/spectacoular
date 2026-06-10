@@ -2,6 +2,7 @@
 *.pyc
 *.pyd
 *.SEC
+*.log
 
 # ignore directories:
 __pycache__/
@@ -12,15 +13,13 @@ _build/
 *.egg-info/
 .eggs/
 
-apps/Measurement_App/static/two_sources_one_moving_10s.h5
-apps/Measurement_App/data/
-*.log
+src/spectacoular/apps/measurement_app/data/
+src/spectacoular/apps/measurement_app/metadata/
+
 */api_ref/generated/
 */auto_examples/*
-docs/_build
-copy_html.sh
+docs/sg_execution_times.rst
 
 tests/.hypothesis/*
 .vscode/launch.json
 .vscode/settings.json
-*/three_sources.h5

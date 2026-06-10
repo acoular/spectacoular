@@ -57,7 +57,10 @@ docs = [
     "matplotlib",
     "numpydoc",
     "pickleshare",
+    "pydata-sphinx-theme",
     "sphinx",
+    "sphinx-copybutton",
+    "sphinx-design",
     "sphinx_gallery",
 ]
 

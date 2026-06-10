@@ -3,32 +3,26 @@
 Sound Level Meter App
 =====================
 
-This application can be used to analyse an audio stream with any input device available. The application can be used as a sound level meter and oscilloscope.
+This application can be used to analyze an audio stream with any available input device. It can be used as a sound level meter and oscilloscope.
 
-Serving the Application:
+Starting the application
 ------------------------
 
-One can run the application by simply running 
+If SpectAcoular is installed in an activated environment, start the application with:
 
 .. code-block:: console
 
-    $ slm_app --show
+    $ level_meter_app --show
 
-in the command line or by navigating to the `spectacoular/apps` folder and typing the following command in a dedicated console (e.g. shell)
+If you installed SpectAcoular with ``uv`` and did not activate the environment, run:
 
 .. code-block:: console
 
-    $ bokeh serve --show SLM
+    $ uv run level_meter_app --show
 
+Starting this application produces the following interactive interface in your browser:
 
-Serving this application produces the following interactive interface in your browser:
-
-   
 .. figure:: slm.mp4
     :align: center
     :width: 100%
     :figwidth: 100%
-
-
-  
-

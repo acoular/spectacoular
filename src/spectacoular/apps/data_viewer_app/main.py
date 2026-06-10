@@ -2,7 +2,11 @@
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
 """
-Example how to plot TimeData
+Time-signal data viewer application.
+
+Start from an installed package with:
+
+    data_viewer_app --show
 """
 
 import acoular as ac
@@ -271,7 +275,7 @@ timeRange.on_change("value_throttled", time_range_callback)
 # make Document
 def server_doc(doc):
     doc.add_root(plotTab)
-    doc.title = "TimeSamplesApp"
+    doc.title = "Time Signal Exploration App"
 
 
 if __name__ == "__main__":
