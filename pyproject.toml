@@ -139,4 +139,3 @@ extend-exclude = [
 [tool.ruff.lint.per-file-ignores]
 "src/spectacoular/__init__.py" = ["ALL"]
 "src/spectacoular/version.py" = ["ALL"]
-"tests/__init__.py" = ["ALL"]
