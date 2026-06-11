@@ -12,6 +12,7 @@ Start from an installed package with:
 import sys
 import threading
 from itertools import cycle
+from time import sleep
 
 import acoular as ac
 import spectacoular as sp
@@ -55,6 +56,10 @@ from bokeh.server.server import Server
 from bokeh.transform import transform
 
 palette = cycle(Category10_10)
+MIN_SELECTION_POINTS = 2
+MIN_DYNAMIC_RANGE_DB = 20
+MIN_LEVEL_OFFSET_DB = 10
+SCOPE_TAB_INDEX = 2
 
 # spectacoular related definitions
 trait_widget_mapper = {
@@ -144,10 +149,12 @@ all_iso_bands = np.array(
 
 
 def iso_bands(bands):
+    """Map center frequencies to the nearest ISO nominal octave bands."""
     return all_iso_bands[np.searchsorted(all_iso_bands, np.array(bands) / 1.01)]
 
 
 def bands_label(bands):
+    """Return string labels for ISO octave bands."""
     return [f'{x:.0f}' for x in iso_bands(bands)]
 
 
@@ -157,8 +164,7 @@ default_device_settable = True
 try:
     ts.device = sd.default.device[0]
     ts.num_channels = 1
-except sd.PortAudioError as e:
-    print(f'Error accessing audio device {sd.default.device[0]}: {e}')
+except sd.PortAudioError:
     default_device_settable = False
 
 
@@ -191,7 +197,7 @@ tbc = sp.TimeBandsConsumer(
 # band slm chain
 fob2 = ac.OctaveFilterBank(source=ts, fraction='Octave')
 tp2 = ac.TimePower(source=fob2)
-ta = sp.Average(source=tp2, num_per_average=512)  # hack for *about* 50~ms average
+ta = sp.Average(source=tp2, num_per_average=512)  # Approx. 50 ms averaging.
 tic3 = sp.TimeConsumer(
     source=ta,
     down=1,
@@ -225,26 +231,24 @@ if devices:
             ts.device = int(dev[0])
             device_select.value = dev[0]
             break
-        except sd.PortAudioError as e:
-            print(f'Error accessing audio device {dev[1]}: {e}')
+        except sd.PortAudioError:
+            continue
     ts.set_widgets(device=device_select)
 else:
     device_select = Select(title='Choose input device:', options=['No input devices found'])
     device_select.disabled = True
-    print('No input devices found')
 
 # button to stop the server
 exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width', width=100)
 
 
-def exit_callback(arg):
-    from time import sleep
-
+def exit_callback():
+    """Terminate the process after the browser window has been closed."""
     sleep(1)
     sys.exit()
 
 
-exit_button.on_click(lambda: sys.exit())
+exit_button.on_click(exit_callback)
 exit_button.js_on_click(
     CustomJS(
         code="""
@@ -257,13 +261,13 @@ exit_button.js_on_click(
 
 
 # button to start / stop measurement
-def toggle_handler(arg):
-    if arg:
+def toggle_handler(active):
+    """Start or stop the currently selected consumer thread."""
+    if active:
         device_select.disabled = True
         lin_or_exp.disabled = True
         exit_button.disabled = True
         active_consumer = (tic, tbc, tic2, tic3)[layout.active]
-        print(active_consumer.num_channels)
         active_consumer.thread = threading.Thread(
             target=active_consumer.consume,
             args=[
@@ -272,7 +276,7 @@ def toggle_handler(arg):
         )
         active_consumer.thread.start()
         play_button.label = '⏹︎'
-    if not arg:
+    else:
         for consumer in (tic, tbc, tic2, tic3):
             if consumer.thread:
                 consumer.thread.do_run = False
@@ -313,7 +317,7 @@ custom_hover = CustomJSHover(
     """
 )
 
-todB = CustomJSTransform(
+to_db = CustomJSTransform(
     v_func="""
     var out = new Array(xs.length);
     for (let i = 0; i < xs.length; i++) {
@@ -324,7 +328,7 @@ todB = CustomJSTransform(
 )
 
 # plot for level time history
-ch = list(tic.ch_names())[0]
+ch = next(iter(tic.ch_names()))
 levelhistory = figure(
     output_backend='webgl',
     width=800,
@@ -343,7 +347,7 @@ levelhistory.text(
     view=view,
     color='orange',
 )
-levelhistory.line(x='t', y=transform(ch, todB), source=tic.ds, color='orange')
+levelhistory.line(x='t', y=transform(ch, to_db), source=tic.ds, color='orange')
 levelhistory.add_tools(WheelPanTool(dimension='height'))
 levelhistory.x_range = DataRange1d(follow='end', follow_interval=10, range_padding=0)
 
@@ -360,16 +364,16 @@ levelhistory2.xaxis.axis_label = 'time / s'
 levelhistory2.yaxis.axis_label = 'sound pressure level / dB'
 # litems = []
 slopes = {}
-for ch, color, band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands)):
+for ch, color, band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands), strict=False):
     levelhistory2.circle(
         radius=1.0,
         x='t',
-        y=transform(ch, todB),
+        y=transform(ch, to_db),
         source=tic3.ds,
         color=None,
         selection_color=color,
     )
-    levelhistory2.line(x='t', y=transform(ch, todB), source=tic3.ds, color=color, legend_label=band)
+    levelhistory2.line(x='t', y=transform(ch, to_db), source=tic3.ds, color=color, legend_label=band)
     slopes[ch] = Slope(gradient=0, y_intercept=0, line_color=color, line_dash='dashed', line_width=2)
     levelhistory2.add_layout(slopes[ch])
 levelhistory2.x_range = DataRange1d(follow='end', follow_interval=10, range_padding=0)
@@ -395,7 +399,7 @@ barplot.toolbar.logo = None
 ch = 'timedata0'
 barplot.vbar(
     x='t',
-    top=transform(ch, todB),
+    top=transform(ch, to_db),
     source=tbc.ds,
     fill_alpha=0.5,
     width=0.5,
@@ -404,7 +408,7 @@ barplot.vbar(
 )
 
 # plot for scope
-ch = list(tic2.ch_names())[0]
+ch = next(iter(tic2.ch_names()))
 scope = figure(output_backend='webgl', width=800, height=600)
 scope.xaxis.axis_label = 'time / s'
 scope.yaxis.axis_label = 'sound pressure / Pa'
@@ -424,35 +428,31 @@ T60ds = ColumnDataSource(data={'f': [], 'T60a': [], 'T60b': []})
 
 
 # select callback for reverberation time
-def selection_change(attrname, old, new):
+def selection_change(_attrname, _old, new):
+    """Estimate reverberation times for the selected decay interval."""
     t = tic3.ds.data['t'][new]
     bands = []
-    T60a = []
-    T60b = []
-    # iterate over bands
-    for ch, color, band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands)):
+    t60a = []
+    t60b = []
+    for ch, _color, band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands), strict=False):
         levels = ac.L_p(tic3.ds.data[ch][new])
-        # dynamic range should be at least 20 dB
-        if len(new) > 2 and np.ptp(levels) > 20:
-            levels1 = levels[levels > levels.min() + 10]
-            # do not consider the lowest 10 dB
-            t1 = t[levels > levels.min() + 10]
-            if len(levels1) > 2:
-                # fit line for interrupted noise
+        if len(new) > MIN_SELECTION_POINTS and np.ptp(levels) > MIN_DYNAMIC_RANGE_DB:
+            levels1 = levels[levels > levels.min() + MIN_LEVEL_OFFSET_DB]
+            t1 = t[levels > levels.min() + MIN_LEVEL_OFFSET_DB]
+            if len(levels1) > MIN_SELECTION_POINTS:
                 gradient, y_intercept = np.polyfit(t1, levels1, 1)
-                # backward integration (impulse response)
                 levels2 = tic3.ds.data[ch][new][np.argsort(t)]
-                # fit on backward integrated imp. response squared
                 gradient2, _ = np.polyfit(t, 10 * np.log10(levels2[::-1].cumsum()[::-1]), 1)
-                # reverberation time
                 bands.append(band)
-                T60a.append(-60 / gradient)
-                T60b.append(-60 / gradient2)
+                t60a.append(-60 / gradient)
+                t60b.append(-60 / gradient2)
+            else:
+                gradient, y_intercept = 0, 0
         else:
             gradient, y_intercept = 0, 0
         slopes[ch].gradient = gradient
         slopes[ch].y_intercept = y_intercept
-    T60ds.data = {'f': bands, 'T60a': T60a, 'T60b': T60b}
+    T60ds.data = {'f': bands, 'T60a': t60a, 'T60b': t60b}
 
 
 tic3.ds.selected.on_change('indices', selection_change)
@@ -483,12 +483,13 @@ data_table = DataTable(
     index_position=None,
 )
 
-instruction_T60 = Div(
-    text="""To estimate reverberation time T, make recording and use 
-the select tool to carefully select the decay part of the time history. Make sure not to select 
-parts of the time history before and after decay. T is then automatically computed for both the 
-case of interrupted noise and impulse excitation.
-""",
+instruction_t60 = Div(
+    text=(
+        'To estimate reverberation time T, make a recording and use the select tool to '
+        'carefully select the decay part of the time history. Make sure not to select '
+        'parts of the time history before and after decay. T is then automatically '
+        'computed for both interrupted noise and impulse excitation.'
+    ),
     width=400,
     height=100,
 )
@@ -562,7 +563,8 @@ save_reverberation_time.js_on_click(
 
 
 # average controls
-def le_callback(a, old, new):
+def le_callback(_attr, _old, new):
+    """Switch between exponential and linear averaging."""
     if new == 0:
         time_weight_widget.disabled = False
         tbc.source = te
@@ -624,7 +626,7 @@ band_level_tab = Panel(
     child=row(
         column(
             every,
-            instruction_T60,
+            instruction_t60,
             data_table,
             save_reverberation_time,
             # xzoom_widget2,
@@ -645,13 +647,14 @@ layout = Tabs(tabs=[level_tab, spectrum_tab, scope_tab, band_level_tab], active=
 
 
 # rearrange processing chain
-def layout_callback(a, old, new):
+def layout_callback(_attr, _old, new):
+    """Rearrange the processing chain when the active tab changes."""
     play_button.active = False  # stop if tab is switched
     if new == 0:  # level tab
         tp.source = fw
     elif new == 1:  # spectrum tab
         tp.source = fob
-    elif new == 2:  # scope tab
+    elif new == SCOPE_TAB_INDEX:  # scope tab
         pass
 
 
@@ -659,6 +662,7 @@ layout.on_change('active', layout_callback)
 
 
 def server_doc(doc):
+    """Add the sound level meter layout to a Bokeh document."""
     doc.add_root(row(Spacer(width_policy='max'), layout, Spacer(width_policy='max')))
     doc.title = 'Sound Level Meter App'
 
@@ -666,7 +670,6 @@ def server_doc(doc):
 if __name__ == '__main__':
     server = Server({'/': server_doc})
     server.start()
-    print('Opening application on http://localhost:5006/')
     server.io_loop.add_callback(server.show, '/')
     server.io_loop.start()
 else:
