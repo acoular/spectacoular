@@ -17,14 +17,13 @@ We welcome your feedback, suggestions, or reports of success using SpectAcoular 
 
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+   :hidden:
 
-   install/index.rst
-   user_guide/index.rst
-   api_ref/index_apiref.rst
-   news/index.rst
-
+   Overview <self>
+   Installation <install/index.rst>
+   User Guide <user_guide/index.rst>
+   API Reference <api_ref/index_apiref.rst>
+   What's new <news/index.rst>
 
 
 Indices and tables
@@ -36,5 +35,5 @@ Indices and tables
 
 
 .. _Bokeh: https://bokeh.org/
-.. _Acoular: http://www.acoular.org/
+.. _Acoular: https://acoular.org/
 .. _Acoular Discussions Forum: https://github.com/acoular/acoular/discussions

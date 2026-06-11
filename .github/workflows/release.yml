@@ -1,4 +1,5 @@
 name: Release CI ✴️
+run-name: Build & publish SpectAcoular release docs → ${{ github.ref_name }}
 permissions:
   contents: read
 on:
@@ -11,28 +12,48 @@ jobs:
     with:
       deploy: true
 
-  docs_build:
+  docs_build_versioned:
     uses: acoular/ci/.github/workflows/docs.yml@main
+    with:
+      artifact_name: build-docs-versioned
+      artifact_path: ./docs/_build/html
+      html_baseurl: "https://acoular.org/spectacoular/${{ github.ref_name }}/"
+      setup_portaudio: false
 
-  docs_publish:
-    needs: docs_build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: build-docs
-          path: ./docs/build/html
-      - name: Upload docs to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          publish_branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/build/html
-          force_orphan: true # This allows you to make your publish branch with only the latest commit.
-          enable_jekyll: false
+  docs_build_stable:
+    uses: acoular/ci/.github/workflows/docs.yml@main
+    with:
+      artifact_name: build-docs-stable
+      artifact_path: ./docs/_build/html
+      html_baseurl: "https://acoular.org/spectacoular/"
+      setup_portaudio: false
+
+  docs_deploy_versioned:
+    needs: docs_build_versioned
+    uses: acoular/ci/.github/workflows/package-docs-deploy.yml@main
+    with:
+      artifact_name: build-docs-versioned
+      artifact_path: ./docs/_build/html
+      destination_dir: spectacoular/${{ github.ref_name }}
+      package_path: /spectacoular
+      min_version: v26.06
+      deploy_switcher: true
+      switcher_destination_dir: spectacoular/_static
+    secrets:
+      website_gh_pages_token: ${{ secrets.WEBSITE_GH_PAGES_TOKEN }}
+
+  docs_deploy_stable:
+    needs: docs_build_stable
+    uses: acoular/ci/.github/workflows/package-docs-deploy.yml@main
+    with:
+      artifact_name: build-docs-stable
+      artifact_path: ./docs/_build/html
+      destination_dir: spectacoular
+      package_path: /spectacoular
+      min_version: v26.06
+      deploy_switcher: false
+    secrets:
+      website_gh_pages_token: ${{ secrets.WEBSITE_GH_PAGES_TOKEN }}
 
   pypi_build:
     uses: acoular/ci/.github/workflows/pypi.yml@main

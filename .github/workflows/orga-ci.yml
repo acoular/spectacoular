@@ -19,6 +19,12 @@ jobs:
 
   docs:
     uses: acoular/ci/.github/workflows/docs.yml@main
+    with:
+      artifact_name: build-docs-dev
+      artifact_path: ./docs/_build/html
+      html_baseurl: "https://acoular.org/spectacoular/dev/"
+      docs_version_match: dev
+      setup_portaudio: false
 
   github:
     uses: acoular/ci/.github/workflows/github.yml@main

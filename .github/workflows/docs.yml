@@ -1,5 +1,5 @@
 name: "Manual: Docs 📝 Build 🛠️ & Deploy"
-run-name: Build Docs 🛠️ & Publish to GitHub Pages 📝
+run-name: Build & Deploy SpectAcoular dev docs → acoular.org/spectacoular/dev
 permissions:
   contents: read
 on:
@@ -8,24 +8,23 @@ on:
 jobs:
   build:
     uses: acoular/ci/.github/workflows/docs.yml@main
+    with:
+      artifact_name: build-docs-dev
+      artifact_path: ./docs/_build/html
+      html_baseurl: "https://acoular.org/spectacoular/dev/"
+      docs_version_match: "dev"
+      setup_portaudio: false
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: build-docs
-          path: ./docs/build/html
-      - name: Upload docs to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          publish_branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/build/html
-          cname: www.acoular.org
-          force_orphan: true # This allows you to make your publish branch with only the latest commit.
-          enable_jekyll: false
+    uses: acoular/ci/.github/workflows/package-docs-deploy.yml@main
+    with:
+      artifact_name: build-docs-dev
+      artifact_path: ./docs/_build/html
+      destination_dir: spectacoular/dev
+      package_path: /spectacoular
+      min_version: v26.06
+      deploy_switcher: true
+      switcher_destination_dir: spectacoular/_static
+    secrets:
+      website_gh_pages_token: ${{ secrets.WEBSITE_GH_PAGES_TOKEN }}
