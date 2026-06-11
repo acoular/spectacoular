@@ -47,13 +47,11 @@ line_opts = {
 }
 
 # build processing chain
-ts = sp.MaskedTimeSamples(file=Path(__file__).parent.parent / "example_data.h5")
+ts = sp.MaskedTimeSamples(file=Path(__file__).parent.parent / 'example_data.h5')
 tv = sp.TimeSamplesPresenter(
     source=ts,
     _numsubsamples=1000,
-    cdsource=ColumnDataSource(
-        data={"xs": [], "ys": [], "ch": [], "color": [], "sizes": []}
-    ),
+    cdsource=ColumnDataSource(data={'xs': [], 'ys': [], 'ch': [], 'color': [], 'sizes': []}),
 )
 tio = ac.MaskedTimeOut(source=ts, invalid_channels=[])
 ps = sp.PowerSpectra(source=tio, cached=False)
@@ -61,7 +59,7 @@ freqdata = ColumnDataSource(data={'amp': [[0]], 'freqs': [[0]], 'chn': [[0]], 'c
 
 # create widget to select the channel that should be plotted
 mselect = MultiSelect(
-    title="Select Channel:",
+    title='Select Channel:',
     value=[],
     height=250,
     options=[(str(i), str(i)) for i in range(ts.num_channels)],
@@ -76,9 +74,7 @@ time_range = RangeSlider(
     step=1000,
     title='Time Range',
 )
-linesize_slider = Slider(
-    start=0.0, end=5, value=2.0, step=0.05, title='Line Size', disabled=False
-)
+linesize_slider = Slider(start=0.0, end=5, value=2.0, step=0.05, title='Line Size', disabled=False)
 
 
 def update_linesize(_attr, _old, _new):
@@ -198,7 +194,7 @@ def change_selectable_channels():
     freqdata.data = {'amp': [[0]], 'freqs': [[0]], 'chn': [[0]], 'color': [0]}
 
 
-ts.on_trait_change(change_selectable_channels, "num_channels")
+ts.on_trait_change(change_selectable_channels, 'num_channels')
 
 # TimeSignalPlot
 timeplottips = [('Channel Index', '@ch'), ('Sample', '$x'), ('p', '$y')]
@@ -215,25 +211,23 @@ ts_plot.multi_line(xs='xs', ys='ys', line_width='sizes', source=tv.cdsource, **l
 
 # FrequencySignalPlot
 freqplottips = [
-    ("Channel", "@chn"),
-    ("Frequency in Hz", "$x"),
-    ("|P(f)|^2 in dB", "$y"),
+    ('Channel', '@chn'),
+    ('Frequency in Hz', '$x'),
+    ('|P(f)|^2 in dB', '$y'),
 ]
 freqplot = figure(
-    title="Auto Power Spectra",
+    title='Auto Power Spectra',
     width=1500,
     height=800,
-    x_axis_type="log",
-    x_axis_label="f in Hz",
-    y_axis_label="|P(f)|^2 / dB",
+    x_axis_type='log',
+    x_axis_label='f in Hz',
+    y_axis_label='|P(f)|^2 / dB',
     tooltips=freqplottips,
     x_range=(40, 26000),
 )
 freqplot.toolbar.logo = None
-freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks(
-    [10, 30000], unit="Hz"
-)
-freqplot.multi_line(xs="freqs", ys="amp", line_width=3, source=freqdata, **line_opts)
+freqplot.xaxis.ticker, freqplot.xaxis.major_label_overrides = get_logticks([10, 30000], unit='Hz')
+freqplot.multi_line(xs='freqs', ys='amp', line_width=3, source=freqdata, **line_opts)
 # create layout
 ts_widgets_col = column(plot_button, mselect, *ts_widgets.values(), width=200)
 ps_widgets_col = column(plot_button, mselect, *list(ps_widgets.values()), width=200)
