@@ -3,6 +3,9 @@ run-name: Build & Deploy SpectAcoular dev docs → acoular.org/spectacoular/dev
 permissions:
   contents: read
 on:
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
