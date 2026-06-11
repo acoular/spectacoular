@@ -1,3 +1,5 @@
+"""Sphinx configuration for the SpectAcoular documentation."""
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -8,18 +10,18 @@
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
+# documentation root, use an absolute path, like shown here.
 #
-import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, str(Path('../..').resolve()))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'SpectAcoular'
-copyright = '2020, Acoular Development Team'
+globals()['copyright'] = '2020, Acoular Development Team'
 author = 'Acoular Development Team'
 
 
@@ -31,16 +33,16 @@ author = 'Acoular Development Team'
 extensions = [
     'bokeh.sphinxext.bokeh_plot',
     #'bokeh.sphinxext.bokeh_gallery',
-    "sphinx_gallery.gen_gallery",
-    "sphinx_design",
-    "sphinx_copybutton",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.doctest",
-    "sphinx.ext.githubpages",
-    "traits.util.trait_documenter",
-    "numpydoc",  # conda install -c anaconda numpydoc
+    'sphinx_gallery.gen_gallery',
+    'sphinx_design',
+    'sphinx_copybutton',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.doctest',
+    'sphinx.ext.githubpages',
+    'traits.util.trait_documenter',
+    'numpydoc',  # conda install -c anaconda numpydoc
 ]
 
 
@@ -63,7 +65,11 @@ numpydoc_show_class_members = (
 numpydoc_show_inherited_class_members = (
     False  # Whether to show all inherited members of a class in the Methods and Attributes sections automatically.
 )
-numpydoc_class_members_toctree = False  # Whether to create a Sphinx table of contents for the lists of class methods and attributes. If a table of contents is made, Sphinx expects each entry to have a separate page.
+numpydoc_class_members_toctree = (
+    False  # Whether to create a Sphinx table of contents for the lists
+    # of class methods and attributes. If a table of contents is made,
+    # Sphinx expects each entry to have a separate page.
+)
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -71,52 +77,52 @@ numpydoc_class_members_toctree = False  # Whether to create a Sphinx table of co
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
 # html_style = 'default.css'
-html_theme = "pydata_sphinx_theme"
+html_theme = 'pydata_sphinx_theme'
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+html_static_path = ['_static']
 html_context = {
-    "github_user": "acoular",
-    "github_repo": "spectacoular",
-    "github_version": "master",
-    "doc_path": "docs",
+    'github_user': 'acoular',
+    'github_repo': 'spectacoular',
+    'github_version': 'master',
+    'doc_path': 'docs',
 }
 html_theme_options = {
-    "logo": {
-        "alt_text": "SpectAcoular - Home",
-        "text": "SpectAcoular",
-        "image_light": "_static/Acoular_logo.png",
-        "image_dark": "_static/Acoular_logo.png",
+    'logo': {
+        'alt_text': 'SpectAcoular - Home',
+        'text': 'SpectAcoular',
+        'image_light': '_static/Acoular_logo.png',
+        'image_dark': '_static/Acoular_logo.png',
     },
-    "icon_links": [
+    'icon_links': [
         {
-            "name": "GitHub",
-            "url": "https://github.com/acoular/spectacoular",
-            "icon": "fa-brands fa-square-github",
+            'name': 'GitHub',
+            'url': 'https://github.com/acoular/spectacoular',
+            'icon': 'fa-brands fa-square-github',
         },
         {
-            "name": "PyPI",
-            "url": "https://pypi.org/project/spectacoular",
-            "icon": "_static/pypi.svg",
-            "type": "local",
+            'name': 'PyPI',
+            'url': 'https://pypi.org/project/spectacoular',
+            'icon': '_static/pypi.svg',
+            'type': 'local',
         },
     ],
-    "pygments_light_style": "tango",
-    "pygments_dark_style": "monokai",
-    "header_links_before_dropdown": 5,
-    "use_edit_page_button": True,
+    'pygments_light_style': 'tango',
+    'pygments_dark_style': 'monokai',
+    'header_links_before_dropdown': 5,
+    'use_edit_page_button': True,
 }
 html_sidebars = {
-    "install/*": [],
-    "news/*": [],
+    'install/*': [],
+    'news/*': [],
 }
-html_favicon = "_static/acoular_logo.ico"
-html_last_updated_fmt = "%b %d, %Y"
+html_favicon = '_static/acoular_logo.ico'
+html_last_updated_fmt = '%b %d, %Y'
 html_copy_source = False
-copybutton_prompt_text = r">>> |\.\.\. |\$ "
+copybutton_prompt_text = r'>>> |\.\.\. |\$ '
 copybutton_prompt_is_regexp = True
 
 
@@ -127,7 +133,7 @@ copybutton_prompt_is_regexp = True
 # Custom CSS paths should either relative to html_static_path
 # or fully qualified paths (eg. https://...)
 # necessary to hide "go to the end" note etc.
-html_css_files = ["css/sphinx_gallery.css", "css/custom_pydata_sphinx_theme.css"]
+html_css_files = ['css/sphinx_gallery.css', 'css/custom_pydata_sphinx_theme.css']
 
 # sphinx_gallery.gen_gallery extension configuration
 sphinx_gallery_conf = {
