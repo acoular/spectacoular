@@ -9,88 +9,87 @@ Start from an installed package with:
     level_meter_app --show
 """
 
-import threading
 import sys
+import threading
+from itertools import cycle
+
 import acoular as ac
 import spectacoular as sp
+
 import numpy as np
 import sounddevice as sd
 
-from itertools import cycle
-
 # bokeh imports
 from bokeh.layouts import column, row
-from bokeh.models import TabPanel as Panel, Tabs
+from bokeh.models import (
+    CDSView,
+    ColumnDataSource,
+    CustomJS,
+    CustomJSFilter,
+    CustomJSHover,
+    CustomJSTransform,
+    DataRange1d,
+    HoverTool,
+    NumberFormatter,
+    Range1d,
+    Slider,
+    Slope,
+    Spacer,
+    Tabs,
+    WheelPanTool,
+)
+from bokeh.models import TabPanel as Panel
 from bokeh.models.widgets import (
     Button,
-    Toggle,
-    Select,
-    RadioGroup,
-    TableColumn,
     DataTable,
     Div,
     NumericInput,
+    RadioGroup,
+    Select,
+    TableColumn,
+    Toggle,
 )
-from bokeh.models import (
-    CDSView,
-    CustomJSFilter,
-    CustomJSTransform,
-    HoverTool,
-    CustomJSHover,
-    CustomJS,
-    Spacer,
-    WheelPanTool,
-    Range1d,
-    DataRange1d,
-    Slider,
-    Slope,
-    ColumnDataSource,
-    NumberFormatter,
-)
-from bokeh.transform import transform
-from bokeh.plotting import figure, curdoc
-from bokeh.server.server import Server
 from bokeh.palettes import Category10_10
-
+from bokeh.plotting import curdoc, figure
+from bokeh.server.server import Server
+from bokeh.transform import transform
 
 palette = cycle(Category10_10)
 
 # spectacoular related definitions
 trait_widget_mapper = {
-    "device": NumericInput,
-    "sample_freq": NumericInput,
-    "num_channels": NumericInput,
+    'device': NumericInput,
+    'sample_freq': NumericInput,
+    'num_channels': NumericInput,
 }
 trait_widget_args = {
-    "device": {"disabled": False, "mode": "int"},
-    "sample_freq": {"disabled": True, "mode": "float"},
-    "num_channels": {"disabled": True, "mode": "int"},
+    'device': {'disabled': False, 'mode': 'int'},
+    'sample_freq': {'disabled': True, 'mode': 'float'},
+    'num_channels': {'disabled': True, 'mode': 'int'},
 }
-sp.add_bokeh_attr(
-    ac.SoundDeviceSamplesGenerator, trait_widget_mapper, trait_widget_args
-)
+sp.add_bokeh_attr(ac.SoundDeviceSamplesGenerator, trait_widget_mapper, trait_widget_args)
 
-trait_widget_mapper = {"band": NumericInput}
+trait_widget_mapper = {'band': NumericInput}
 trait_widget_args = {
-    "band": {"disabled": False, "mode": "float"},
+    'band': {'disabled': False, 'mode': 'float'},
 }
 sp.add_bokeh_attr(ac.FiltOctave, trait_widget_mapper, trait_widget_args)
 
-trait_widget_mapper = {"weight": Select}
+trait_widget_mapper = {'weight': Select}
 trait_widget_args = {
-    "weight": {"disabled": False},
+    'weight': {'disabled': False},
 }
 sp.add_bokeh_attr(ac.TimeExpAverage, trait_widget_mapper, trait_widget_args)
 
-trait_widget_mapper = {"weight": Select}
+trait_widget_mapper = {'weight': Select}
 trait_widget_args = {
-    "weight": {"disabled": False},
+    'weight': {'disabled': False},
 }
 sp.add_bokeh_attr(ac.FiltFreqWeight, trait_widget_mapper, trait_widget_args)
 
-trait_widget_mapper = {"elapsed": NumericInput}
+trait_widget_mapper = {'elapsed': NumericInput}
 trait_widget_args = {
-    "elapsed": {"disabled": True, "mode": "float"},
+    'elapsed': {'disabled': True, 'mode': 'float'},
 }
 sp.add_bokeh_attr(sp.TimeBandsConsumer, trait_widget_mapper, trait_widget_args)
 
@@ -149,7 +148,7 @@ def iso_bands(bands):
 
 
 def bands_label(bands):
-    return ["{:.0f}".format(x) for x in iso_bands(bands)]
+    return [f'{x:.0f}' for x in iso_bands(bands)]
 
 
 # build processing chains
@@ -159,14 +158,14 @@ try:
     ts.device = sd.default.device[0]
     ts.num_channels = 1
 except sd.PortAudioError as e:
-    print(f"Error accessing audio device {sd.default.device[0]}: {e}")
+    print(f'Error accessing audio device {sd.default.device[0]}: {e}')
     default_device_settable = False
 
 
 # slm chain
 fw = ac.FiltFreqWeight(source=ts)
 tp = ac.TimePower(source=fw)
-te = ac.TimeExpAverage(source=tp, weight="F")
+te = ac.TimeExpAverage(source=tp, weight='F')
 tca = ac.TimeCumAverage(source=tp)
 tic = sp.TimeConsumer(
     source=te,
@@ -179,7 +178,7 @@ tic = sp.TimeConsumer(
 )
 
 # spectrum chain
-fob = ac.OctaveFilterBank(source=ts, fraction="Third octave")
+fob = ac.OctaveFilterBank(source=ts, fraction='Third octave')
 tbc = sp.TimeBandsConsumer(
     source=te,
     channels=[
@@ -190,7 +189,7 @@ tbc = sp.TimeBandsConsumer(
 )
 
 # band slm chain
-fob2 = ac.OctaveFilterBank(source=ts, fraction="Octave")
+fob2 = ac.OctaveFilterBank(source=ts, fraction='Octave')
 tp2 = ac.TimePower(source=fob2)
 ta = sp.Average(source=tp2, num_per_average=512)  # hack for *about* 50~ms average
 tic3 = sp.TimeConsumer(
@@ -215,11 +214,11 @@ tic2 = sp.TimeConsumer(
 # set up devices choice
 devices = {}
 for i, dev in enumerate(sd.query_devices()):
-    if dev["max_input_channels"] > 0:
-        devices["{}".format(i)] = "{name} {max_input_channels}".format(**dev)
+    if dev['max_input_channels'] > 0:
+        devices[f'{i}'] = '{name} {max_input_channels}'.format(**dev)
 
 if devices:
-    device_select = Select(title="Choose input device:", options=list(devices.items()))
+    device_select = Select(title='Choose input device:', options=list(devices.items()))
     # try all devices until the first one works
     for dev in device_select.options:
         try:
@@ -227,19 +226,15 @@ if devices:
             device_select.value = dev[0]
             break
         except sd.PortAudioError as e:
-            print(f"Error accessing audio device {dev[1]}: {e}")
+            print(f'Error accessing audio device {dev[1]}: {e}')
     ts.set_widgets(device=device_select)
 else:
-    device_select = Select(
-        title="Choose input device:", options=["No input devices found"]
-    )
+    device_select = Select(title='Choose input device:', options=['No input devices found'])
     device_select.disabled = True
-    print("No input devices found")
+    print('No input devices found')
 
 # button to stop the server
-exit_button = Button(
-    label="Exit", button_type="danger", sizing_mode="stretch_width", width=100
-)
+exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width', width=100)
 
 
 def exit_callback(arg):
@@ -276,7 +271,7 @@ def toggle_handler(arg):
             ],
         )
         active_consumer.thread.start()
-        play_button.label = "⏹︎"
+        play_button.label = '⏹︎'
     if not arg:
         for consumer in (tic, tbc, tic2, tic3):
             if consumer.thread:
@@ -284,12 +279,10 @@ def toggle_handler(arg):
         device_select.disabled = False
         lin_or_exp.disabled = False
         exit_button.disabled = False
-        play_button.label = "▶"
+        play_button.label = '▶'
 
 
-play_button = Toggle(
-    label="▶", button_type="success", sizing_mode="stretch_width", width=100
-)
+play_button = Toggle(label='▶', button_type='success', sizing_mode='stretch_width', width=100)
 play_button.on_click(toggle_handler)
 
 # JS routines
@@ -333,57 +326,53 @@ todB = CustomJSTransform(
 # plot for level time history
 ch = list(tic.ch_names())[0]
 levelhistory = figure(
-    output_backend="webgl",
+    output_backend='webgl',
     width=800,
     height=600,
-    y_range=Range1d(start=10, end=90, bounds="auto", min_interval=40),
+    y_range=Range1d(start=10, end=90, bounds='auto', min_interval=40),
 )
-levelhistory.xaxis.axis_label = "time / s"
-levelhistory.yaxis.axis_label = "sound pressure level / dB"
+levelhistory.xaxis.axis_label = 'time / s'
+levelhistory.yaxis.axis_label = 'sound pressure level / dB'
 levelhistory.text(
-    x="t",
+    x='t',
     y=60,
     text=transform(ch, tofixed),
-    text_font_size={"value": "32px"},
-    text_align="right",
+    text_font_size={'value': '32px'},
+    text_align='right',
     source=tic.ds,
     view=view,
-    color="orange",
+    color='orange',
 )
-levelhistory.line(x="t", y=transform(ch, todB), source=tic.ds, color="orange")
-levelhistory.add_tools(WheelPanTool(dimension="height"))
-levelhistory.x_range = DataRange1d(follow="end", follow_interval=10, range_padding=0)
+levelhistory.line(x='t', y=transform(ch, todB), source=tic.ds, color='orange')
+levelhistory.add_tools(WheelPanTool(dimension='height'))
+levelhistory.x_range = DataRange1d(follow='end', follow_interval=10, range_padding=0)
 
 # plot for band level time history
 levelhistory2 = figure(
-    output_backend="webgl",
-    tools="pan,wheel_zoom,xbox_select,reset,xbox_zoom",
-    active_drag="xbox_select",
+    output_backend='webgl',
+    tools='pan,wheel_zoom,xbox_select,reset,xbox_zoom',
+    active_drag='xbox_select',
     width=800,
     height=600,
-    y_range=Range1d(start=10, end=90, bounds="auto", min_interval=40),
+    y_range=Range1d(start=10, end=90, bounds='auto', min_interval=40),
 )
-levelhistory2.xaxis.axis_label = "time / s"
-levelhistory2.yaxis.axis_label = "sound pressure level / dB"
+levelhistory2.xaxis.axis_label = 'time / s'
+levelhistory2.yaxis.axis_label = 'sound pressure level / dB'
 # litems = []
 slopes = {}
 for ch, color, band in zip(tic3.ch_names(), palette, tbc.lfunc(fob2.bands)):
     levelhistory2.circle(
         radius=1.0,
-        x="t",
+        x='t',
         y=transform(ch, todB),
         source=tic3.ds,
         color=None,
         selection_color=color,
     )
-    levelhistory2.line(
-        x="t", y=transform(ch, todB), source=tic3.ds, color=color, legend_label=band
-    )
-    slopes[ch] = Slope(
-        gradient=0, y_intercept=0, line_color=color, line_dash="dashed", line_width=2
-    )
+    levelhistory2.line(x='t', y=transform(ch, todB), source=tic3.ds, color=color, legend_label=band)
+    slopes[ch] = Slope(gradient=0, y_intercept=0, line_color=color, line_dash='dashed', line_width=2)
     levelhistory2.add_layout(slopes[ch])
-levelhistory2.x_range = DataRange1d(follow="end", follow_interval=10, range_padding=0)
+levelhistory2.x_range = DataRange1d(follow='end', follow_interval=10, range_padding=0)
 
 # bar graph plot for 3rd octave average
 barplot = figure(
@@ -391,52 +380,52 @@ barplot = figure(
     y_range=(0, 80),
     width=800,
     height=600,
-    output_backend="webgl",
+    output_backend='webgl',
 )
-barplot.xaxis.axis_label = "band center frequency / Hz"
-barplot.yaxis.axis_label = "sound pressure level / dB"
+barplot.xaxis.axis_label = 'band center frequency / Hz'
+barplot.yaxis.axis_label = 'sound pressure level / dB'
 barplot.add_tools(
     HoverTool(
-        tooltips=[("val", "@timedata0{custom}")],
-        formatters={"@timedata0": custom_hover},
+        tooltips=[('val', '@timedata0{custom}')],
+        formatters={'@timedata0': custom_hover},
     )
 )
-barplot.add_tools(WheelPanTool(dimension="height"))
+barplot.add_tools(WheelPanTool(dimension='height'))
 barplot.toolbar.logo = None
-ch = "timedata0"
+ch = 'timedata0'
 barplot.vbar(
-    x="t",
+    x='t',
     top=transform(ch, todB),
     source=tbc.ds,
     fill_alpha=0.5,
     width=0.5,
     name=ch,
-    color="orange",
+    color='orange',
 )
 
 # plot for scope
 ch = list(tic2.ch_names())[0]
-scope = figure(output_backend="webgl", width=800, height=600)
-scope.xaxis.axis_label = "time / s"
-scope.yaxis.axis_label = "sound pressure / Pa"
-scope.line(x="t", y=ch, source=tic2.ds, color="orange")
-scope.add_tools(WheelPanTool(dimension="height"))
-scope.x_range = DataRange1d(follow="end", follow_interval=10, range_padding=0)
+scope = figure(output_backend='webgl', width=800, height=600)
+scope.xaxis.axis_label = 'time / s'
+scope.yaxis.axis_label = 'sound pressure / Pa'
+scope.line(x='t', y=ch, source=tic2.ds, color='orange')
+scope.add_tools(WheelPanTool(dimension='height'))
+scope.x_range = DataRange1d(follow='end', follow_interval=10, range_padding=0)
 
 # xzoom for scope
-xzoom_widget = Slider(start=1, end=10, step=1, value=10, title="time range")
-xzoom_widget.js_link("value", scope.x_range, "follow_interval")
+xzoom_widget = Slider(start=1, end=10, step=1, value=10, title='time range')
+xzoom_widget.js_link('value', scope.x_range, 'follow_interval')
 
 # xzoom for levelhistory
-xzoom_widget2 = Slider(start=5, end=60, step=5, value=10, title="time range")
-xzoom_widget2.js_link("value", levelhistory.x_range, "follow_interval")
+xzoom_widget2 = Slider(start=5, end=60, step=5, value=10, title='time range')
+xzoom_widget2.js_link('value', levelhistory.x_range, 'follow_interval')
 
-T60ds = ColumnDataSource(data={"f": [], "T60a": [], "T60b": []})
+T60ds = ColumnDataSource(data={'f': [], 'T60a': [], 'T60b': []})
 
 
 # select callback for reverberation time
 def selection_change(attrname, old, new):
-    t = tic3.ds.data["t"][new]
+    t = tic3.ds.data['t'][new]
     bands = []
     T60a = []
     T60b = []
@@ -454,9 +443,7 @@ def selection_change(attrname, old, new):
                 # backward integration (impulse response)
                 levels2 = tic3.ds.data[ch][new][np.argsort(t)]
                 # fit on backward integrated imp. response squared
-                gradient2, _ = np.polyfit(
-                    t, 10 * np.log10(levels2[::-1].cumsum()[::-1]), 1
-                )
+                gradient2, _ = np.polyfit(t, 10 * np.log10(levels2[::-1].cumsum()[::-1]), 1)
                 # reverberation time
                 bands.append(band)
                 T60a.append(-60 / gradient)
@@ -465,24 +452,24 @@ def selection_change(attrname, old, new):
             gradient, y_intercept = 0, 0
         slopes[ch].gradient = gradient
         slopes[ch].y_intercept = y_intercept
-    T60ds.data = {"f": bands, "T60a": T60a, "T60b": T60b}
+    T60ds.data = {'f': bands, 'T60a': T60a, 'T60b': T60b}
 
 
-tic3.ds.selected.on_change("indices", selection_change)
+tic3.ds.selected.on_change('indices', selection_change)
 
 # data table widget
 Tcolumns = [
-    TableColumn(field="f", title="band / Hz", width=100),
+    TableColumn(field='f', title='band / Hz', width=100),
     TableColumn(
-        field="T60a",
-        title="T60 noise / s",
-        formatter=NumberFormatter(format="0.00"),
+        field='T60a',
+        title='T60 noise / s',
+        formatter=NumberFormatter(format='0.00'),
         width=100,
     ),
     TableColumn(
-        field="T60b",
-        title="T60 impulse / s",
-        formatter=NumberFormatter(format="0.00"),
+        field='T60b',
+        title='T60 impulse / s',
+        formatter=NumberFormatter(format='0.00'),
         width=100,
     ),
 ]
@@ -491,8 +478,8 @@ data_table = DataTable(
     source=T60ds,
     columns=Tcolumns,
     width=300,  # autosize_mode="force_fit",
-    sizing_mode="stretch_both",
-    width_policy="min",
+    sizing_mode='stretch_both',
+    width_policy='min',
     index_position=None,
 )
 
@@ -507,10 +494,10 @@ case of interrupted noise and impulse excitation.
 )
 
 # data save buttons
-save_spectrum = Button(label="Download data", button_type="warning")
+save_spectrum = Button(label='Download data', button_type='warning')
 save_spectrum.js_on_click(
     CustomJS(
-        args={"source": tbc.ds},
+        args={'source': tbc.ds},
         code="""
         var length = source.get_length();
         var data = source.data;
@@ -529,10 +516,10 @@ save_spectrum.js_on_click(
     )
 )
 
-save_levelhistory = Button(label="Download data", button_type="warning")
+save_levelhistory = Button(label='Download data', button_type='warning')
 save_levelhistory.js_on_click(
     CustomJS(
-        args={"source": tic.ds},
+        args={'source': tic.ds},
         code="""
         var length = source.get_length();
         var data = source.data;
@@ -551,10 +538,10 @@ save_levelhistory.js_on_click(
     )
 )
 
-save_reverberation_time = Button(label="Download data", button_type="warning")
+save_reverberation_time = Button(label='Download data', button_type='warning')
 save_reverberation_time.js_on_click(
     CustomJS(
-        args={"source": T60ds},
+        args={'source': T60ds},
         code="""
         var length = source.get_length();
         var data = source.data;
@@ -586,19 +573,19 @@ def le_callback(a, old, new):
         tic.source = tca
 
 
-lin_or_exp = RadioGroup(labels=["exponential averaging", "linear averaging"], active=0)
-lin_or_exp.on_change("active", le_callback)
+lin_or_exp = RadioGroup(labels=['exponential averaging', 'linear averaging'], active=0)
+lin_or_exp.on_change('active', le_callback)
 
-time_weight_widget = te.get_widgets()["weight"]
-time_weight_widget.title = "exponential weighting scheme"
+time_weight_widget = te.get_widgets()['weight']
+time_weight_widget.title = 'exponential weighting scheme'
 
-elapsed_widget = tbc.get_widgets()["elapsed"]
-elapsed_widget.title = "elapsed time / s"
+elapsed_widget = tbc.get_widgets()['elapsed']
+elapsed_widget.title = 'elapsed time / s'
 
 average_controls = column(lin_or_exp, time_weight_widget)
 
 # weight control
-freq_weight_widget = fw.get_widgets()["weight"]
+freq_weight_widget = fw.get_widgets()['weight']
 
 # widgets on every tab
 every = column(row(play_button, exit_button), device_select)
@@ -609,13 +596,13 @@ spectrum_tab = Panel(
         column(
             every,
             save_spectrum,
-            Spacer(height_policy="max"),
+            Spacer(height_policy='max'),
             average_controls,
             elapsed_widget,
         ),
         barplot,
     ),
-    title="Third octave band average",
+    title='Third octave band average',
 )
 
 level_tab = Panel(
@@ -623,14 +610,14 @@ level_tab = Panel(
         column(
             every,
             save_levelhistory,
-            Spacer(height_policy="max"),
+            Spacer(height_policy='max'),
             freq_weight_widget,
             average_controls,
             xzoom_widget2,
         ),
         levelhistory,
     ),
-    title="Sound level meter",
+    title='Sound level meter',
 )
 
 band_level_tab = Panel(
@@ -645,12 +632,12 @@ band_level_tab = Panel(
         ),
         levelhistory2,
     ),
-    title="Band sound level meter",
+    title='Band sound level meter',
 )
 
 scope_tab = Panel(
-    child=row(column(every, Spacer(height_policy="max"), xzoom_widget), scope),
-    title="Oscilloscope",
+    child=row(column(every, Spacer(height_policy='max'), xzoom_widget), scope),
+    title='Oscilloscope',
 )
 
 # overall layout
@@ -668,19 +655,19 @@ def layout_callback(a, old, new):
         pass
 
 
-layout.on_change("active", layout_callback)
+layout.on_change('active', layout_callback)
 
 
 def server_doc(doc):
-    doc.add_root(row(Spacer(width_policy="max"), layout, Spacer(width_policy="max")))
-    doc.title = "Sound Level Meter App"
+    doc.add_root(row(Spacer(width_policy='max'), layout, Spacer(width_policy='max')))
+    doc.title = 'Sound Level Meter App'
 
 
-if __name__ == "__main__":
-    server = Server({"/": server_doc})
+if __name__ == '__main__':
+    server = Server({'/': server_doc})
     server.start()
-    print("Opening application on http://localhost:5006/")
-    server.io_loop.add_callback(server.show, "/")
+    print('Opening application on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, '/')
     server.io_loop.start()
 else:
     doc = curdoc()
