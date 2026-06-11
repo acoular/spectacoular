@@ -1,7 +1,7 @@
 <!-- 
 Thank you so much for contributing a pull request! Please ensure
 that your pull request satisfies the checklist before submitting:
-https://www.acoular.org/contributing/checklist.html
+https://acoular.org/contributing/checklist.html
 
 If you are part the of Acoular development team, please make sure to
 select a label for this pull request on the sidebar to the right.
@@ -19,8 +19,8 @@ Again, thanks for contributing!
 
 ### Checklist
 <!-- Please make sure that your pull request checks all the boxes. -->
-- [ ] I have read the [Contributing](https://www.acoular.org/contributing/index.html) section.
+- [ ] I have read the [Contributing](https://acoular.org/contributing/index.html) section.
 - [ ] My branch is up-to-date with the *master* branch of the [SpectAcoular repository](https://github.com/acoular/spectacoular).
-- [ ] My changes fulfill the [Code Quality](https://www.acoular.org/contributing/quality.html) standards.
+- [ ] My changes fulfill the [Code Quality](https://acoular.org/contributing/quality.html) standards.
 - [ ] I have updated the [What's new](https://github.com/acoular/spectacoular/blob/master/docs/source/news/index.rst) section explaining my changes.
 - [ ] I have appended myself to the [CITATION.cff](https://github.com/acoular/spectacoular/blob/master/CITATION.cff) file.
