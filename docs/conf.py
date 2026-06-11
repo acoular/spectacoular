@@ -54,7 +54,7 @@ html_theme_options = configure_package_theme_options(
     github_url='https://github.com/acoular/spectacoular',
     pypi_project='spectacoular',
     use_edit_page_button=True,
-    switcher_json_url='https://acoular.org/acoular/_static/switcher.json',
+    switcher_json_url='https://acoular.org/spectacoular/_static/switcher.json',
     version_match=docs_build['version_match'],
 )
 html_sidebars = {
