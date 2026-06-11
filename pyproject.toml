@@ -134,7 +134,11 @@ extend-exclude = [
     "docs/conf.py",
     "examples",
     "tests",
-    "src/spectacoular/apps",
+    "src/spectacoular/apps/bf_example_app",
+    "src/spectacoular/apps/level_meter_app",
+    "src/spectacoular/apps/measurement_app",
+    "src/spectacoular/apps/micgeom_app",
+    "src/spectacoular/apps/rotating_example_app",
 ]
 
 [tool.ruff.lint.per-file-ignores]
