@@ -13,7 +13,6 @@ jobs:
       artifact_path: ./docs/_build/html
       html_baseurl: "https://acoular.org/spectacoular/dev/"
       docs_version_match: "dev"
-      setup_portaudio: false
 
   deploy:
     needs: build
