@@ -129,7 +129,6 @@ filterwarnings = [
 [tool.ruff]
 extend = ".venv/share/ruff/ruff.acoular.toml"
 extend-exclude = [
-    "docs/_build",
     "examples",
     "tests",
     "src/spectacoular/apps",
