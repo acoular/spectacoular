@@ -52,21 +52,21 @@ doc = curdoc()
 # %% Build processing chain
 invalid = [1, 7]
 ts = sp.MaskedTimeSamples(
-    file=Path(__file__).parent.parent / "example_data.h5",
+    file=Path(__file__).parent.parent / 'example_data.h5',
     invalid_channels=invalid,
     start=0,
     stop=16000,
 )
 cal = sp.Calib(
     source=ts,
-    file=Path(__file__).parent / "example_calib.xml",
+    file=Path(__file__).parent / 'example_calib.xml',
     invalid_channels=ts.invalid_channels,
 )
 mg = sp.MicGeom(
-    file=Path(ac.__file__).parent / "xml" / "array_56.xml",
+    file=Path(ac.__file__).parent / 'xml' / 'array_56.xml',
     invalid_channels=ts.invalid_channels,
 )
-ps = sp.PowerSpectra(source=cal, block_size=1024, overlap="50%")
+ps = sp.PowerSpectra(source=cal, block_size=1024, overlap='50%')
 rg = sp.RectGrid(x_min=-0.6, x_max=-0.1, y_min=-0.3, y_max=0.3, z=0.68, increment=0.01)
 env = sp.Environment(c=346.04)
 st = sp.SteeringVector(grid=rg, mics=mg, env=env)
@@ -83,8 +83,8 @@ bdp = sp.BeamformerDamasPlus(freq_data=ps, n_iter=100)
 bo = sp.BeamformerOrth(freq_data=ps, eva_list=list(range(38, 54)))
 bs = sp.BeamformerCleansc(freq_data=ps, steer=st, r_diag=True)
 bl = sp.BeamformerClean(freq_data=ps, n_iter=100)
-bcmf = sp.BeamformerCMF(freq_data=ps, steer=st, method="LassoLarsBIC")
-bgib = sp.BeamformerGIB(freq_data=ps, steer=st, method="LassoLars", n=10)
+bcmf = sp.BeamformerCMF(freq_data=ps, steer=st, method='LassoLarsBIC')
+bgib = sp.BeamformerGIB(freq_data=ps, steer=st, method='LassoLars', n=10)
 
 bv = sp.BeamformerPresenter(source=bb, num=3, freq=4000.0)
 mgp = sp.MicGeomPresenter(source=mg, auto_update=True)
@@ -96,29 +96,27 @@ mgp.update()
 grid_data = ColumnDataSource(
     data={
         # x and y are the centers of the rectangle!
-        "x": [(rg.x_max + rg.x_min) / 2],
-        "y": [(rg.y_max + rg.y_min) / 2],
-        "width": [rg.x_max - rg.x_min],
-        "height": [rg.y_max - rg.y_min],
+        'x': [(rg.x_max + rg.x_min) / 2],
+        'y': [(rg.y_max + rg.y_min) / 2],
+        'width': [rg.x_max - rg.x_min],
+        'height': [rg.y_max - rg.y_min],
     }
 )
 
 f_ticks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 freqdata = ColumnDataSource(
     data={
-        "freqs": [np.array(f_ticks)],  # initialize
-        "amp": [np.array([0] * len(f_ticks))],
-        "colors": ["white"],
+        'freqs': [np.array(f_ticks)],  # initialize
+        'amp': [np.array([0] * len(f_ticks))],
+        'colors': ['white'],
     }
 )
 
-sectordata = ColumnDataSource(data={"x": [], "y": [], "width": [], "height": []})
+sectordata = ColumnDataSource(data={'x': [], 'y': [], 'width': [], 'height': []})
 
 
 # Beamforming Plot
-bf_plot = figure(
-    title='Source Map', tools='pan,wheel_zoom,reset', width=700, match_aspect=True
-)
+bf_plot = figure(title='Source Map', tools='pan,wheel_zoom,reset', width=700, match_aspect=True)
 # draw airfoil
 bf_plot.rect(
     -0.38,
@@ -137,15 +135,13 @@ bf_plot.rect(  # draw rect grid bounds
 bf_plot.toolbar.logo = None
 bf_plot.xgrid.visible = False
 bf_plot.ygrid.visible = False
-color_mapper = LinearColorMapper(
-    palette=viridis(100), low=40, high=50, low_color=(1, 1, 1, 0)
-)
+color_mapper = LinearColorMapper(palette=viridis(100), low=40, high=50, low_color=(1, 1, 1, 0))
 bf_image = bf_plot.image(
-    image="bfdata",
-    x="x",
-    y="y",
-    dw="dw",
-    dh="dh",
+    image='bfdata',
+    x='x',
+    y='y',
+    dw='dw',
+    dh='dh',
     alpha=0.9,
     color_mapper=color_mapper,
     source=bv.cdsource,
@@ -175,77 +171,75 @@ bf_plot.add_tools(
 
 # set up widgets for Microphone Geometry
 editor = NumberEditor()
-formatter = NumberFormatter(format="0.00")
+formatter = NumberFormatter(format='0.00')
 mpos_columns = [
-    TableColumn(field="x", title="x/m", editor=editor, formatter=formatter),
-    TableColumn(field="y", title="x/m", editor=editor, formatter=formatter),
-    TableColumn(field="z", title="x/m", editor=editor, formatter=formatter),
+    TableColumn(field='x', title='x/m', editor=editor, formatter=formatter),
+    TableColumn(field='y', title='x/m', editor=editor, formatter=formatter),
+    TableColumn(field='z', title='x/m', editor=editor, formatter=formatter),
 ]
 mic_layout.mics_trait_widget_args.update(
     {
-        "pos_total": {
-            "width": 280,
-            "editable": True,
-            "transposed": True,
-            "columns": mpos_columns,
+        'pos_total': {
+            'width': 280,
+            'editable': True,
+            'transposed': True,
+            'columns': mpos_columns,
         },
-        "invalid_channels": {
-            "width": 280,
-            "options": [str(i) for i in range(mg.pos_total.shape[1])],
+        'invalid_channels': {
+            'width': 280,
+            'options': [str(i) for i in range(mg.pos_total.shape[1])],
         },
     }
 )
 
 # FrequencySignalPlot
 f_ticks_override = {
-    20: "0.02",
-    50: "0.05",
-    100: "0.1",
-    200: "0.2",
-    500: "0.5",
-    1000: "1",
-    2000: "2",
-    5000: "5",
-    10000: "10",
-    20000: "20",
+    20: '0.02',
+    50: '0.05',
+    100: '0.1',
+    200: '0.2',
+    500: '0.5',
+    1000: '1',
+    2000: '2',
+    5000: '5',
+    10000: '10',
+    20000: '20',
 }
 freqplot = figure(
-    title="Sector-Integrated Spectrum",
+    title='Sector-Integrated Spectrum',
     width=800,
     match_aspect=True,
-    x_axis_type="log",
-    x_axis_label="f / kHz",
-    y_axis_label="SPL / dB",
+    x_axis_type='log',
+    x_axis_label='f / kHz',
+    y_axis_label='SPL / dB',
 )  # tooltips=TOOLTIPS)
 freqplot.toolbar.logo = None
-freqplot.xaxis.axis_label_text_font_style = "normal"
-freqplot.yaxis.axis_label_text_font_style = "normal"
-freqplot.xgrid.minor_grid_line_color = "navy"
+freqplot.xaxis.axis_label_text_font_style = 'normal'
+freqplot.yaxis.axis_label_text_font_style = 'normal'
+freqplot.xgrid.minor_grid_line_color = 'navy'
 freqplot.xgrid.minor_grid_line_alpha = 0.05
 freqplot.xaxis.ticker = f_ticks
 freqplot.x_range = Range1d(20, 20000)
 freqplot.y_range = Range1d(0, 120)
 freqplot.xaxis.major_label_overrides = f_ticks_override
-fr_line = freqplot.multi_line(
-    'freqs', 'amp', color='colors', alpha=0.0, line_width=3, source=freqdata
-)
+fr_line = freqplot.multi_line('freqs', 'amp', color='colors', alpha=0.0, line_width=3, source=freqdata)
 
 
 # %% widgets
 
 beamformer_dict = {
-    "Conventional Beamforming": (bb, bb.get_widgets()),
-    "Functional Beamforming": (bf, bf.get_widgets()),
-    "Capon Beamforming": (bc, bc.get_widgets()),
-    "Eigenvalue Beamforming": (be, be.get_widgets()),
-    "Music Beamforming": (bm, bm.get_widgets()),
-    "Damas Deconvolution": (bd, bd.get_widgets()),
-    "DamasPlus Deconvolution": (bdp, bdp.get_widgets()),
-    "Orthogonal Beamforming": (bo, bo.get_widgets()),
-    "CleanSC Deconvolution": (bs, bs.get_widgets()),
-    "Clean Deconvolution": (bl, bl.get_widgets()),
-    "CMF": (bcmf, bcmf.get_widgets()),
-    "GIB": (bgib, bgib.get_widgets()),
+    'Conventional Beamforming': (bb, bb.get_widgets()),
+    'Functional Beamforming': (bf, bf.get_widgets()),
+    'Capon Beamforming': (bc, bc.get_widgets()),
+    'Eigenvalue Beamforming': (be, be.get_widgets()),
+    'Music Beamforming': (bm, bm.get_widgets()),
+    'Damas Deconvolution': (bd, bd.get_widgets()),
+    'DamasPlus Deconvolution': (bdp, bdp.get_widgets()),
+    'Orthogonal Beamforming': (bo, bo.get_widgets()),
+    'CleanSC Deconvolution': (bs, bs.get_widgets()),
+    'Clean Deconvolution': (bl, bl.get_widgets()),
+    'CMF': (bcmf, bcmf.get_widgets()),
+    'GIB': (bgib, bgib.get_widgets()),
 }
 
 # create Select Button to select Beamforming Algorithm
@@ -296,11 +290,9 @@ dynamic_slider = RangeSlider(
     value=(40, 50),
     width=220,
     height=50,
-    title="Dynamic Range",
+    title='Dynamic Range',
 )
-spl_slider = RangeSlider(
-    start=0, end=140, step=1.0, value=(10, 120), width=350, height=50, title="SPL Range"
-)
+spl_slider = RangeSlider(start=0, end=140, step=1.0, value=(10, 120), width=350, height=50, title='SPL Range')
 
 freq_slider = RangeSlider(
     start=20,
@@ -309,7 +301,7 @@ freq_slider = RangeSlider(
     value=(20, 20000),
     width=350,
     height=50,
-    title="Frequency Range",
+    title='Frequency Range',
 )
 
 
@@ -345,10 +337,10 @@ def update_grid(_attr, _old, _new):
     """Update grid data source when grid settings change."""
     grid_data.data = {
         # x and y are the centers of the rectangle!
-        "x": [(rg.x_max + rg.x_min) / 2],
-        "y": [(rg.y_max + rg.y_min) / 2],
-        "width": [rg.x_max - rg.x_min],
-        "height": [rg.y_max - rg.y_min],
+        'x': [(rg.x_max + rg.x_min) / 2],
+        'y': [(rg.y_max + rg.y_min) / 2],
+        'width': [rg.x_max - rg.x_min],
+        'height': [rg.y_max - rg.y_min],
     }
 
 
@@ -397,7 +389,7 @@ beamformer_selector.on_change('value', beamformer_handler)
 # %% Integration sector
 def integrate_result(_attr, _old, _new):
     """Update the integrated sector spectrum."""
-    numsectors = len(sectordata.data["x"])
+    numsectors = len(sectordata.data['x'])
     if numsectors > 0:
         fr_line.glyph.line_alpha = 0.8
         famp = []
@@ -406,10 +398,10 @@ def integrate_result(_attr, _old, _new):
         for i in range(numsectors):
             sector = np.array(
                 [
-                    sectordata.data["x"][i] - sectordata.data["width"][i] / 2,
-                    sectordata.data["y"][i] - sectordata.data["height"][i] / 2,
-                    sectordata.data["x"][i] + sectordata.data["width"][i] / 2,
-                    sectordata.data["y"][i] + sectordata.data["height"][i] / 2,
+                    sectordata.data['x'][i] - sectordata.data['width'][i] / 2,
+                    sectordata.data['y'][i] - sectordata.data['height'][i] / 2,
+                    sectordata.data['x'][i] + sectordata.data['width'][i] / 2,
+                    sectordata.data['y'][i] + sectordata.data['height'][i] / 2,
                 ]
             )
             sector[0] = np.clip(sector[0], rg.x_min, rg.x_max)
@@ -424,42 +416,38 @@ def integrate_result(_attr, _old, _new):
             ffreq.append(ps.fftfreq())
             colors.append(COLORS[i])
         if famp:
-            freqdata.data = {"amp": famp, "freqs": ffreq, "colors": colors}
+            freqdata.data = {'amp': famp, 'freqs': ffreq, 'colors': colors}
         else:
             fr_line.glyph.line_alpha = 0.0
             freqdata.data = {
-                "freqs": [np.array(f_ticks)],
-                "amp": [np.array([0] * len(f_ticks))],
-                "colors": ["white"],
+                'freqs': [np.array(f_ticks)],
+                'amp': [np.array([0] * len(f_ticks))],
+                'colors': ['white'],
             }
     else:
         fr_line.glyph.line_alpha = 0.0  # make transparent if no integration sector exist
         freqdata.data = {
-            "freqs": [np.array(f_ticks)],
-            "amp": [np.array([0] * len(f_ticks))],
-            "colors": ["white"],
+            'freqs': [np.array(f_ticks)],
+            'amp': [np.array([0] * len(f_ticks))],
+            'colors': ['white'],
         }
 
 
 isector = bf_plot.rect(
-    "x",
-    "y",
-    "width",
-    "height",
+    'x',
+    'y',
+    'width',
+    'height',
     alpha=1.0,
     fill_alpha=0.2,
-    color="black",
+    color='black',
     line_width=3,
     source=sectordata,
 )
-tool = BoxEditTool(
-    renderers=[isector], num_objects=len(COLORS)
-)  # allow only as many boxes as Colors
+tool = BoxEditTool(renderers=[isector], num_objects=len(COLORS))  # allow only as many boxes as Colors
 bf_plot.add_tools(tool)
-sectordata.on_change("data", integrate_result)
-bv.cdsource.on_change(
-    "data", integrate_result
-)  # also change integration result when source map changes
+sectordata.on_change('data', integrate_result)
+bv.cdsource.on_change('data', integrate_result)  # also change integration result when source map changes
 
 # %% Instructions
 
@@ -507,7 +495,7 @@ right_layout = column(
     setting_selector,
     Spacer(height=20),
     selected_setting_col,
-    sizing_mode="stretch_width",
+    sizing_mode='stretch_width',
 )
 instructions_col = column(instruction_calculation, instruction_sector_integration)
 layout = column(
