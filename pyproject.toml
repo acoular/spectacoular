@@ -122,7 +122,6 @@ filterwarnings = [
 extend = ".venv/share/ruff/ruff.acoular.toml"
 extend-exclude = [
     "src/spectacoular/apps/level_meter_app",
-    "src/spectacoular/apps/measurement_app",
     "src/spectacoular/apps/micgeom_app",
     "src/spectacoular/apps/rotating_example_app",
 ]
@@ -133,3 +132,5 @@ banned-module-level-imports = ["sounddevice"]
 [tool.ruff.lint.per-file-ignores]
 "src/spectacoular/__init__.py" = ["ALL"]
 "src/spectacoular/version.py" = ["ALL"]
+"src/spectacoular/apps/**/*.py" = ["T201"]
+"src/spectacoular/apps/measurement_app/acoular_future/fastFuncs.py" = ["N999"]
