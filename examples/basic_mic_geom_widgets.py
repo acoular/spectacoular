@@ -1,19 +1,15 @@
 # ------------------------------------------------------------------------------
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
-"""
+"""Creating widgets with SpectAcoular.
+
 .. _basic_mic_geom_widgets:
 
-Creating widgets with SpectAcoular
-==================================
-
-In this example, we are going to create an interactive plot of a Microphone Array Geometry with additional control widgets
-using the SpectAcoular package.
-
+This example creates an interactive plot of a microphone array geometry
+with additional control widgets using the SpectAcoular package.
 
 .. bokeh-plot:: ../examples/basic_mic_geom_widgets.py
    :source-position: none
-
 
 .. note::
     This example can be rendered as a standalone Bokeh document, but full interactivity
@@ -32,7 +28,6 @@ from pathlib import Path
 import acoular as ac
 import spectacoular as sp
 
-from pathlib import Path
 from bokeh.io import curdoc, show
 from bokeh.layouts import column, row
 from bokeh.models import ColumnDataSource, NumberEditor, PointDrawTool, TableColumn
@@ -67,19 +62,25 @@ glyph = figure.circle(
 # Create widgets for MicGeom
 # --------------------------
 #
-# The :class:`~acoular.microphones.MicGeom` class provides several attributes, known as traits, that can be used to
-# either provide additional information about the microphone array or to modify the geometry. In this example,
-# we focus on the most relevant ones for widget creation: :attr:`~acoular.microphones.MicGeom.num_mics`,
-# :attr:`~acoular.microphones.MicGeom.aperture`, and :attr:`~acoular.microphones.MicGeom.pos_total`.
+# The :class:`~acoular.microphones.MicGeom` class provides several
+# attributes, known as traits, that can either provide additional
+# information about the microphone array or modify the geometry. In this
+# example, we focus on the most relevant ones for widget creation:
+# :attr:`~acoular.microphones.MicGeom.num_mics`,
+# :attr:`~acoular.microphones.MicGeom.aperture`, and
+# :attr:`~acoular.microphones.MicGeom.pos_total`.
 
 # %%
-# Let's say we want to know about the number of microphones (:attr:`~acoular.microphones.MicGeom.num_mics`) and
-# the aperture of the microphone array (:attr:`~acoular.microphones.MicGeom.aperture`), we can use SpectAcoular's
-# :func:`~spectacoular.factory.get_widgets` function to translate each attribute into a Bokeh widget.
+# If we want to inspect the number of microphones
+# (:attr:`~acoular.microphones.MicGeom.num_mics`) and the aperture of the
+# microphone array (:attr:`~acoular.microphones.MicGeom.aperture`), we can
+# use SpectAcoular's :func:`~spectacoular.factory.get_widgets` function to
+# translate each attribute into a Bokeh widget.
 #
-# Defining each trait to widget mapping individually can become cumbersome, and not all
-# widgets are suitable for all traits. Therefore, SpectAcoular provides default widget mapping for
-# most of Acoular's classes.
+# Defining each trait to widget mapping individually can become
+# cumbersome, and not all widgets are suitable for all traits.
+# Therefore, SpectAcoular provides default widget mapping for most of
+# Acoular's classes.
 
 numeric_widgets = mics.get_widgets(
     {'aperture': NumericInput, 'num_mics': NumericInput},
@@ -129,15 +130,11 @@ figure.toolbar.active_tap = draw_tool
 # %%
 # Let's create a layout that contains the figure and the widgets.
 
-widget_column = column(
-    *numeric_widgets.values(), *data_table_widget.values(), width=400
-)
+widget_column = column(*numeric_widgets.values(), *data_table_widget.values(), width=400)
 layout = row(figure, widget_column)
 show(layout)  # Show the plot in a new browser window
 
 # %%
 # The following code is for Bokeh server apps only.
 
-curdoc().add_root(
-    layout
-)  # Add the layout to the current document for Bokeh server apps
+curdoc().add_root(layout)  # Add the layout to the current document for Bokeh server apps
