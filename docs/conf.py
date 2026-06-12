@@ -1,149 +1,109 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""Sphinx configuration for the SpectAcoular documentation."""
 
-# -- Path setup --------------------------------------------------------------
+from __future__ import annotations
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, str(Path('../..').resolve()))
 
+from spectacoular.version import __version__ as version
 
-# -- Project information -----------------------------------------------------
+from acoular_sphinx import (
+    COMMON_EXTENSIONS,
+    build_github_context,
+    build_html_context,
+    configure_package_theme_options,
+    resolve_docs_build_config,
+)
 
 project = 'SpectAcoular'
-copyright = '2020, Acoular Development Team'
 author = 'Acoular Development Team'
+globals()['copyright'] = f'2015-%Y, {author}'
+today_fmt = '%B %d, %Y'
+docs_build = resolve_docs_build_config(
+    default_version_match='dev' if 'dev' in version else version,
+)
 
-
-# -- General configuration ---------------------------------------------------
-
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
 extensions = [
+    *COMMON_EXTENSIONS,
     'bokeh.sphinxext.bokeh_plot',
-    #'bokeh.sphinxext.bokeh_gallery',
-    "sphinx_gallery.gen_gallery",
-    "sphinx_design",
-    "sphinx_copybutton",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.doctest",
-    "sphinx.ext.githubpages",
-    "traits.util.trait_documenter",
-    "numpydoc",  # conda install -c anaconda numpydoc
+    'sphinx.ext.doctest',
+    'sphinx.ext.githubpages',
+    'sphinx_design',
+    'sphinx_copybutton',
+    'sphinx_gallery.gen_gallery',
+    'numpydoc',
 ]
 
-
-# Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
-
-# autosummary: https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html
-autosummary_generate = True
-autodoc_member_order = 'bysource'
-autosummary_generate_overwrite = True  # alternatively generate stub files manually with sphinx-autogen *.rst
-numpydoc_show_class_members = (
-    False  # Whether to show all members of a class in the Methods and Attributes sections automatically.
-)
-numpydoc_show_inherited_class_members = (
-    False  # Whether to show all inherited members of a class in the Methods and Attributes sections automatically.
-)
-numpydoc_class_members_toctree = False  # Whether to create a Sphinx table of contents for the lists of class methods and attributes. If a table of contents is made, Sphinx expects each entry to have a separate page.
-
-# -- Options for HTML output -------------------------------------------------
-
-# The style sheet to use for HTML and HTML Help pages. A file of that name
-# must exist either in Sphinx' static/ path, or in one of the custom paths
-# given in html_static_path.
-# html_style = 'default.css'
-html_theme = "pydata_sphinx_theme"
-
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+html_theme = 'pydata_sphinx_theme'
+html_static_path = ['_static']
 html_context = {
-    "github_user": "acoular",
-    "github_repo": "spectacoular",
-    "github_version": "master",
-    "doc_path": "docs",
+    **build_html_context(),
+    **build_github_context(
+        github_user='acoular',
+        github_repo='spectacoular',
+        github_version='master',
+        doc_path='docs',
+    ),
 }
-html_theme_options = {
-    "logo": {
-        "alt_text": "SpectAcoular - Home",
-        "text": "SpectAcoular",
-        "image_light": "_static/Acoular_logo.png",
-        "image_dark": "_static/Acoular_logo.png",
-    },
-    "icon_links": [
-        {
-            "name": "GitHub",
-            "url": "https://github.com/acoular/spectacoular",
-            "icon": "fa-brands fa-square-github",
-        },
-        {
-            "name": "PyPI",
-            "url": "https://pypi.org/project/spectacoular",
-            "icon": "_static/pypi.svg",
-            "type": "local",
-        },
-    ],
-    "pygments_light_style": "tango",
-    "pygments_dark_style": "monokai",
-    "header_links_before_dropdown": 5,
-    "use_edit_page_button": True,
-}
+html_theme_options = configure_package_theme_options(
+    package_name='SpectAcoular',
+    github_url='https://github.com/acoular/spectacoular',
+    pypi_project='spectacoular',
+    use_edit_page_button=True,
+    switcher_json_url='https://acoular.org/spectacoular/_static/switcher.json',
+    version_match=docs_build['version_match'],
+)
 html_sidebars = {
-    "install/*": [],
-    "news/*": [],
+    '**': ['sidebar-nav-bs.html'],
 }
-html_favicon = "_static/acoular_logo.ico"
-html_last_updated_fmt = "%b %d, %Y"
+html_favicon = '_static/acoular_logo.ico'
+html_last_updated_fmt = '%b %d, %Y'
+html_baseurl = docs_build['html_baseurl']
 html_copy_source = False
-copybutton_prompt_text = r">>> |\.\.\. |\$ "
+
+# sphinx_copybutton config
+# ------------------------
+copybutton_prompt_text = r'>>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: '  # strips prompts
 copybutton_prompt_is_regexp = True
 
+autosummary_generate = True
+autosummary_generate_overwrite = True
 
 # %%
-# sphinx_gallery.gen_gallery extension settings
-# ---------------------------------------------
+# sphinx.ext.autodoc extension settings
+# -------------------------------------
 
-# Custom CSS paths should either relative to html_static_path
-# or fully qualified paths (eg. https://...)
-# necessary to hide "go to the end" note etc.
-html_css_files = ["css/sphinx_gallery.css", "css/custom_pydata_sphinx_theme.css"]
+autodoc_default_options = {
+    'members': True,
+    'member-order': 'bysource',
+    'exclude-members': 'trait_added,trait_modified',
+    'inherited-members': 'ABCHasStrictTraits,HasStrictTraits,HasTraits,CHasTraits',
+    'show-inheritance': True,  # False does not work, need to delete this line to deactivate!
+}
 
-# sphinx_gallery.gen_gallery extension configuration
+numpydoc_show_class_members = False
+numpydoc_show_inherited_class_members = False
+numpydoc_class_members_toctree = False
+
+html_css_files = ['css/sphinx_gallery.css', 'css/custom_pydata_sphinx_theme.css']
+
 sphinx_gallery_conf = {
-    'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
+    'gallery_dirs': 'auto_examples',
     'example_extensions': {'.py'},
-    'download_all_examples': False,  # whether to download all examples
+    'download_all_examples': False,
     'examples_dirs': ['../examples'],
 }
 
-# %%
-# intersphinx extension settings
-
 intersphinx_mapping = {
-    'numpy': ('https://numpy.org/doc/stable', None),
-    'scipy': ('https://docs.scipy.org/doc/scipy/', None),
+    'acoular': ('https://acoular.org', None),
+    'h5py': ('https://docs.h5py.org/en/stable/', None),
     'matplotlib': ('https://matplotlib.org/stable', None),
-    'bokeh': ('https://docs.bokeh.org/en/latest', None),
-    'acoular': ('https://www.acoular.org/', None),
+    'numpy': ('https://numpy.org/doc/stable', None),
+    'python': (f'https://docs.python.org/{sys.version_info.major}', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/', None),
+    'traits': ('https://docs.enthought.com/traits', None),
 }
