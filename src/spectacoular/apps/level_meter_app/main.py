@@ -9,6 +9,7 @@ Start from an installed package with:
     level_meter_app --show
 """
 
+import importlib
 import sys
 import threading
 from itertools import cycle
@@ -18,7 +19,6 @@ import acoular as ac
 import spectacoular as sp
 
 import numpy as np
-import sounddevice as sd
 
 # bokeh imports
 from bokeh.layouts import column, row
@@ -54,6 +54,8 @@ from bokeh.palettes import Category10_10
 from bokeh.plotting import curdoc, figure
 from bokeh.server.server import Server
 from bokeh.transform import transform
+
+sd = importlib.import_module('sounddevice')
 
 palette = cycle(Category10_10)
 MIN_SELECTION_POINTS = 2
