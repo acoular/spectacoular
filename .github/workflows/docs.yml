@@ -27,6 +27,5 @@ jobs:
       package_path: /spectacoular
       min_version: v26.06
       deploy_switcher: true
-      switcher_destination_dir: spectacoular/_static
     secrets:
       website_gh_pages_token: ${{ secrets.WEBSITE_GH_PAGES_TOKEN }}
