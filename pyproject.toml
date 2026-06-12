@@ -52,16 +52,8 @@ full = [
 
 [dependency-groups]
 docs = [
-    "ipython",
-    "graphviz",
-    "matplotlib",
-    "numpydoc",
-    "pickleshare",
-    "pydata-sphinx-theme",
-    "sphinx",
-    "sphinx-copybutton",
-    "sphinx-design",
-    "sphinx_gallery",
+    "acoular-sphinx @ git+https://github.com/acoular/ci.git@sphinx-v1.3#subdirectory=packages/acoular-sphinx",
+    "bokeh >=3.0",
 ]
 
 lint = ["acoular-ruff @ git+https://github.com/acoular/ci.git@ruff-v1.0"]
@@ -89,8 +81,8 @@ level_meter_app = "spectacoular.apps.level_meter_app:main"
 data_viewer_app = "spectacoular.apps.data_viewer_app:main"
 
 [project.urls]
-homepage = "https://acoular.github.io/spectacoular/"
-documentation = "https://acoular.github.io/spectacoular/"
+homepage = "https://acoular.org/spectacoular/"
+documentation = "https://acoular.org/spectacoular/"
 repository = "https://github.com/acoular/spectacoular"
 
 [build-system]
@@ -129,12 +121,8 @@ filterwarnings = [
 [tool.ruff]
 extend = ".venv/share/ruff/ruff.acoular.toml"
 extend-exclude = [
-    "docs/_build",
-    "docs/auto_examples",
-    "docs/conf.py",
     "examples",
     "tests",
-    "src/spectacoular/apps/data_viewer_app",
     "src/spectacoular/apps/level_meter_app",
     "src/spectacoular/apps/measurement_app",
     "src/spectacoular/apps/micgeom_app",
