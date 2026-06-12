@@ -167,7 +167,7 @@ try:
     ts.device = sd.default.device[0]
     ts.num_channels = 1
 except sd.PortAudioError as e:
-    print(f'Error accessing audio device {sd.default.device[0]}: {e}')  # noqa: T201
+    print(f'Error accessing audio device {sd.default.device[0]}: {e}')
     default_device_settable = False
 
 
@@ -235,13 +235,13 @@ if devices:
             device_select.value = dev[0]
             break
         except sd.PortAudioError as e:
-            print(f'Error accessing audio device {dev[1]}: {e}')  # noqa: T201
+            print(f'Error accessing audio device {dev[1]}: {e}')
             continue
     ts.set_widgets(device=device_select)
 else:
     device_select = Select(title='Choose input device:', options=['No input devices found'])
     device_select.disabled = True
-    print('No input devices found')  # noqa: T201
+    print('No input devices found')
 
 # button to stop the server
 exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width', width=100)
@@ -273,7 +273,7 @@ def toggle_handler(active):
         lin_or_exp.disabled = True
         exit_button.disabled = True
         active_consumer = (tic, tbc, tic2, tic3)[layout.active]
-        print(active_consumer.num_channels)  # noqa: T201
+        print(active_consumer.num_channels)
         active_consumer.thread = threading.Thread(
             target=active_consumer.consume,
             args=[
@@ -676,7 +676,7 @@ def server_doc(doc):
 if __name__ == '__main__':
     server = Server({'/': server_doc})
     server.start()
-    print('Opening application on http://localhost:5006/')  # noqa: T201
+    print('Opening application on http://localhost:5006/')
     server.io_loop.add_callback(server.show, '/')
     server.io_loop.start()
 else:
