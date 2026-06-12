@@ -136,7 +136,7 @@ extend-exclude = [
     "src/spectacoular/apps",
 ]
 
-[tool.ruff.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports]
 banned-module-level-imports = ["sounddevice"]
 
 [tool.ruff.lint.per-file-ignores]

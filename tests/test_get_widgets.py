@@ -10,7 +10,6 @@ import pkgutil
 import spectacoular as sp
 
 import pytest
-import sounddevice as sd
 from traits.api import HasTraits
 
 
@@ -65,6 +64,7 @@ def test_get_widgets(cls):
         pytest.skip(f'{cls} does not have get_widgets method.')
 
     if cls.__name__ == 'SoundDeviceSamplesGenerator':
+        sd = importlib.import_module('sounddevice')
         # In some cases, the default value ``device=0`` is invalid.
         # Use the default input device instead.
         device = sd.default.device[0]
