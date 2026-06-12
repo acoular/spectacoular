@@ -1,3 +1,5 @@
+"""Tests for SpectAcoular Bokeh application entry points."""
+
 import importlib
 import os
 
@@ -9,6 +11,7 @@ from bokeh.server.server import Server
 
 @pytest.fixture
 def bokeh_server(request):
+    """Create a Bokeh server for the requested application module."""
     # Dynamically import the server_doc based on the app name
     app_name = request.param  # Parameterized fixture
     try:
@@ -30,9 +33,7 @@ def bokeh_server(request):
                 yield server  # Provide the server to the test
                 break
             except OSError as e:
-                if 'Address already in use' in str(e):
-                    print(f'Port {port} is in use. Trying next port...')
-                else:
+                if 'Address already in use' not in str(e):
                     pytest.fail(f'Error starting the server: {e}')
         if server is None:
             pytest.fail(f'Failed to start the server. No available ports in range {default_port}-{max_port}.')
@@ -57,5 +58,7 @@ def bokeh_server(request):
     indirect=True,
 )
 def test_bokeh_app(bokeh_server):
+    """Test that each configured Bokeh application server starts."""
     bokeh_server.start()
-    assert bokeh_server.io_loop is not None, 'Bokeh server failed to start.'
+    if bokeh_server.io_loop is None:
+        pytest.fail('Bokeh server failed to start.')

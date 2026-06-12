@@ -6,7 +6,7 @@
 
 ## Package Documentation
 
-The documentation for the SpectAcoular package is available at [https://acoular.github.io/spectacoular/](https://acoular.github.io/spectacoular/).
+The documentation for the SpectAcoular package is available at [https://acoular.org/spectacoular/](https://acoular.org/spectacoular/).
 
 ## Quick Start
 
@@ -31,4 +31,4 @@ $ uv run micgeom_app --show
 
 A browser window or tab should open with the microphone geometry application.
 
-For more detailed installation instructions, see the [installation guide](https://acoular.github.io/spectacoular/install/index.html).
+For more detailed installation instructions, see the [installation guide](https://acoular.org/spectacoular/install/index.html).
