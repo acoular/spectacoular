@@ -1,30 +1,27 @@
 # ------------------------------------------------------------------------------
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
-"""
+"""Interactive server applications with SpectAcoular.
+
 .. _interactive_apps:
 
-Interactive Server Applications with SepctAcoular
-=================================================
-
-In many cases, a standalone HTML document is not sufficient to provide full interactivity, especially
-when computations are required on the Python side to update data shown in the Browser document.
-Bokeh provides a way to host applications that can be run in a web browser, allowing for
-interactivity and real-time updates.
+Standalone HTML documents are often not sufficient for full interactivity,
+especially when Python-side computations are needed to update displayed
+results. Bokeh can host applications in a web browser and provide
+real-time updates.
 
 .. image:: https://docs.bokeh.org/en/latest/_images/bokeh_serve.svg
     :width: 600px
     :align: center
     :alt: Bokeh Server Application (see: `Bokeh documentation <https://docs.bokeh.org/en/latest/docs/user_guide/server/app.html#ug-server-apps>`_)
 
-
-In this example, we are going to create an interactive application to visualize the Beamforming
-result for Acoular's
-`three sources example <https://www.acoular.org/auto_examples/introductory_examples/example_basic_beamforming.html#sphx-glr-auto-examples-introductory-examples-example-basic-beamforming-py>`_ .
-As seen by the HTML document below, changing the frequency or grid parameters will **not** result
-in an update of the plot, since the HTML document is static and does not allow for interaction with
-the Python code. Instead, it is necessary to run a Bokeh server application hosting the Python code
-to which the client can listen for updates of the data.
+This example creates an interactive application to visualize the
+beamforming result for Acoular's three sources example.
+See the `Acoular example documentation <https://www.acoular.org/auto_examples/introductory_examples/example_basic_beamforming.html>`_.
+As the HTML document below shows, changing the frequency or grid
+parameters will **not** update the plot because the document is static and
+cannot interact with the Python code. To get updates, the Python code must
+run in a Bokeh server application to which the client can listen.
 
 To start the Bokeh server, run the following command in the terminal:
 
@@ -32,10 +29,8 @@ To start the Bokeh server, run the following command in the terminal:
 
     $ bokeh serve --show examples/interactive_apps.py
 
-
 .. bokeh-plot:: ../examples/interactive_apps.py
    :source-position: none
-
 
 """
 
@@ -43,21 +38,20 @@ To start the Bokeh server, run the following command in the terminal:
 # Create three sources example
 # -----------------------------
 #
-# Let's begin with the necessary imports and setting up the simulation pipeline for the three sources example.
+# Let's begin with the necessary imports and the simulation pipeline
+# for the three sources example.
 
 from pathlib import Path
 
 import acoular as ac
 import spectacoular as sp
+
 from bokeh.io import curdoc
 from bokeh.layouts import column, gridplot, row
 from bokeh.models import ColumnDataSource, LinearColorMapper
 from bokeh.models.widgets import Slider
 from bokeh.palettes import viridis
 from bokeh.plotting import figure
-
-import acoular as ac
-import spectacoular as sp
 
 mg = ac.MicGeom(file=Path(ac.__file__).parent / 'xml' / 'array_64.xml')
 
@@ -66,9 +60,11 @@ three_sources = ac.demo.create_three_sources(mg)
 
 
 # %%
-# Next, we will define a rectangular grid (:class:`~acoular.grids.RectGrid`) discretizing the source area.
-# To obtain a source map at 4 kHz (one-third octave) asociated with the defined grid,
-# we will utilize conventional beamforming (:class:`~acoular.fbeamform.BeamformerBase`).
+# Next, we define a rectangular grid
+# (:class:`~acoular.grids.RectGrid`) that discretizes the source area.
+# To obtain a source map at 4 kHz (one-third octave) associated with the
+# defined grid, we use conventional beamforming
+# (:class:`~acoular.fbeamform.BeamformerBase`).
 
 # set up the rectangular grid
 rg = ac.RectGrid(x_min=-0.2, x_max=0.2, y_min=-0.2, y_max=0.2, z=-0.3, increment=0.01)
@@ -96,12 +92,13 @@ grid_grid = gridplot(list(sp.get_widgets(rg).values()), ncols=2, width=150)
 # Plot the beamforming result
 # ---------------------------
 #
-# To visualize the beamforming result, we will create figure and use Bokeh's
-# :class:`~bokeh.models.Image` glyph, which allows us to display 2D source mappings.
-# The :class:`~bokeh.models.Image` glyph requires us to specify the *x* and *y* coordinates of the bottom
-# left grid corner, the width and height of the grid, and the sound pressure to be displayed.
+# To visualize the beamforming result, we create a figure and use
+# Bokeh's :class:`~bokeh.models.Image` glyph, which displays 2D source
+# mappings. The :class:`~bokeh.models.Image` glyph requires the *x* and
+# *y* coordinates of the bottom-left grid corner, the width and height of
+# the grid, and the sound pressure to be displayed.
 
-source_plot = figure(title="Acoular Three Sources", tools="hover,reset,pan,wheel_zoom")
+source_plot = figure(title='Acoular Three Sources', tools='hover,reset,pan,wheel_zoom')
 
 cds = ColumnDataSource(
     data={
@@ -134,10 +131,12 @@ source_plot.image(
 # The Presenter class
 # -------------------
 #
-# SpectAcoular provides so-called Presenter classes to automatically handle updates of the
-# :class:`~bokeh.models.ColumnDataSource` data whenever the desired evaluation parameters change.
-# Here, we will use the :class:`~spectacoular.BeamformerPresenter` class. We choose `auto_update=True`,
-# which means that the data in the :class:`~bokeh.models.ColumnDataSource` will be updated automatically
+# SpectAcoular provides Presenter classes that automatically handle
+# updates of :class:`~bokeh.models.ColumnDataSource` data whenever the
+# desired evaluation parameters change. Here, we use the
+# :class:`~spectacoular.BeamformerPresenter` class with
+# ``auto_update=True``, which means that the data in the
+# :class:`~bokeh.models.ColumnDataSource` is updated automatically
 # whenever the internal state of the beamformer changes.
 
 bf_presenter = sp.BeamformerPresenter(
