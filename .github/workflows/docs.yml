@@ -22,9 +22,8 @@ jobs:
     uses: acoular/ci/.github/workflows/package-docs-deploy.yml@main
     with:
       artifact_name: build-docs-dev
-      artifact_path: ./docs/_build/html
-      destination_dir: spectacoular/dev
-      package_path: /spectacoular
+      package: spectacoular
+      version: dev
       min_version: v26.06
       deploy_switcher: true
     secrets:
