@@ -122,7 +122,6 @@ filterwarnings = [
 extend = ".venv/share/ruff/ruff.acoular.toml"
 extend-exclude = [
     "examples",
-    "src/spectacoular/apps/bf_example_app",
     "src/spectacoular/apps/level_meter_app",
     "src/spectacoular/apps/measurement_app",
     "src/spectacoular/apps/micgeom_app",
