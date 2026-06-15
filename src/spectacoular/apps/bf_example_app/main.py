@@ -515,7 +515,7 @@ def server_doc(doc):
 if __name__ == '__main__':
     server = Server({'/': server_doc})
     server.start()
-    print('Opening application on http://localhost:5006/')  # noqa: T201
+    print('Opening application on http://localhost:5006/')
     server.io_loop.add_callback(server.show, '/')
     server.io_loop.start()
 else:
