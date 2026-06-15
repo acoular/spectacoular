@@ -1,43 +1,40 @@
 # ------------------------------------------------------------------------------
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
-"""
-Example that demonstrates different beamforming algorithms
-"""
+"""Example that demonstrates different beamforming algorithms."""
 
 from pathlib import Path
+
 import acoular as ac
 import spectacoular as sp
 
 # bokeh imports
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import LogColorMapper, ColorBar
+from bokeh.models import ColorBar, LogColorMapper, Tabs
+from bokeh.models import TabPanel as Panel
 from bokeh.models.widgets import (
-    Select,
-    Toggle,
-    RangeSlider,
     DataTable,
-    TableColumn,
     NumberEditor,
     NumberFormatter,
+    RangeSlider,
+    Select,
+    TableColumn,
+    Toggle,
 )
-from bokeh.models import TabPanel as Panel, Tabs
-from bokeh.plotting import figure
 from bokeh.palettes import viridis
+from bokeh.plotting import figure
 from bokeh.server.server import Server
 
 doc = curdoc()
 # build processing chain
-micgeofile = Path(ac.__file__).parent / "xml" / "array_56.xml"
-tdfile = Path(__file__).parent / "rotating_source.h5"
+micgeofile = Path(ac.__file__).parent / 'xml' / 'array_56.xml'
+tdfile = Path(__file__).parent / 'rotating_source.h5'
 ts = sp.MaskedTimeSamples(file=tdfile)
 
 mg = sp.MicGeom(file=micgeofile)
 
-si = sp.SpatialInterpolatorConstantRotation(
-    source=ts, mics=mg, rotational_speed=15.0, array_dimension="2D"
-)
+si = sp.SpatialInterpolatorConstantRotation(source=ts, mics=mg, rotational_speed=15.0, array_dimension='2D')
 
 ps = sp.PowerSpectra(source=si)
 rg = sp.RectGrid(x_min=-0.8, x_max=0.8, y_min=-0.8, y_max=0.8, z=1.00, increment=0.05)
@@ -55,29 +52,29 @@ bdp = sp.BeamformerDamasPlus(freq_data=ps, n_iter=100)
 bo = sp.BeamformerOrth(freq_data=ps, eva_list=list(range(38, 54)))
 bs = sp.BeamformerCleansc(freq_data=ps, steer=st, r_diag=True)
 bl = sp.BeamformerClean(freq_data=ps, n_iter=100)
-bcmf = sp.BeamformerCMF(freq_data=ps, steer=st, method="LassoLarsBIC")
-bgib = sp.BeamformerGIB(freq_data=ps, steer=st, method="LassoLars", n=10)
+bcmf = sp.BeamformerCMF(freq_data=ps, steer=st, method='LassoLarsBIC')
+bgib = sp.BeamformerGIB(freq_data=ps, steer=st, method='LassoLars', n=10)
 
 beamformer_dict = {
-    "Conventional Beamforming": bb,
-    "Functional Beamforming": bf,
-    "Capon Beamforming": bc,
-    "Eigenvalue Beamforming": be,
-    "Music Beamforming": bm,
-    "Damas Deconvolution": bd,
-    "DamasPlus Deconvolution": bdp,
-    "Orthogonal Beamforming": bo,
-    "CleanSC Deconvolution": bs,
-    "Clean Deconvolution": bl,
-    "CMF": bcmf,
-    "GIB": bgib,
+    'Conventional Beamforming': bb,
+    'Functional Beamforming': bf,
+    'Capon Beamforming': bc,
+    'Eigenvalue Beamforming': be,
+    'Music Beamforming': bm,
+    'Damas Deconvolution': bd,
+    'DamasPlus Deconvolution': bdp,
+    'Orthogonal Beamforming': bo,
+    'CleanSC Deconvolution': bs,
+    'Clean Deconvolution': bl,
+    'CMF': bcmf,
+    'GIB': bgib,
 }
 
 # create Select Button to select Beamforming Algorithm
-beamformerSelector = Select(
-    title="Select Beamforming Method:",
+beamformer_selector = Select(
+    title='Select Beamforming Method:',
     options=list(beamformer_dict.keys()),
-    value=list(beamformer_dict.keys())[0],
+    value=next(iter(beamformer_dict.keys())),
 )
 
 
@@ -85,128 +82,123 @@ beamformerSelector = Select(
 bv = sp.BeamformerPresenter(source=bb, num=3, freq=4000.0)
 
 # get widgets to control settings
-tsWidgets = ts.get_widgets()
-tsWidgets.pop("invalid_channels")
-siWidgets = si.get_widgets()
-envWidgets = env.get_widgets()
-psWidgets = ps.get_widgets()
-rgWidgets = rg.get_widgets()
-stWidgets = st.get_widgets()
-bbWidgets = bb.get_widgets()
-bvWidgets = bv.get_widgets()
+ts_widgets = ts.get_widgets()
+ts_widgets.pop('invalid_channels')
+si_widgets = si.get_widgets()
+env_widgets = env.get_widgets()
+ps_widgets = ps.get_widgets()
+rg_widgets = rg.get_widgets()
+st_widgets = st.get_widgets()
+bb_widgets = bb.get_widgets()
+bv_widgets = bv.get_widgets()
 
 # position table
 editor = NumberEditor()
-formatter = NumberFormatter(format="0.00")
+formatter = NumberFormatter(format='0.00')
 mpos_columns = [
-    TableColumn(field="x", title="x/m", editor=editor, formatter=formatter),
-    TableColumn(field="y", title="x/m", editor=editor, formatter=formatter),
-    TableColumn(field="z", title="x/m", editor=editor, formatter=formatter),
+    TableColumn(field='x', title='x/m', editor=editor, formatter=formatter),
+    TableColumn(field='y', title='x/m', editor=editor, formatter=formatter),
+    TableColumn(field='z', title='x/m', editor=editor, formatter=formatter),
 ]
-trait_widget_mapper = {"pos_total": DataTable}
+trait_widget_mapper = {'pos_total': DataTable}
 trait_widget_args = {
-    "pos_total": {
-        "editable": True,
-        "transposed": True,
-        "columns": mpos_columns,
+    'pos_total': {
+        'editable': True,
+        'transposed': True,
+        'columns': mpos_columns,
     }
 }
-mgWidgets = mg.get_widgets(
-    trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args
-)
+mg_widgets = mg.get_widgets(trait_widget_mapper=trait_widget_mapper, trait_widget_args=trait_widget_args)
 
-colorMapper = LogColorMapper(
-    palette=viridis(100), low=50, high=65, low_color=(1, 1, 1, 0)
-)
-dynamicSlider = RangeSlider(
-    start=0, end=120, step=1.0, value=(50, 65), title="Dynamic Range"
-)
+color_mapper = LogColorMapper(palette=viridis(100), low=50, high=65, low_color=(1, 1, 1, 0))
+dynamic_slider = RangeSlider(start=0, end=120, step=1.0, value=(50, 65), title='Dynamic Range')
 
 
-def dynamicSlider_callback(attr, old, new):
-    (colorMapper.low, colorMapper.high) = dynamicSlider.value
+def dynamic_slider_callback(_attr, _old, _new):
+    """Update the beamforming plot color range."""
+    (color_mapper.low, color_mapper.high) = dynamic_slider.value
 
 
-dynamicSlider.on_change("value", dynamicSlider_callback)
+dynamic_slider.on_change('value', dynamic_slider_callback)
 
 # create Button to trigger beamforming result calculation
-calcButton = Toggle(label="Calculate", button_type="primary")
-sp.set_calc_button_callback(bv.update, calcButton)
+calc_button = Toggle(label='Calculate', button_type='primary')
+sp.set_calc_button_callback(bv.update, calc_button)
 
 # MicGeomPlot
-mgPlot = figure(title="Microphone Geometry", tools="hover,pan,wheel_zoom,reset")
-mgPlot.circle(x="x", y="y", radius=1, source=mgWidgets["pos_total"].source)
+mg_plot = figure(title='Microphone Geometry', tools='hover,pan,wheel_zoom,reset')
+mg_plot.circle(x='x', y='y', radius=1, source=mg_widgets['pos_total'].source)
 
 # beamformerPlot
-bfPlot = figure(title="Beamforming Result", tools="pan,wheel_zoom,reset")
-bfPlot.image(
-    image="bfdata",
-    x="x",
-    y="y",
-    dw="dw",
-    dh="dh",
-    color_mapper=colorMapper,
+bf_plot = figure(title='Beamforming Result', tools='pan,wheel_zoom,reset')
+bf_plot.image(
+    image='bfdata',
+    x='x',
+    y='y',
+    dw='dw',
+    dh='dh',
+    color_mapper=color_mapper,
     source=bv.cdsource,
 )
-bfPlot.add_layout(
-    ColorBar(
-        color_mapper=colorMapper, location=(0, 0), title="Level [dB]", title_standoff=10
-    ),
-    "right",
+bf_plot.add_layout(
+    ColorBar(color_mapper=color_mapper, location=(0, 0), title='Level [dB]', title_standoff=10),
+    'right',
 )
 
 # Plot Tabs
-mgPlotTab = Panel(child=row(mgPlot), title="Microphone Geometry Plot")
-bfPlotTab = Panel(child=row(bfPlot), title="Source Plot")
-plotTabs = Tabs(tabs=[mgPlotTab, bfPlotTab], width=600)
+mg_plot_tab = Panel(child=row(mg_plot), title='Microphone Geometry Plot')
+bf_plot_tab = Panel(child=row(bf_plot), title='Source Plot')
+plot_tabs = Tabs(tabs=[mg_plot_tab, bf_plot_tab], width=600)
 
 # Property Tabs
-selectedBfWidgets = column(*bbWidgets.values())
-tsTab = Panel(child=column(*tsWidgets.values()), title="Time Data")
-siTab = Panel(child=column(*siWidgets.values()), title="Virtual Rotation")
-mgTab = Panel(child=column(*mgWidgets.values()), title="MicGeometry")
-envTab = Panel(child=column(*envWidgets.values()), title="Environment")
-gridTab = Panel(child=column(*rgWidgets.values()), title="Grid")
-stTab = Panel(child=column(*stWidgets.values()), title="Steering")
-psTab = Panel(child=column(*psWidgets.values()), title="FFT")
-bfTab = Panel(child=column(beamformerSelector, selectedBfWidgets), title="Beamforming")
-propertyTabs = Tabs(
+selected_bf_widgets = column(*bb_widgets.values())
+ts_tab = Panel(child=column(*ts_widgets.values()), title='Time Data')
+si_tab = Panel(child=column(*si_widgets.values()), title='Virtual Rotation')
+mg_tab = Panel(child=column(*mg_widgets.values()), title='MicGeometry')
+env_tab = Panel(child=column(*env_widgets.values()), title='Environment')
+grid_tab = Panel(child=column(*rg_widgets.values()), title='Grid')
+st_tab = Panel(child=column(*st_widgets.values()), title='Steering')
+ps_tab = Panel(child=column(*ps_widgets.values()), title='FFT')
+bf_tab = Panel(child=column(beamformer_selector, selected_bf_widgets), title='Beamforming')
+property_tabs = Tabs(
     tabs=[
-        tsTab,
-        siTab,
-        mgTab,  # envTab
+        ts_tab,
+        si_tab,
+        mg_tab,  # env_tab
     ],
-    sizing_mode="stretch_both",
+    sizing_mode='stretch_both',
 )
 
-propertyTabs2 = Tabs(tabs=[gridTab, stTab, psTab, bfTab], sizing_mode="stretch_both")
+property_tabs_2 = Tabs(tabs=[grid_tab, st_tab, ps_tab, bf_tab], sizing_mode='stretch_both')
 
 
-calcColumn = column(calcButton, *bvWidgets.values(), dynamicSlider)
+calc_column = column(calc_button, *bv_widgets.values(), dynamic_slider)
 
 
-def beamformer_handler(attr, old, new):
+def beamformer_handler(_attr, _old, new):
+    """Switch the active beamforming algorithm widgets and source."""
     bv.source = beamformer_dict.get(new)
-    selectedBfWidgets.children = list(beamformer_dict.get(new).get_widgets().values())
+    selected_bf_widgets.children = list(beamformer_dict.get(new).get_widgets().values())
 
 
-beamformerSelector.on_change("value", beamformer_handler)
+beamformer_selector.on_change('value', beamformer_handler)
 
 # make Document
-mainlayout = row(plotTabs, calcColumn, propertyTabs, propertyTabs2)
+main_layout = row(plot_tabs, calc_column, property_tabs, property_tabs_2)
 
 
 # make Document
 def server_doc(doc):
-    doc.add_root(mainlayout)
-    doc.title = "RotatingExample"
+    """Populate a Bokeh document for the rotating example app."""
+    doc.add_root(main_layout)
+    doc.title = 'RotatingExample'
 
 
-if __name__ == "__main__":
-    server = Server({"/": server_doc})
+if __name__ == '__main__':
+    server = Server({'/': server_doc})
     server.start()
-    print("Opening application on http://localhost:5006/")
-    server.io_loop.add_callback(server.show, "/")
+    print('Opening application on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, '/')
     server.io_loop.start()
 else:
     doc = curdoc()
