@@ -1,3 +1,5 @@
+"""Thread helpers for measurement app worker coordination."""
+
 # ------------------------------------------------------------------------------
 # Copyright (c) 2007-2021, Acoular Development Team.
 # ------------------------------------------------------------------------------
@@ -6,6 +8,8 @@ from threading import Thread
 
 
 class EventThread(Thread):
+    """Wait for an event and trigger Bokeh callbacks before and after."""
+
     def __init__(self, event, doc, pre_callback=None, post_callback=None):
         Thread.__init__(self)
         self.pre_callback = pre_callback
@@ -14,18 +18,16 @@ class EventThread(Thread):
         self.event = event
 
     def run(self):
+        """Schedule callbacks around waiting for the thread event."""
         if self.pre_callback:
             self.doc.add_next_tick_callback(self.pre_callback)
         self.event.wait()
         if self.post_callback:
             self.doc.add_next_tick_callback(self.post_callback)
-        return
 
 
 class SamplesThread(Thread):
-    """
-    event is set when thread finishes
-    """
+    """Consume samples until stopped and set an event on completion."""
 
     def __init__(self, gen, splitter, register, register_args, event=None):
         Thread.__init__(self)
@@ -37,13 +39,13 @@ class SamplesThread(Thread):
         self.breakThread = False
 
     def run(self):
+        """Register the target, consume samples, and clean up afterward."""
         if self.event:
             self.event.clear()
         self.splitter.register_object(self.register, **self.register_args)
-        for sample in self.gen:
+        for _sample in self.gen:
             if self.breakThread:
                 break
         if self.event:
             self.event.set()
         self.splitter.remove_object(self.register)
-        return

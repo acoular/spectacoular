@@ -1,57 +1,64 @@
+"""Measurement app controls, calibration helpers, and phantom data sources."""
+
+import contextlib
+import importlib
 import sys
-import acoular as ac
-import spectacoular as sp
-from threading import Event
+from datetime import UTC, datetime
 from functools import partial
-from datetime import datetime
-from .threads import SamplesThread, EventThread
-from .layout import toggle_labels, plot_colors, button_height
-from acoular import MaskedTimeOut
 from pathlib import Path
-import numpy as np
+from threading import Event
 from time import sleep
 
-from bokeh.models import TabPanel as Panel, CustomJS
-from bokeh.layouts import column, Spacer, row
+import acoular as ac
+import spectacoular as sp
+from acoular import MaskedTimeOut
+
+from .layout import button_height, plot_colors, toggle_labels
+from .threads import EventThread, SamplesThread
+
+import numpy as np
+from bokeh.layouts import Spacer, column, row
+from bokeh.models import CustomJS
+from bokeh.models import TabPanel as Panel
 from bokeh.models.widgets import (
-    Toggle,
-    TextInput,
-    CheckboxGroup,
-    Select,
     Button,
-    Div,
+    CheckboxGroup,
     DataTable,
-    TableColumn,
+    Div,
     NumberEditor,
     NumericInput,
+    Select,
+    TableColumn,
+    TextInput,
+    Toggle,
 )
 
-try:
-    import sounddevice as sd
-except ModuleNotFoundError:
-    pass
+sd = None
+with contextlib.suppress(ModuleNotFoundError):
+    sd = importlib.import_module('sounddevice')
 
 BUFFERSIZE = 400
 
 
 def current_time():
-    return (
-        datetime.now().isoformat("_").replace(":", "-").replace(".", "_")
-    )  # for timestamp filename
+    """Return a filesystem-friendly UTC timestamp string."""
+    return datetime.now(tz=UTC).isoformat('_').replace(':', '-').replace('.', '_')
 
 
-def _get_channel_labels(source, ltype="Number"):
-    if ltype == "Index":
+def _get_channel_labels(source, ltype='Number'):
+    if ltype == 'Index':
         labels = [str(i) for i in range(source.num_channels)]
-    elif ltype == "Number":
+    elif ltype == 'Number':
         labels = [str(i + 1) for i in range(source.num_channels)]
-    elif ltype == "Physical":
-        labels = [ch.name for ch in source._enabled_analog_inputs]
+    elif ltype == 'Physical':
+        labels = [ch.name for ch in source._enabled_analog_inputs]  # noqa: SLF001
     return labels
 
 
 class MeasurementControl:
-    def __init__(self, doc, source, logger, blocksize=1024, steer=None, cfreq=1000):
+    """Control measurement, display, calibration, and beamforming actions."""
+
+    def __init__(self, doc, source, logger, blocksize=1024, steer=None, cfreq=1000):  # noqa: PLR0913
         self.modecolor = None
         self.clipcolor = None
         self.blocksize = blocksize
@@ -59,16 +66,12 @@ class MeasurementControl:
         self.source = source
         self.splitter = ac.SampleSplitter(source=self.source)
         self.disp = sp.TimeOutPresenter(
-            source=ac.Average(
-                source=ac.TimePower(source=self.splitter), num_per_average=blocksize
-            )
+            source=ac.Average(source=ac.TimePower(source=self.splitter), num_per_average=blocksize)
         )
         self.msm = ac.WriteH5(source=self.splitter)
         self.calib = sp.CalibHelper(
             source=ac.Average(
-                source=ac.TimePower(
-                    source=sp.FiltOctave(source=self.splitter, band=1000.0)
-                ),
+                source=ac.TimePower(source=sp.FiltOctave(source=self.splitter, band=1000.0)),
                 num_per_average=blocksize,
             )
         )
@@ -77,9 +80,7 @@ class MeasurementControl:
                 source=ac.Average(
                     source=ac.TimePower(
                         source=sp.FiltOctave(
-                            source=ac.BeamformerTime(
-                                source=MaskedTimeOut(source=self.splitter), steer=steer
-                            ),
+                            source=ac.BeamformerTime(source=MaskedTimeOut(source=self.splitter), steer=steer),
                             band=cfreq,
                         )
                     ),
@@ -90,55 +91,51 @@ class MeasurementControl:
 
         # create measurement toggle button
         self.display_toggle = Toggle(
-            label="Display",
+            label='Display',
             active=False,
-            button_type="primary",
-            sizing_mode="stretch_width",
+            button_type='primary',
+            sizing_mode='stretch_width',
             height=button_height,
         )
         self.msm_toggle = Toggle(
-            label="MEASURE",
+            label='MEASURE',
             active=False,
             disabled=True,
-            button_type="danger",
-            sizing_mode="stretch_width",
+            button_type='danger',
+            sizing_mode='stretch_width',
             height=button_height,
         )
         self.calib_toggle = Toggle(
-            label="Calibration",
+            label='Calibration',
             active=False,
             disabled=True,
-            button_type="warning",
-            sizing_mode="stretch_width",
+            button_type='warning',
+            sizing_mode='stretch_width',
             height=button_height,
         )
         self.beamf_toggle = Toggle(
-            label="Beamforming",
+            label='Beamforming',
             active=False,
             disabled=True,
-            button_type="warning",
-            sizing_mode="stretch_width",
+            button_type='warning',
+            sizing_mode='stretch_width',
             height=button_height,
         )
         # Others
-        self.ti_msmtime = TextInput(value="10", title="Measurement Time [s]:")
+        self.ti_msmtime = TextInput(value='10', title='Measurement Time [s]:')
         self.ti_savename = TextInput(
-            value="",
-            title="Filename:",
+            value='',
+            title='Filename:',
             disabled=True,
-            description=f"Filename for the measurement data. Files are saved to {ac.config.td_dir}",
+            description=f'Filename for the measurement data. Files are saved to {ac.config.td_dir}',
         )
-        self.current_time_checkbox = CheckboxGroup(
-            labels=["use current time"], active=[0]
-        )
+        self.current_time_checkbox = CheckboxGroup(labels=['use current time'], active=[0])
         self.update_period = Select(
-            title="Select Update Period [ms]",
+            title='Select Update Period [ms]',
             value=str(50),
-            options=["25", "50", "100", "200", "400", "800"],
+            options=['25', '50', '100', '200', '400', '800'],
         )
-        self.exit_button = Button(
-            label="Exit", button_type="danger", sizing_mode="stretch_width"
-        )
+        self.exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width')
 
         # threads
         self._disp_threads = []
@@ -146,7 +143,7 @@ class MeasurementControl:
 
         # widgets disable / enable lists depending on mode
         self.widgets_disable = {
-            "msm": [
+            'msm': [
                 self.ti_msmtime,
                 self.current_time_checkbox,
                 self.ti_savename,
@@ -154,24 +151,24 @@ class MeasurementControl:
                 self.calib_toggle,
                 self.beamf_toggle,
             ],
-            "display": [self.update_period],  # maybe unfinished!
-            "calib": [self.msm_toggle],
-            "beamf": [],
+            'display': [self.update_period],  # maybe unfinished!
+            'calib': [self.msm_toggle],
+            'beamf': [],
         }
 
         self.widgets_enable = {
-            "msm": [],
-            "display": [self.calib_toggle, self.msm_toggle, self.beamf_toggle],
-            "calib": [],
-            "beamf": [],
+            'msm': [],
+            'display': [self.calib_toggle, self.msm_toggle, self.beamf_toggle],
+            'calib': [],
+            'beamf': [],
         }
         self.set_callbacks()
 
     def get_num_samples(self):
-        if self.ti_msmtime.value == "-1" or self.ti_msmtime.value == "":
+        """Return the configured measurement length in samples."""
+        if self.ti_msmtime.value in {'-1', ''}:
             return -1
-        else:
-            return int(float(self.ti_msmtime.value) * self.msm.sample_freq)
+        return int(float(self.ti_msmtime.value) * self.msm.sample_freq)
 
     def _change_mode(self, toggle, mode, active):
         # activate / deactivate toggle button
@@ -184,69 +181,70 @@ class MeasurementControl:
         for widget in self.widgets_enable[mode]:
             widget.disabled = not disabled
         # change colors
-        if not mode == "beamf":
+        if mode != 'beamf':
             self.modecolor, self.clipcolor = plot_colors[(mode, active)]
 
-    def checkbox_use_current_time_callback(self, attr, old, new):
+    def checkbox_use_current_time_callback(self, _attr, _old, new):
+        """Toggle manual filename entry when current-time naming is disabled."""
         if new == []:
-            self.widgets_disable["msm"].append(self.ti_savename)
+            self.widgets_disable['msm'].append(self.ti_savename)
             self.ti_savename.disabled = False
         elif new == [0]:
-            if self.ti_savename in self.widgets_disable["msm"]:
-                self.widgets_disable["msm"].remove(self.ti_savename)
+            if self.ti_savename in self.widgets_disable['msm']:
+                self.widgets_disable['msm'].remove(self.ti_savename)
             self.ti_savename.disabled = True
 
-    def savename_callback(self, attr, old, new):
-        self.msm.name = Path(ac.config.td_dir) / f"{new}.h5"
+    def savename_callback(self, _attr, _old, new):
+        """Update the measurement output filename."""
+        self.msm.name = Path(ac.config.td_dir) / f'{new}.h5'
 
-    def exit_callback(arg):
+    def exit_callback(self):
+        """Exit the application after a short delay."""
         sleep(0.5)
         sys.exit()
 
     def displaytoggle_handler(self, arg):
+        """Start or stop the display update threads."""
         if arg:
             self.source.collect_samples = True
-            dispEvent = Event()
-            dispEventThread = EventThread(
-                pre_callback=partial(
-                    self._change_mode, self.display_toggle, "display", True
-                ),
-                post_callback=partial(
-                    self._change_mode, self.display_toggle, "display", False
-                ),
+            disp_event = Event()
+            disp_event_thread = EventThread(
+                pre_callback=partial(self._change_mode, self.display_toggle, 'display', active=True),
+                post_callback=partial(self._change_mode, self.display_toggle, 'display', active=False),
                 doc=self.doc,
-                event=dispEvent,
+                event=disp_event,
             )
             amp_thread = SamplesThread(
                 gen=self.disp.result(1),
                 splitter=self.splitter,
                 register=self.disp.source.source,
                 register_args={
-                    "buffer_size": BUFFERSIZE,
-                    "buffer_overflow_treatment": "none",
+                    'buffer_size': BUFFERSIZE,
+                    'buffer_overflow_treatment': 'none',
                 },
-                event=dispEvent,
+                event=disp_event,
             )
-            self._disp_threads = [amp_thread, dispEventThread]
+            self._disp_threads = [amp_thread, disp_event_thread]
             for thread in self._disp_threads:
                 thread.start()
-            self.logger.info("Display...")
+            self.logger.info('Display...')
         if not arg:
             self.source.collect_samples = False
             for thread in self._disp_threads:
                 thread.join()
             self._disp_threads = []
-            self.logger.info("stopped display")
+            self.logger.info('stopped display')
 
     def msmtoggle_handler(self, arg):
+        """Start or stop writing measurement data to disk."""
         if arg:  # toggle button is pressed
             self.msm.num_samples_write = self.get_num_samples()
             if self.current_time_checkbox.active == [0]:
                 self.ti_savename.value = current_time()
             msm_event = Event()
             msm_consumer = EventThread(
-                post_callback=partial(self._change_mode, self.msm_toggle, "msm", False),
-                pre_callback=partial(self._change_mode, self.msm_toggle, "msm", True),
+                post_callback=partial(self._change_mode, self.msm_toggle, 'msm', active=False),
+                pre_callback=partial(self._change_mode, self.msm_toggle, 'msm', active=True),
                 doc=self.doc,
                 event=msm_event,
             )
@@ -255,29 +253,26 @@ class MeasurementControl:
                 splitter=self.splitter,
                 register=self.msm,
                 register_args={
-                    "buffer_size": BUFFERSIZE,
-                    "buffer_overflow_treatment": "error",
+                    'buffer_size': BUFFERSIZE,
+                    'buffer_overflow_treatment': 'error',
                 },
                 event=msm_event,
             )
             self._msm_thread.start()
             msm_consumer.start()
-            self.logger.info("recording...")
+            self.logger.info('recording...')
         if not arg:
             self.msm.writeflag = False
             self._msm_thread.join()
-            self.logger.info("finished recording")
+            self.logger.info('finished recording')
 
     def calibtoggle_handler(self, arg):
+        """Start or stop the calibration worker threads."""
         if arg:
             self._calibEvent = Event()
             self._calibEventThread = EventThread(
-                post_callback=partial(
-                    self._change_mode, self.calib_toggle, "calib", False
-                ),
-                pre_callback=partial(
-                    self._change_mode, self.calib_toggle, "calib", True
-                ),
+                post_callback=partial(self._change_mode, self.calib_toggle, 'calib', active=False),
+                pre_callback=partial(self._change_mode, self.calib_toggle, 'calib', active=True),
                 doc=self.doc,
                 event=self._calibEvent,
             )
@@ -286,30 +281,27 @@ class MeasurementControl:
                 splitter=self.splitter,
                 register=self.calib.source.source.source,
                 register_args={
-                    "buffer_size": BUFFERSIZE,
-                    "buffer_overflow_treatment": "none",
+                    'buffer_size': BUFFERSIZE,
+                    'buffer_overflow_treatment': 'none',
                 },
                 event=self._calibEvent,
             )
             self._calib_thread.start()
             self._calibEventThread.start()
-            self.logger.info("calibrating...")
+            self.logger.info('calibrating...')
         if not arg:
             self._calib_thread.breakThread = True
             self._calib_thread.join()
             self._calibEventThread.join()
-            self.logger.info("finished calibration...")
+            self.logger.info('finished calibration...')
 
     def beamftoggle_handler(self, arg):
+        """Start or stop the beamforming worker threads."""
         if arg:
             self._beamfEvent = Event()
             self._beamfEventThread = EventThread(
-                pre_callback=partial(
-                    self._change_mode, self.beamf_toggle, "beamf", True
-                ),
-                post_callback=partial(
-                    self._change_mode, self.beamf_toggle, "beamf", False
-                ),
+                pre_callback=partial(self._change_mode, self.beamf_toggle, 'beamf', active=True),
+                post_callback=partial(self._change_mode, self.beamf_toggle, 'beamf', active=False),
                 doc=self.doc,
                 event=self._beamfEvent,
             )
@@ -317,19 +309,20 @@ class MeasurementControl:
                 gen=self.beamf.result(1),
                 splitter=self.splitter,
                 register=self.beamf.source.source.source.source.source,
-                register_args={"buffer_size": 1, "buffer_overflow_treatment": "none"},
+                register_args={'buffer_size': 1, 'buffer_overflow_treatment': 'none'},
                 event=self._beamfEvent,
             )
             self._bf_thread.start()
             self._beamfEventThread.start()
-            self.logger.info("Beamforming...")
+            self.logger.info('Beamforming...')
         if not arg:
             self._bf_thread.breakThread = True
             self._bf_thread.join()
             self._beamfEventThread.join()
-            self.logger.info("stopped beamforming")
+            self.logger.info('stopped beamforming')
 
     def get_widgets(self):
+        """Return the main measurement control widget column."""
         return column(
             [
                 self.exit_button,
@@ -347,14 +340,13 @@ class MeasurementControl:
         )
 
     def set_callbacks(self):
+        """Attach all widget callbacks for the control panel."""
         self.msm_toggle.on_click(self.msmtoggle_handler)
         self.display_toggle.on_click(self.displaytoggle_handler)
         self.calib_toggle.on_click(self.calibtoggle_handler)
         self.beamf_toggle.on_click(self.beamftoggle_handler)
-        self.current_time_checkbox.on_change(
-            "active", self.checkbox_use_current_time_callback
-        )
-        self.ti_savename.on_change("value", self.savename_callback)
+        self.current_time_checkbox.on_change('active', self.checkbox_use_current_time_callback)
+        self.ti_savename.on_change('value', self.savename_callback)
         self.exit_button.on_click(self.exit_callback)
         self.exit_button.js_on_click(
             CustomJS(
@@ -368,55 +360,51 @@ class MeasurementControl:
 
 
 class PhantomControl(MeasurementControl):
+    """Measurement control backed by generated phantom input files."""
+
     def __init__(
         self,
-        h5path=Path(__file__).parent / "data",
-        initial_file="rotating.h5",
+        h5path=Path(__file__).parent / 'data',
+        initial_file='rotating.h5',
         **kwargs,
     ):
         self.sfreq = 25600
         self.duration = 10
         self.num_samples = self.duration * self.sfreq
-        self.mics = ac.MicGeom(
-            file=Path(ac.__file__).parent / "xml" / "tub_vogel64.xml"
-        )
+        self.mics = ac.MicGeom(file=Path(ac.__file__).parent / 'xml' / 'tub_vogel64.xml')
         if not h5path.exists():
             h5path.mkdir()
         self.h5path = h5path
-        kwargs["source"] = sp.TimeSamplesPhantom()
+        kwargs['source'] = sp.TimeSamplesPhantom()
         super().__init__(**kwargs)
 
         self.select_file = Select(
-            title="Select Source Case",
+            title='Select Source Case',
             value=initial_file,
             options=[
-                ("rotating.h5", "Rotating Source"),
-                ("calib.h5", "Calibration Signal"),
+                ('rotating.h5', 'Rotating Source'),
+                ('calib.h5', 'Calibration Signal'),
             ],
         )
         self.change_file(None, None, None)
-        self.select_file.on_change("value", self.change_file)
+        self.select_file.on_change('value', self.change_file)
 
-    def change_file(self, attr, old, new):
+    def change_file(self, _attr, _old, _new):
+        """Switch to the selected phantom input file, creating it if needed."""
         h5f = self.h5path / self.select_file.value
         if not h5f.exists():
-            self.logger.info("file does not exist. Create file...")
-            if self.select_file.value == "rotating.h5":
+            self.logger.info('file does not exist. Create file...')
+            if self.select_file.value == 'rotating.h5':
                 self.create_three_sources_moving(h5f)
-            elif self.select_file.value == "calib.h5":
+            elif self.select_file.value == 'calib.h5':
                 self.create_calibration_signal(h5f)
         self.source.file = Path(h5f)
 
     def create_three_sources_moving(self, h5f):
-        n1 = ac.WNoiseGenerator(
-            sample_freq=self.sfreq, num_samples=self.num_samples, seed=100
-        )
-        n2 = ac.WNoiseGenerator(
-            sample_freq=self.sfreq, num_samples=self.num_samples, seed=200, rms=0.7
-        )
-        n3 = ac.WNoiseGenerator(
-            sample_freq=self.sfreq, num_samples=self.num_samples, seed=300, rms=0.5
-        )
+        """Create a synthetic rotating-source measurement file."""
+        n1 = ac.WNoiseGenerator(sample_freq=self.sfreq, num_samples=self.num_samples, seed=100)
+        n2 = ac.WNoiseGenerator(sample_freq=self.sfreq, num_samples=self.num_samples, seed=200, rms=0.7)
+        n3 = ac.WNoiseGenerator(sample_freq=self.sfreq, num_samples=self.num_samples, seed=300, rms=0.5)
         # trajectory of source
         tr = ac.Trajectory()
         rps = 0.2  # revs pre second
@@ -435,15 +423,14 @@ class PhantomControl(MeasurementControl):
         wh5.save()
 
     def create_calibration_signal(self, h5f):
+        """Create a synthetic calibration-signal measurement file."""
         n1 = ac.SineGenerator(
             sample_freq=self.sfreq,
             num_samples=self.num_samples,
             freq=1000,
             amplitude=20.0,
         )
-        n2 = ac.WNoiseGenerator(
-            sample_freq=self.sfreq, num_samples=self.num_samples, seed=1, rms=0.0001
-        )
+        n2 = ac.WNoiseGenerator(sample_freq=self.sfreq, num_samples=self.num_samples, seed=1, rms=0.0001)
         noise = ac.UncorrelatedNoiseSource(signal=n2, mics=self.mics)
         d = np.zeros((n1.num_samples, self.mics.num_mics))
         d[:, 0] = n1.signal()
@@ -453,6 +440,7 @@ class PhantomControl(MeasurementControl):
         wh5.save()
 
     def get_widgets(self):
+        """Return the phantom-source control widget column."""
         return column(
             [
                 self.exit_button,
@@ -472,50 +460,48 @@ class PhantomControl(MeasurementControl):
 
 
 class SoundDeviceControl(MeasurementControl):
+    """Measurement control backed by a live sounddevice input."""
+
     def __init__(self, **kwargs):
         devices, default_index, num_channels = self._get_devices()
-        kwargs["source"] = sp.SoundDeviceSamplesGenerator(
-            device=int(default_index), num_channels=num_channels
-        )
-        widgets = kwargs["source"].get_widgets(
-            trait_widget_mapper={"device": Select, "num_channels": NumericInput},
+        kwargs['source'] = sp.SoundDeviceSamplesGenerator(device=int(default_index), num_channels=num_channels)
+        widgets = kwargs['source'].get_widgets(
+            trait_widget_mapper={'device': Select, 'num_channels': NumericInput},
             trait_widget_args={
-                "device": {"value": default_index, "options": devices},
-                "num_channels": {
-                    "title": "Number of Input Channels",
-                    "value": num_channels,
+                'device': {'value': default_index, 'options': devices},
+                'num_channels': {
+                    'title': 'Number of Input Channels',
+                    'value': num_channels,
                 },
             },
         )
-        self.device_select = widgets["device"]
-        self.num_channels_text = widgets["num_channels"]
-        self.device_select.on_change("value", self.device_update)
+        self.device_select = widgets['device']
+        self.num_channels_text = widgets['num_channels']
+        self.device_select.on_change('value', self.device_update)
         for dev in devices:
-            if "nanoSHARC" in dev[1] and "16" in dev[1]:
-                kwargs["steer"].mics.file = (
-                    Path(ac.__file__).parent / "xml" / "minidsp_uma-16.xml"
-                )
+            if 'nanoSHARC' in dev[1] and '16' in dev[1]:
+                kwargs['steer'].mics.file = Path(ac.__file__).parent / 'xml' / 'minidsp_uma-16.xml'
         super().__init__(**kwargs)
 
     def _get_devices(self):
         devices = []
         default_index = None
         for i, dev in enumerate(sd.query_devices()):
-            if dev["max_input_channels"] > 0:
-                devices.append((f"{i}", "{name} {max_input_channels}".format(**dev)))
-            if "nanoSHARC" in dev["name"]:
-                default_index = f"{i}"
+            if dev['max_input_channels'] > 0:
+                devices.append((f'{i}', '{name} {max_input_channels}'.format(**dev)))
+            if 'nanoSHARC' in dev['name']:
+                default_index = f'{i}'
         if default_index is None:
-            default_index = f"{devices[0][0]}"
-        num_channels = sd.query_devices(int(default_index))["max_input_channels"]
+            default_index = f'{devices[0][0]}'
+        num_channels = sd.query_devices(int(default_index))['max_input_channels']
         return devices, default_index, num_channels
 
-    def device_update(self, attr, old, new):
-        self.source.num_channels = sd.query_devices(self.source.device)[
-            "max_input_channels"
-        ]
+    def device_update(self, _attr, _old, _new):
+        """Update the channel count after selecting another input device."""
+        self.source.num_channels = sd.query_devices(self.source.device)['max_input_channels']
 
     def get_widgets(self):
+        """Return the live-device control widget column."""
         return column(
             [
                 self.exit_button,
@@ -536,79 +522,74 @@ class SoundDeviceControl(MeasurementControl):
 
 
 class Calibration:
+    """Calibration table and file-save controls for the measurement app."""
+
     def __init__(self, doc, control):
         self.doc = doc
         self.control = control
         self.cal_widgets = control.calib.get_widgets()
         self.cal_filter_widgets = self.control.calib.source.source.source.get_widgets()
         # save button
-        self.savecal = Button(
-            label="save to .xml", button_type="warning", height=button_height
-        )
+        self.savecal = Button(label='save to .xml', button_type='warning', height=button_height)
         self.savecal.on_click(self._save_calib_callback)
         # calibration table
         columns = [
-            TableColumn(field="channel", title="channel"),
-            TableColumn(field="calibvalue", title="calibvalue", editor=NumberEditor()),
-            TableColumn(field="caliblevel", title="caliblevel", editor=NumberEditor()),
-            TableColumn(
-                field="calibfactor", title="calibfactor", editor=NumberEditor()
-            ),
+            TableColumn(field='channel', title='channel'),
+            TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
+            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor()),
+            TableColumn(field='calibfactor', title='calibfactor', editor=NumberEditor()),
         ]
-        self.cal_table = DataTable(columns=columns, sizing_mode="stretch_both")
+        self.cal_table = DataTable(columns=columns, sizing_mode='stretch_both')
         self._calibtable_callback()
-        self.control.calib.on_trait_change(self.calibtable_callback, "calibdata")
+        self.control.calib.on_trait_change(self.calibtable_callback, 'calibdata')
 
     def _calibtable_callback(self):
         cal_fac = self.control.calib.calibfactor
         if cal_fac.size == 0:
             cal_fac = np.ones(self.control.calib.calibdata.shape[0])
         self.cal_table.source.data = {
-            "calibvalue": self.control.calib.calibdata[:, 0],
-            "caliblevel": self.control.calib.calibdata[:, 1],
-            "calibfactor": cal_fac,
-            "channel": np.arange(1, self.control.calib.calibdata.shape[0] + 1),
+            'calibvalue': self.control.calib.calibdata[:, 0],
+            'caliblevel': self.control.calib.calibdata[:, 1],
+            'calibfactor': cal_fac,
+            'channel': np.arange(1, self.control.calib.calibdata.shape[0] + 1),
         }
 
     def calibtable_callback(self):
+        """Schedule a calibration table refresh on the next document tick."""
         return self.doc.add_next_tick_callback(self._calibtable_callback)
 
     def _save_calib_callback(self):
-        file_value = self.cal_widgets["file"].value
+        file_value = self.cal_widgets['file'].value
         if not file_value:
-            fname = (
-                Path("measurement_app") / "metadata" / f"calibdata_{current_time()}.xml"
-            )
+            fname = Path('measurement_app') / 'metadata' / f'calibdata_{current_time()}.xml'
         else:
             fname = Path(file_value)
 
         fname.parent.mkdir(parents=True, exist_ok=True)
-        self.cal_widgets["file"].value = str(fname)
+        self.cal_widgets['file'].value = str(fname)
         self.control.calib.file = str(fname)
         self.control.calib.save()
 
     def get_widgets(self):
+        """Return the calibration tab widget layout."""
         return column(
             Div(text=r"""<b style="font-size:15px;">Save Calibration Data</b>"""),
             row(
                 self.cal_table,
                 column(
-                    row(self.savecal, self.cal_widgets["file"]),
+                    row(self.savecal, self.cal_widgets['file']),
                     Spacer(height=50),
-                    Div(
-                        text=r"""<b style="font-size:15px;">Calibration Filter Settings</b>"""
-                    ),
+                    Div(text=r"""<b style="font-size:15px;">Calibration Filter Settings</b>"""),
                     *self.cal_filter_widgets.values(),
                     Spacer(height=50),
-                    Div(
-                        text=r"""<b style="font-size:15px;">Basic Calibration Settings</b>"""
-                    ),
+                    Div(text=r"""<b style="font-size:15px;">Basic Calibration Settings</b>"""),
                     *self.cal_widgets.values(),
                 ),
-                sizing_mode="stretch_both",
+                sizing_mode='stretch_both',
             ),
-            sizing_mode="stretch_both",
+            sizing_mode='stretch_both',
         )
 
     def get_tab(self):
-        return Panel(child=self.get_widgets(), title="Calibration")
+        """Return the calibration panel tab."""
+        return Panel(child=self.get_widgets(), title='Calibration')

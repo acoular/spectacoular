@@ -3,9 +3,9 @@
 # Copyright (c) 2019, Acoular Development Team.
 # ------------------------------------------------------------------------------
 
-"""
-Plugin classes for acoular to be used with spectacoular
-"""
+"""Plugin classes for Acoular to be used with SpectAcoular."""
 
-from .spectra import CSMInOut, PowerSpectraSetCSM  # noqa: F401
-from .tbeamform import BeamformerFreqTime  # noqa: F401
+from .spectra import CSMInOut, PowerSpectraSetCSM
+from .tbeamform import BeamformerFreqTime
+
+__all__ = ['BeamformerFreqTime', 'CSMInOut', 'PowerSpectraSetCSM']

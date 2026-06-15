@@ -1,34 +1,36 @@
+"""Time-dependent frequency-domain beamforming helpers."""
+
 # ------------------------------------------------------------------------------
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
 
 import acoular as ac
 
-# imports from other packages
-from traits.api import Property, Trait, Bool, cached_property, Instance
-
 from .spectra import CSMInOut, PowerSpectraSetCSM
+
+from traits.api import Bool, Instance, Property, Trait, cached_property
 
 
 class BeamformerFreqTime(ac.BeamformerTime, ac.TimeOut):
-    """
-    Provides a basic time-dependent frequency domain beamformer with frequency output
-    for a spatially fixed grid.
+    """Provide frequency-domain beamforming output for a spatially fixed grid.
+
+    This beamformer yields time-dependent frequency-domain results.
     """
 
-    #: :class:`~acoular.fbeamform.BeamformerBase` object that provides the beamformer and it parameters.
+    #: :class:`~acoular.fbeamform.BeamformerBase` object that provides the
+    #: beamformer and its parameters.
     beamformer = Instance(ac.BeamformerBase)
 
-    #: Boolean flag, if 'True' (default), the main diagonal is removed before beamforming.
-    r_diag = Bool(True, desc="removal of diagonal")
+    #: Boolean flag indicating whether the main diagonal is removed first.
+    r_diag = Bool(default_value=True, desc='removal of diagonal')
 
     #: :class:`~acoular.spectra.CSMInOut` object that provides the time-dependent
     #: cross spectral matrix and eigenvalues
-    source = Trait(CSMInOut, desc="freq data object")
+    source = Trait(CSMInOut, desc='freq data object')
 
     # internal identifier
     digest = Property(
-        depends_on=["steer.digest", "source.digest", "beamformer.digest"],
+        depends_on=['steer.digest', 'source.digest', 'beamformer.digest'],
     )
 
     @cached_property
@@ -62,6 +64,6 @@ class BeamformerFreqTime(ac.BeamformerTime, ac.TimeOut):
         # self.beamformer.r_diag = self.r_diag
         for csm in self.source.result(num):
             fdata.csm = csm
-            fdata._fftfreq = self.source.fftfreq()
+            fdata._fftfreq = self.source.fftfreq()  # noqa: SLF001
             fdata.indices = self.source.indices
             yield self.beamformer.result
