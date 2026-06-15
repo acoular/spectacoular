@@ -120,11 +120,6 @@ filterwarnings = [
 
 [tool.ruff]
 extend = ".venv/share/ruff/ruff.acoular.toml"
-extend-exclude = [
-    "src/spectacoular/apps/level_meter_app",
-    "src/spectacoular/apps/micgeom_app",
-    "src/spectacoular/apps/rotating_example_app",
-]
 
 [tool.ruff.lint.flake8-tidy-imports]
 banned-module-level-imports = ["sounddevice"]
