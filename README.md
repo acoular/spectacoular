@@ -32,3 +32,5 @@ $ uv run micgeom_app --show
 A browser window or tab should open with the microphone geometry application.
 
 For more detailed installation instructions, see the [installation guide](https://acoular.org/spectacoular/install/index.html).
+
+For contribution guidance, see the shared [Acoular contributing guide](https://acoular.org/contributing/).

@@ -14,6 +14,7 @@ A few highlights of the framework:
    * Expandable interface to support flexible software design with custom processing
 
 We welcome your feedback, suggestions, or reports of success using SpectAcoular via the `Acoular Discussions Forum`_.
+For contribution guidance, see the shared `Acoular contributing guide <https://acoular.org/contributing/>`_.
 
 
 .. toctree::
