@@ -164,7 +164,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     file = File(filter=['*.xml'], desc='name of data file')
 
     #: calibration level  dB  
-   calibration_level_db = Float(114, desc='calibration level of calibration device in dB')
+    calibration_level_db = Float(114, desc='calibration level of calibration device in dB')
 
     #: calibration values determined during evaluation of :meth:`result`.
     #: array of floats with dimension (num_channels, 2)
@@ -263,19 +263,21 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
             ns = temp.shape[0]
             bufferidx = self.buffer_size - ns
             buffer[0:bufferidx] = buffer[-bufferidx:]  # copy remaining samples in front of next block
-            buffer[-ns:, :] = ac.L_p(temp)
+            buffer[-ns:, :] = temp
+            level_buffer = ac.L_p(buffer)
             calibmask = np.logical_and(
-                buffer > (self.calibration_level_db - self.delta),
-                buffer < (self.calibration_level_db + self.delta),
+                level_buffer > (self.calibration_level_db - self.delta),
+                level_buffer < (self.calibration_level_db + self.delta),
             ).sum(0)
             # print(calibmask)
             if (calibmask.max() == self.buffer_size) and (calibmask.sum() == self.buffer_size):
                 idx = calibmask.argmax()
                 # print(buffer[:,idx].std())
-                if buffer[:, idx].std() < self.calibstd:
+                if level_buffer[:, idx].std() < self.calibstd:
+                    mean_power = np.mean(buffer[:, idx])
+                    measured_level_db = ac.L_p(mean_power)
                     calibdata = self.calibdata.copy()
-                    calibdata[idx, :] = [np.mean(buffer[:, idx]), self.calibration_level_db]
-                    # self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.calibration_level_db]
+                    calibdata[idx, :] = [measured_level_db, self.calibration_level_db]
                     self.calibdata = calibdata
 
             for i in np.arange(self.num_channels):
