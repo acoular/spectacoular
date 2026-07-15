@@ -208,7 +208,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
 
     def to_pa(self, level):
         """Convert a sound level to pressure in pascal."""
-        return (10 ** (level / 10)) * (4e-10)
+        return (10 ** (level / 20)) * (2e-5)
 
     @cached_property
     def _get_digest(self):
