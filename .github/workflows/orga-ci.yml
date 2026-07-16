@@ -25,9 +25,6 @@ jobs:
       html_baseurl: "https://acoular.org/spectacoular/dev/"
       docs_version_match: dev
 
-  github:
-    uses: acoular/ci/.github/workflows/github.yml@main
-
   linting:
     uses: acoular/ci/.github/workflows/linting.yml@main
 
