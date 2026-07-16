@@ -163,8 +163,8 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     #: automatically generated from a time stamp.
     file = File(filter=['*.xml'], desc='name of data file')
 
-    #: calibration level  dB  
-    calibration_level_db = Float(114, desc='calibration level of calibration device in dB')
+    #: calibration level in dB
+    magnitude = Float(114, desc='sound-pressure level produced by the calibration device in dB')
 
     #: calibration values determined during evaluation of :meth:`result`.
     #: array of floats with dimension (num_channels, 2)
@@ -184,7 +184,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     #: calibrated and remaining channels.
     delta = Float(
         10,
-        desc='calibration_level_db difference between calibrating channel and remaining channels',
+        desc='magnitude difference between calibrating channel and remaining channels',
     )
 
     # internal identifier
@@ -192,7 +192,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
 
     trait_widget_mapper: ClassVar[dict[str, type]] = {
         'file': TextInput,
-        'calibration_level_db': NumericInput,
+        'magnitude': NumericInput,
         'buffer_size': NumericInput,
         'calibstd': NumericInput,
         'delta': NumericInput,
@@ -200,7 +200,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
 
     trait_widget_args: ClassVar[dict[str, dict[str, object]]] = {
         'file': {'disabled': False},
-        'calibration_level_db': {'disabled': False, 'mode': 'float'},
+        'magnitude': {'disabled': False, 'mode': 'float'},
         'buffer_size': {'disabled': False, 'mode': 'int'},
         'calibstd': {'disabled': False, 'mode': 'float'},
         'delta': {'disabled': False, 'mode': 'float'},
@@ -266,8 +266,8 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
             buffer[-ns:, :] = temp
             level_buffer = ac.L_p(buffer)
             calibmask = np.logical_and(
-                level_buffer > (self.calibration_level_db - self.delta),
-                level_buffer < (self.calibration_level_db + self.delta),
+                level_buffer > (self.magnitude - self.delta),
+                level_buffer < (self.magnitude + self.delta),
             ).sum(0)
             # print(calibmask)
             if (calibmask.max() == self.buffer_size) and (calibmask.sum() == self.buffer_size):
@@ -277,11 +277,11 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
                     mean_power = np.mean(buffer[:, idx])
                     measured_level_db = ac.L_p(mean_power)
                     calibdata = self.calibdata.copy()
-                    calibdata[idx, :] = [measured_level_db, self.calibration_level_db]
+                    calibdata[idx, :] = [measured_level_db, self.magnitude]
                     self.calibdata = calibdata
 
             for i in np.arange(self.num_channels):
-                self.calibfactor[i] = self.to_pa(self.calibration_level_db) / self.to_pa(float(self.calibdata[i, 0]))
+                self.calibfactor[i] = self.to_pa(self.magnitude) / self.to_pa(float(self.calibdata[i, 0]))
             yield temp
 
 
