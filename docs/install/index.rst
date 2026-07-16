@@ -51,6 +51,19 @@ We strongly encourage the use of virtual environments. An environment ``my-env``
 
             $ mamba activate my-env
 
+    .. tab-item:: ``conda``
+        :sync: conda
+
+        .. code-block:: console
+
+            $ conda create -n my-env
+
+        and activate the environment with:
+
+        .. code-block:: console
+
+            $ conda activate my-env
+
 Installation
 ------------
 To install SpectAcoular, run the following in your terminal or command prompt:
@@ -77,7 +90,14 @@ To install SpectAcoular, run the following in your terminal or command prompt:
 
         .. code-block:: console
 
-            $ mamba install -c acoular spectacoular
+            $ mamba install -c acoular -c conda-forge spectacoular
+
+    .. tab-item:: ``conda``
+        :sync: conda
+
+        .. code-block:: console
+
+            $ conda install -c acoular -c conda-forge spectacoular
 
 Dependencies
 ------------
@@ -129,7 +149,14 @@ SpectAcoular and its optional dependencies can be installed with one of the foll
 
         .. code-block:: console
 
-            $ mamba install -c acoular spectacoular opencv python-sounddevice
+            $ mamba install -c acoular -c conda-forge spectacoular opencv python-sounddevice
+
+    .. tab-item:: ``conda``
+        :sync: conda
+
+        .. code-block:: console
+
+            $ conda install -c acoular -c conda-forge spectacoular opencv python-sounddevice
 
 Verify your installation
 ------------------------
@@ -154,6 +181,13 @@ After installation, you can verify that SpectAcoular is working by starting one 
 
     .. tab-item:: ``mamba``
         :sync: mamba
+
+        .. code-block:: console
+
+            $ micgeom_app --show
+
+    .. tab-item:: ``conda``
+        :sync: conda
 
         .. code-block:: console
 
