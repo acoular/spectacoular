@@ -2,28 +2,29 @@
 
 Run with: uv run calib_app
 """
+from pathlib import Path
+
+from .help.help_doc import help_doc
+from .main import server_doc
+
+from bokeh.application import Application
+from bokeh.application.handlers.function import FunctionHandler
+from bokeh.server.server import Server
+from tornado.web import StaticFileHandler
 
 
 def main():
     """Start the Bokeh server for the calibration application.
-    
+
     Creates a Bokeh server with:
-    - Main application at / 
+    - Main application at /
     - Help page at /help
     - Static file handler for help page assets
     - 1-hour session token expiration
     """
-    from .main import server_doc
-    from bokeh.server.server import Server
-    from bokeh.application import Application
-    from bokeh.application.handlers.function import FunctionHandler
-    from .help.help_doc import help_doc
-    from tornado.web import StaticFileHandler
-    from pathlib import Path
-
     server = Server(
         {
-            "/": Application(FunctionHandler(server_doc)), 
+            "/": Application(FunctionHandler(server_doc)),
             "/help": Application(FunctionHandler(help_doc))
         },
         # Static handler for serving images/css to the help page

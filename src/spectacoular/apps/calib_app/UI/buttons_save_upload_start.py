@@ -7,15 +7,17 @@ This module provides reusable UI elements for:
 - Starting/stopping calibration and saving results
 """
 
-from bokeh.models import Button, TextInput, FileInput, Div, InlineStyleSheet
-from bokeh.layouts import row, column
 from .tooltips import info_label
+
+from bokeh.layouts import column, row
+from bokeh.models import Button, Div, FileInput, InlineStyleSheet, TextInput
 
 
 class PathInput:
     """Text input widget for specifying the calibration save path.
 
-    Attributes:
+    Attributes
+    ----------
         widget: TextInput widget configured for path entry.
         layout: Column layout containing the info label and text input.
     """
@@ -39,7 +41,8 @@ class PathInput:
 class InputFile:
     """File input widget for loading calibration data from JSON files.
 
-    Attributes:
+    Attributes
+    ----------
         widget: FileInput widget restricted to .json files.
         layout: Column layout containing the info label and file input.
     """
@@ -57,7 +60,8 @@ class InputFile:
 class ButtonBar:
     """Control bar with Start, Stop, Save buttons and a Help link.
 
-    Attributes:
+    Attributes
+    ----------
         btn_start: Primary button to start calibration.
         btn_stop: Danger button to stop current calibration.
         btn_save: Button to save calibration results.
@@ -74,15 +78,15 @@ class ButtonBar:
         self.logger = logger
 
         # Shared button style
-        self.button_style = InlineStyleSheet(css=f"""
-            :host {{
+        self.button_style = InlineStyleSheet(css="""
+            :host {
                 --bokeh-base-font-size: .72rem;
-            }}
-            .bk-btn {{
+            }
+            .bk-btn {
                 border-radius: 4px;
                 font-size: .72rem;
                 font-weight: 600;
-            }}
+            }
         """)
 
         self.btn_start = Button(label="Start", button_type="primary",

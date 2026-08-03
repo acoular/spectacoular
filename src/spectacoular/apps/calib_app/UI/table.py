@@ -1,16 +1,18 @@
 """Calibration channel overview table."""
 
-from bokeh.models import DataTable, TableColumn, ColumnDataSource, StringFormatter, NumberFormatter, InlineStyleSheet, NumberEditor
+from .colors import ACC, BD, GRN, S1, T1, T2, T3
+
 from bokeh.layouts import column
-from .colors import ACC, S1, S2, BD, T1, T2, T3, GRN, RED
+from bokeh.models import ColumnDataSource, DataTable, InlineStyleSheet, NumberFormatter, StringFormatter, TableColumn
 
 
 class CalibTable:
     """Bokeh DataTable showing calibration status for all channels.
-    
+
     Displays channel number, calibration factor, frequency, level, unit, and calibration time.
-    
-    Attributes:
+
+    Attributes
+    ----------
         source: ColumnDataSource backing the table data.
         table: The DataTable widget.
         layout: Column layout containing the table.
@@ -133,9 +135,15 @@ class CalibTable:
                 background: {ACC};
             }}
         """)
-        self.source = ColumnDataSource(dict(
-            channel=[], factor=[], band=[], magnitude=[], unit=[],calib_time=[],stability_tolerance=[]
-        ))
+        self.source = ColumnDataSource({
+            'channel': [],
+            'factor': [],
+            'band': [],
+            'magnitude': [],
+            'unit': [],
+            'calib_time': [],
+            'stability_tolerance': []
+        })
         self.table = DataTable(
             source=self.source,
             columns=columns,
@@ -147,20 +155,30 @@ class CalibTable:
         self.layout = column(self.table, sizing_mode="stretch_width")
 
     def refresh(self, ui_state):
+        """Update the table with current calibration channel data.
+
+        Args:
+            ui_state: CalibUIState containing the current channel data to display.
+        """
         channels = ui_state.all_channels()
-        if not channels:                               
-            self.table.source.data = dict(
-                channel=[], factor=[], band=[], magnitude=[], unit=[], calib_time = []
-            )
+        if not channels:
+            self.table.source.data = {
+                'channel': [],
+                'factor': [],
+                'band': [],
+                'magnitude': [],
+                'unit': [],
+                'calib_time': []
+            }
             return
         sorted_chs = sorted(channels.keys())
         pad_len = len(str(sorted_chs[-1]))  # Auto-pad based on channel count
-        self.table.source.data = dict(
-            channel=["CH " + str(ch + 1).zfill(pad_len) for ch in sorted_chs],
-            factor=[channels[ch]['final_factor'] for ch in sorted_chs],
-            band=[channels[ch]['band'] for ch in sorted_chs],
-            magnitude=[channels[ch]['magnitude'] for ch in sorted_chs],
-            unit=[channels[ch]['unit'] for ch in sorted_chs],
-            calib_time=[channels[ch]['calib_time'] for ch in sorted_chs],
-            stability_tolerance=[channels[ch]['stability_tolerance'] for ch in sorted_chs],
-        )
+        self.table.source.data = {
+            'channel': ["CH " + str(ch + 1).zfill(pad_len) for ch in sorted_chs],
+            'factor': [channels[ch]['final_factor'] for ch in sorted_chs],
+            'band': [channels[ch]['band'] for ch in sorted_chs],
+            'magnitude': [channels[ch]['magnitude'] for ch in sorted_chs],
+            'unit': [channels[ch]['unit'] for ch in sorted_chs],
+            'calib_time': [channels[ch]['calib_time'] for ch in sorted_chs],
+            'stability_tolerance': [channels[ch]['stability_tolerance'] for ch in sorted_chs],
+        }

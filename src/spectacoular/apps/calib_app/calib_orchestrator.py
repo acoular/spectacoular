@@ -1,10 +1,13 @@
 """Calibration orchestration: channel detection and management."""
 
 import logging
+
 import acoular as ac
-import numpy as np
+
 from .calibration.calib import Calib
 from .preprocessor.per_channel_detection_preprocessor import PerChannelDetectionPreprocessor
+
+import numpy as np
 from traits.api import Dict, Float, Instance, Int, List, observe
 
 logger = logging.getLogger(__name__)
@@ -12,11 +15,12 @@ logger = logging.getLogger(__name__)
 
 class ChannelDetector(ac.TimeOut):
     """Detects which channel currently carries the calibration reference signal.
-    
+
     Uses amplitude analysis to identify the active calibration channel.
     The source must provide all channels (unmasked).
-    
-    Attributes:
+
+    Attributes
+    ----------
         source: Acoular source.
         required_stable: Number of consecutive blocks needed to confirm detection.
         exclude_channels: Channel indices to ignore (already calibrated).
@@ -38,7 +42,7 @@ class ChannelDetector(ac.TimeOut):
     _detection_preproc = Instance(PerChannelDetectionPreprocessor, transient=True)
 
     @observe('source')
-    def _update_source(self, event):
+    def _update_source(self, _event):
         """Initialize detection preprocessor when source is set."""
         self._detection_preproc = PerChannelDetectionPreprocessor(
             channel_freqs=self.channel_freqs
@@ -47,17 +51,18 @@ class ChannelDetector(ac.TimeOut):
         self.source.register_object(self._detection_preproc, buffer_overflow_treatment='none')
 
     # no support for num
-    def result(self, num):
+    def result(self, _num):
         """Yield blocks while detecting the calibration channel.
-        
+
         Uses amplitude analysis: finds the channel that is significantly
-        louder (min_ratio ×) than the average of all other channels.
+        louder (min_ratio) than the average of all other channels.
         Confirms detection after required_stable consecutive blocks.
-        
+
         Args:
             num: Not used (inherited from parent class).
-        
-        Yields:
+
+        Yields
+        ------
             ndarray: Audio blocks with detected_channel updated.
         """
         self.detected_channel = -1
@@ -102,8 +107,9 @@ class ChannelDetector(ac.TimeOut):
 
 class Channel:
     """Represents a single calibration channel.
-    
-    Attributes:
+
+    Attributes
+    ----------
         calib: Calibration instance for this channel.
         preprocess: Preprocessor instance for signal conditioning.
         calib_value: Current running calibration value.
@@ -112,6 +118,7 @@ class Channel:
         calib_time: Required stable time for calibration.
         stability_tolerance: Allowed variance for stability detection.
     """
+
     def __init__(self, calib: Calib, preprocess: ac.TimeOut, unit: str, calib_time: float, stability_tolerance: float):
         self.calib = calib
         self.preprocess = preprocess
@@ -124,19 +131,21 @@ class Channel:
 
 class CalibOrchestrator:
     """Manages calibration channels and coordinates the calibration process.
-    
+
     Creates and configures channels, runs calibration, and provides access
     to calibration results.
-    
-    Attributes:
+
+    Attributes
+    ----------
         source: Acoular Audio source.
         channels: Dict mapping channel index to Channel objects.
         log: Logger instance.
         detector: ChannelDetector for auto-detection mode.
     """
-    def __init__(self, source: ac.TimeOut, logger: logging.Logger = None):
+
+    def __init__(self, source: ac.TimeOut, logger: logging.Logger | None = None):
         """Initialize the orchestrator.
-        
+
         Args:
             source: Audio source (SampleSplitter) providing channel data.
             logger: Optional logger instance.
@@ -148,7 +157,7 @@ class CalibOrchestrator:
 
     def configure_detector(self):
         """Connect detector to all channels for auto-detection.
-        
+
         Sets up the detector with channel frequencies from all configured channels.
         """
         self.detector.channel_freqs = {ch: self.channels[ch].preprocess.band for ch in self.channels}
@@ -156,13 +165,14 @@ class CalibOrchestrator:
 
     def detect_channel(self, num):
         """Yield blocks while waiting for channel detection.
-        
+
         Stops when the detector has confirmed a channel.
-        
+
         Args:
             num: Number of blocks to process.
-        
-        Yields:
+
+        Yields
+        ------
             ndarray: Audio blocks until channel is detected.
         """
         for block in self.detector.result(num):
@@ -170,67 +180,99 @@ class CalibOrchestrator:
             if self.detector.detected_channel != -1:
                 break
 
-    def add_channel(self, i: int, calib: Calib, preproc: ac.TimeOut, unit:str, calib_time:float,stability_tolerance:float):
+    def add_channel(self, i: int, calib: Calib, preproc: ac.TimeOut, unit: str, calib_time: float, stability_tolerance: float):
+        """Add a new calibration channel.
+
+        Creates a Channel object with the given calibration and preprocessor,
+        configures it with buffer_size, stability settings, and masks all other
+        channels to isolate this one for calibration.
+
+        Args:
+            i: Channel index (0-based).
+            calib: Calibration instance for this channel.
+            preproc: Preprocessor instance for signal conditioning.
+            unit: Measurement unit ('dB', 'Pa', etc.).
+            calib_time: Required stable time for calibration (seconds).
+            stability_tolerance: Allowed variance for stability detection (dB).
+        """
         self.channels[i] = Channel(calib, preproc, unit, calib_time,stability_tolerance)
-        block_duration = preproc._num_per_average / self.source.sample_freq
+        block_duration = preproc.num_per_average / self.source.sample_freq
         n_blocks = int(float(calib_time) / block_duration)
         calib.buffer_size = n_blocks
         calib.required_stable = 100
-        calib.calibstd = 10 ** (stability_tolerance / 20) - 1 
-        masked = ac.MaskedTimeOut(source=self.source, invalid_channels=[j for j in range(self.source.num_channels) if j != i])
+        calib.calibstd = 10 ** (stability_tolerance / 20) - 1
+        masked = ac.MaskedTimeOut(
+            source=self.source,
+            invalid_channels=[j for j in range(self.source.num_channels) if j != i]
+        )
         self.source.register_object(masked,buffer_overflow_treatment = 'none')
         preproc.source = masked
         calib.source = preproc
-        self.log.debug(f"CalibOrchestrator: added channel {i} (calib={type(calib).__name__}, preproc={type(preproc).__name__}, unit = {unit}, calib_time = {calib_time}, stability_tolerance = {stability_tolerance})")
+        self.log.debug(
+            "CalibOrchestrator: added channel %d (calib=%s, preproc=%s, unit = %s, calib_time = %f, stability_tolerance = %f)",
+            i,
+            type(calib).__name__,
+            type(preproc).__name__,
+            unit,
+            calib_time,
+            stability_tolerance,
+        )
+
 
     def init_channels(self, calib: Calib, preproc: ac.TimeOut, unit, calib_time,stability_tolerance: float):
         """Initialize all source channels with the given calib and preproc config.
+
         Each channel gets its own clone, otherwise every channel's masking would
-        overwrite the same shared calib/preproc instance's source."""
-        self.channels.clear()          
+        overwrite the same shared calib/preproc instance's source.
+        """
+        self.channels.clear()
         for i in range(self.source.num_channels):
             self.add_channel(i, calib.clone_traits(), preproc.clone_traits(), unit, calib_time,stability_tolerance)
-        self.log.debug(f"CalibOrchestrator: initialized {self.source.num_channels} channels")
+        self.log.debug("CalibOrchestrator: initialized %d channels", self.source.num_channels)
 
-    def result(self, num, channel_num: int, no_progress_blocks: int=None, stop_on_complete: bool = True):
+    def result(self, _num, channel_num: int, no_progress_blocks: int | None, *, stop_on_complete: bool = True):
         """Yield calibration blocks for a specific channel.
-        
+
         Monitors calibration progress, updates calib_value and calib_value_final,
         and can stop early if no progress is detected or calibration completes.
-        
+
         Args:
             num: Number of blocks to process (passed to underlying calib.result).
             channel_num: Channel index to calibrate.
             no_progress_blocks: If set, stop after this many blocks without progress.
             stop_on_complete: Whether to stop when calibration completes (default: True).
-        
-        Yields:
+
+        Yields
+        ------
             ndarray: Calibration blocks with updated calib_value.
-        
-        Raises:
+
+        Raises
+        ------
             KeyError: If channel_num doesn't exist.
         """
         if channel_num not in self.channels:
-            raise KeyError(f"Channel {channel_num} does not exist")
-        self.log.debug(f"CalibOrchestrator: starting result for channel {channel_num + 1}")
+            msg = f"Channel {channel_num} does not exist"
+            raise KeyError(msg)
+        self.log.debug("CalibOrchestrator: starting result for channel %d", channel_num + 1)
         buffer_size = self.channels[channel_num].calib.buffer_size
-        block_count = 0
         no_progress_count = 0
-        for block in self.channels[channel_num].calib.result(1):
+        for block_count, block in enumerate(self.channels[channel_num].calib.result(1), 1):
             self.channels[channel_num].calib_value = self.channels[channel_num].calib.current_estimate
             yield block
-            block_count += 1
             if self.channels[channel_num].calib.is_complete():
                 if self.channels[channel_num].calib_value_final == 0.0:
                     self.channels[channel_num].calib_value_final = self.channels[channel_num].calib.calibfactor
                 if stop_on_complete:
                     break
             if no_progress_blocks is not None and block_count > buffer_size:
-                if self.channels[channel_num].calib._stable_count == 0:
+                if self.channels[channel_num].calib.stable_count == 0:
                     no_progress_count += 1
                 else:
                     no_progress_count = 0
                 if no_progress_count >= no_progress_blocks:
-                    self.log.debug(f"CalibOrchestrator: no progress after {no_progress_count} blocks for channel {channel_num + 1}")
+                    self.log.debug(
+                        "CalibOrchestrator: no progress after %d blocks for channel %d",
+                        no_progress_count, channel_num + 1
+                    )
                     break
 

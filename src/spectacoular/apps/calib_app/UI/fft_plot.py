@@ -1,21 +1,24 @@
 """FFT spectrum visualization for calibration signals."""
 
-import numpy as np
-from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource
-from bokeh.layouts import column
+from spectacoular.apps.calib_app.util import v_to_dbv
+
 from .tooltips import info_label
-from ..util import V_to_dBV
+
+import numpy as np
+from bokeh.layouts import column
+from bokeh.models import ColumnDataSource
+from bokeh.plotting import figure
 
 
 class FFTViewer:
     """Live FFT spectrum plot for visualizing calibration channel signals.
-    
+
     Shows relative amplitude vs frequency. The y-axis has fixed tick spacing
     (Y_DELTA dB) but no absolute scale — it's purely relative for visualizing
     signal stability and frequency content.
-    
-    Attributes:
+
+    Attributes
+    ----------
         fft: FFT generator instance (FFT preprocessor).
         source: ColumnDataSource with frequency/amplitude data.
         plot: Bokeh figure instance.
@@ -28,7 +31,7 @@ class FFTViewer:
 
     def __init__(self, fft_generator):
         """Initialize the FFT viewer.
-        
+
         Args:
             fft_generator: FFT preprocessor instance providing spectrum data.
         """
@@ -42,22 +45,22 @@ class FFTViewer:
             height=583,
             sizing_mode="stretch_width",
             x_axis_label="Frequency (Hz)",
-            y_axis_label=f"Amplitude  (dBV)",
+            y_axis_label="Amplitude  (dBV)",
             x_range=(-100, 8000),
             y_range=(-150, 0),
             background_fill_color="#fafafa",
             border_fill_color="white",
         )
 
-      
+
         self.title = info_label(
             "FFT Spectrum",
             "Live-Spectrum of the active Channel.",
             direction="down"
         )
 
-       
-    
+
+
         self.plot.xgrid.grid_line_color = "#e0e0e0"
         self.plot.ygrid.grid_line_color = "#e0e0e0"
         self.plot.ygrid.grid_line_dash = "dashed"
@@ -76,14 +79,14 @@ class FFTViewer:
 
     def update(self, num):
         """Update plot data from FFT generator for the selected channel.
-        
+
         Args:
             num: Channel identifier string (e.g., "Channel 1").
         """
         try:
             result = next(self.fft.result())
             spectrum = result[int(num.split()[1]) - 1, :]
-            amplitude = V_to_dBV(np.abs(spectrum))
+            amplitude = v_to_dbv(np.abs(spectrum))
             frequency = self.fft.frequencies
 
             self.source.data = {
@@ -95,8 +98,9 @@ class FFTViewer:
 
     def widget(self):
         """Get the plot widget layout (cached after first call).
-        
-        Returns:
+
+        Returns
+        -------
             column: Bokeh column layout containing title and plot.
         """
         # Always return the same layout

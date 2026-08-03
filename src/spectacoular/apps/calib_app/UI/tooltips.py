@@ -2,21 +2,23 @@
 
 # We might want to longterm migrate to the Bokeh build in tool tips
 
-from bokeh.models import Div
 from .colors import ACC, T1, T2
+
+from bokeh.models import Div
 
 
 def info_label(label: str, tooltip: str, width: int = 160,
                direction: str = "down") -> Div:
     """Create a labeled Div with an info icon and tooltip.
-    
+
     Args:
         label: The visible label text.
         tooltip: The tooltip text shown on hover.
         width: Width of the tooltip in pixels.
         direction: "up" or "down" - which direction the tooltip opens.
-    
-    Returns:
+
+    Returns
+    -------
         Div: Bokeh Div widget with embedded HTML/CSS for the tooltip.
     """
     cls = "tooltip-up" if direction == "up" else "tooltip-down"

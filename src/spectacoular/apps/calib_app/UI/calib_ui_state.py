@@ -1,10 +1,13 @@
-from datetime import datetime
-from ..util import pa_to_dB
+"""Shared state management for calibration UI components."""
+
+from datetime import UTC, datetime
+
+from spectacoular.apps.calib_app.util import pa_to_db
 
 
 class CalibUIState:
     """Shared state between background thread and UI components.
-    
+
     Concurrency model:
     - At most ONE background thread (consume/consume_auto) writes via update()
     - Main thread (Bokeh) reads via get()/all_channels() for UI refresh
@@ -15,13 +18,26 @@ class CalibUIState:
       STOP background thread BEFORE modifying orchestrator or calling init_from_orchestrator()
     """
 
+    #ch[i]={factor, band, magnitude, unit, is_stable, final_factor, calib_time, stability_tolerance}
     def __init__(self):
         """Initialize empty channel state."""
-        self._channels = {}  # ch -> {factor, band, magnitude, unit, is_stable, final_factor, calib_time, stability_tolerance}
+        self._channels = {}
 
-    def update(self, ch: int, factor: float = None, band: float = None, magnitude: float = None, is_stable: bool = None, final_factor: float = None, unit: str = None, calib_time: float = None, stability_tolerance: float = None):
+    def update(
+        self,
+        ch: int,
+        * ,
+        factor: float | None = None,
+        band: float | None = None,
+        magnitude: float | None = None,
+        is_stable: bool | None = None,
+        final_factor: float | None = None,
+        unit: str | None = None,
+        calib_time: float | None = None,
+        stability_tolerance: float | None = None,
+    ):
         """Update channel data. Called by background thread during calibration.
-        
+
         Args:
             ch: Channel index (0-based).
             factor: Current calibration factor (calib_value).
@@ -35,7 +51,7 @@ class CalibUIState:
         """
         if ch not in self._channels:
             self._channels[ch] = {}
-        
+
         channel_data = self._channels[ch]
         if factor is not None:
             channel_data['factor'] = factor
@@ -53,41 +69,46 @@ class CalibUIState:
             channel_data['calib_time'] = calib_time
         if stability_tolerance is not None:
             channel_data['stability_tolerance'] = stability_tolerance
-        channel_data['timestamp'] = datetime.now().strftime("%H:%M:%S")
+        channel_data['timestamp'] = datetime.now(tz=UTC).strftime("%H:%M:%S")
 
     def get(self, ch: int):
         """Get channel data dict, or None if channel doesn't exist.
-        
+
         Args:
             ch: Channel index (0-based).
-        
-        Returns:
+
+        Returns
+        -------
             dict or None: Channel data dictionary.
         """
         return self._channels.get(ch)
 
     def all_channels(self):
         """Get a copy of all channel data.
-        
-        Returns:
+
+        Returns
+        -------
             dict: Mapping of channel index to channel data dict.
         """
         return dict(self._channels)
 
     def reset(self):
-        """Clear all channel data. Called when source changes or before repopulating from orchestrator."""
+        """Clear all channel data.
+
+        Called when source changes or before repopulating from orchestrator.
+        """
         self._channels = {}
 
     def init_from_orchestrator(self, orchestrator):
         """Populate UI state from orchestrator's channels.
-        
+
         Called from main thread after stopping the background thread.
         Converts dB reference magnitudes to Pa for consistent UI display.
-        
+
         Args:
             orchestrator: CalibOrchestrator instance with channel configuration.
         """
-        self.reset() 
+        self.reset()
         for ch, channel_obj in orchestrator.channels.items():
             factor = float(channel_obj.calib_value)
             final_factor = float(channel_obj.calib_value_final)
@@ -96,8 +117,19 @@ class CalibUIState:
             calib_time = float(channel_obj.calib_time)
             stability_tolerance = float(channel_obj.stability_tolerance)
             if unit == "dB":
-                magnitude = pa_to_dB(channel_obj.calib.referenceMagnitude)
-            else: 
-                magnitude = channel_obj.calib.referenceMagnitude
+                magnitude = pa_to_db(channel_obj.calib.reference_magnitude)
+            else:
+                magnitude = channel_obj.calib.reference_magnitude
             is_stable = channel_obj.calib.is_stable()
-            self.update(ch, factor, band, magnitude, is_stable, final_factor=final_factor, unit=unit, calib_time=calib_time, stability_tolerance=stability_tolerance)
+            self.update(
+                ch,
+                factor,
+                band,
+                magnitude,
+                is_stable,
+                final_factor=final_factor,
+                unit=unit,
+                calib_time=calib_time,
+                stability_tolerance=stability_tolerance
+            )
+

@@ -1,14 +1,15 @@
 """Calibration parameter panel UI component."""
 
-from bokeh.layouts import row, column
-from bokeh.models import Div, TextInput, Select, InlineStyleSheet,  RadioButtonGroup, Button
-from .colors import ACC, S1, BD, T1, T2, T3, GRN, ORG
+from .colors import ACC, BD, GRN, ORG, S1, T1, T2, T3
 from .tooltips import info_label
+
+from bokeh.layouts import column, row
+from bokeh.models import Button, Div, InlineStyleSheet, RadioButtonGroup, Select, TextInput
 
 
 class ParameterPanel:
     """Panel for editing and displaying calibration parameters.
-    
+
     Provides UI controls for:
     - Selecting calibration mode (Edit/Select vs Automatic)
     - Selecting active channel
@@ -16,15 +17,16 @@ class ParameterPanel:
     - Setting calibration frequency
     - Setting calibration time and stability tolerance
     - Displaying current calibration factor and stability status
-    
-    Attributes:
+
+    Attributes
+    ----------
         logger: Logger instance.
         num_channels: Total number of channels available.
         on_params_change: Callback for parameter changes.
         on_calib_channel_change: Callback for channel selection changes.
         auto_detected_channel: Currently auto-detected channel (int or None).
         ui_state: CalibUIState instance for reading current state.
-        
+
         Widgets: mode_toggle, edit_channel_select, pegel_input, pegel_unit_select,
         freq_input, calib_time_input, stability_tolerance_input, bew_select,
         btn_set, result_factor, result_status, layout.
@@ -32,7 +34,7 @@ class ParameterPanel:
 
     def __init__(self, ui_state, logger, num_channels=8):
         """Initialize the parameter panel.
-        
+
         Args:
             ui_state: CalibUIState instance for accessing current state.
             logger: Logger instance for debugging.
@@ -50,35 +52,35 @@ class ParameterPanel:
         self._build_layout()
         self.logger.debug("ParameterPanel: Initialization completed")
 
-    
+
     @property
     def get_channel_int(self):
         """Get the currently selected channel as an integer (0-based).
-        
-        Returns:
+
+        Returns
+        -------
             int or None: Channel index, or None if "All" is selected.
         """
         if self.edit_channel_select.value == "All":
             return None
-        else:
-            return int(self.edit_channel_select.value.split()[-1]) - 1
-         
+        return int(self.edit_channel_select.value.split()[-1]) - 1
+
     def get_value_from_ui_state(self, value):
         """Get a value from UI state for the currently selected channel.
-        
+
         Args:
             value: Key to retrieve from channel data (e.g., "band", "magnitude").
-        
-        Returns:
+
+        Returns
+        -------
             str: String representation of the value, or "0" / "" for "All" selection.
         """
         ch = self.get_channel_int
-        if ch == None and value != "unit":
+        if ch is None and value != "unit":
             return str(0)
-        elif ch == None and value == "unit":
+        if ch is None and value == "unit":
             return ""
-        else:
-            return str(self.ui_state.get(ch)[value])
+        return str(self.ui_state.get(ch)[value])
 
 
 
@@ -154,13 +156,13 @@ class ParameterPanel:
             }}
         """)
 
-        self.result_box_style = InlineStyleSheet(css=f"""
-        :host {{
+        self.result_box_style = InlineStyleSheet(css="""
+        :host {
             background:    rgba(26,127,55,.04);
             border:        1px solid rgba(26,127,55,.2);
             border-radius: 8px;
             padding:       10px 12px;
-            }}
+            }
         """)
         self.logger.debug("ParameterPanel: Styles built")
 
@@ -195,7 +197,7 @@ class ParameterPanel:
 
         self.logger.debug("     Channel Select created")
 
-    
+
         # Info-Labels
         self.channel_label = info_label(
             "Channel",
@@ -227,15 +229,15 @@ class ParameterPanel:
         )
         self.logger.debug("     Info tooltips created")
 
-        
-        
+
+
         self.pegel_unit_select = Select(
             value= "dB",
             options=["dB", "N", "m/s²"],
             sizing_mode='stretch_width',
             stylesheets=[self.select_style]
         )
-       
+
         self.logger.debug("     Unit select created (Default: dB)")
 
         self.freq_input = TextInput(
@@ -244,7 +246,7 @@ class ParameterPanel:
             sizing_mode='stretch_width',
             stylesheets=[self.input_style]
         )
-        
+
         self.logger.debug("     Frequency input created (Default: 1000 Hz)")
 
 
@@ -280,7 +282,7 @@ class ParameterPanel:
             stylesheets=[self.input_style]
         )
 
-        
+
 
 
 
@@ -305,7 +307,7 @@ class ParameterPanel:
 
         self.logger.debug("ParameterPanel: All widgets created")
 
-    
+
 
     # ------------------------------------------------------------------
     # Layout Creation
@@ -318,7 +320,7 @@ class ParameterPanel:
             row(
                 column(
                     self.result_factor,
-                    self.factor_info, 
+                    self.factor_info,
                 ),
                 column(
                     self.result_status,
@@ -344,7 +346,7 @@ class ParameterPanel:
             row(self.calib_time_label, self.stability_tolerance_label, sizing_mode='stretch_width'),
             row(self.calib_time_input,self.stability_tolerance_input,sizing_mode='stretch_width'),
             self.btn_set,
-            self.result_section,      
+            self.result_section,
             sizing_mode='stretch_width'
         )
         self.logger.debug("ParameterPanel: Layout complete")
@@ -355,7 +357,7 @@ class ParameterPanel:
 
     def refresh(self, ui_state):
         """Update displayed calibration factor and stability status from UI state.
-        
+
         Args:
             ui_state: CalibUIState instance with current channel data.
         """
@@ -390,20 +392,20 @@ class ParameterPanel:
             f"<b style='font-size:16px;color:{color};'>{'STABLE' if stable else 'UNSTABLE'}</b>"
             f"<br><b style='font-size:16px;color:transparent;'>—</b>"
         )
-        
+
 
     def update_num_channels(self, num_channels):
         """Update channel selectors after source change.
-        
+
         Args:
             num_channels: New number of available channels.
         """
         self.num_channels = num_channels
         channels = [f"Channel {i}" for i in range(1, num_channels + 1)]
 
-        self.edit_channel_select.options = ["All"] + channels
+        self.edit_channel_select.options = ["All", *channels]
         if self.edit_channel_select.value not in self.edit_channel_select.options:
             self.edit_channel_select.value = "Channel 1"
 
-        self.logger.debug(f"ParameterPanel: Channel number updated to {num_channels}")
+        self.logger.debug("ParameterPanel: Channel number updated to %d", num_channels)
 

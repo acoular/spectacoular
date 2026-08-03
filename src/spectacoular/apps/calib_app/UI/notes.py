@@ -1,17 +1,20 @@
 """Text input widget for calibration notes."""
 
-from bokeh.models import TextAreaInput
-from bokeh.layouts import column
 from .tooltips import info_label
+
+from bokeh.layouts import column
+from bokeh.models import TextAreaInput
 
 
 class NotesInput:
     """Free-text input for calibration session notes.
-    
-    Attributes:
+
+    Attributes
+    ----------
         textarea: TextAreaInput widget for note entry.
         layout: Column layout containing label and text area.
     """
+
     def __init__(self):
         """Initialize the notes input widget."""
         self.textarea = TextAreaInput(

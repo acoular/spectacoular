@@ -1,23 +1,27 @@
 """FFT preprocessing for spectrum visualization."""
 
 import logging
+
 import acoular as ac
-from traits.api import observe, Any
+
+from traits.api import Any, observe
 
 
 class FFT(ac.Generator):
     """Real FFT generator for spectrum visualization.
-    
+
     Computes RFFT (Real Fast Fourier Transform) of the input signal
     and yields spectrum data reshaped for per-channel display.
-    
-    Attributes:
+
+    Attributes
+    ----------
         source: Input audio source.
         log: Logger instance.
         rfft: RFFT processor instance.
         frequencies: Array of frequency bins from the RFFT.
         switch: Visibility switch to enable/disable processing.
     """
+
     source = Any()
     log = Any()
     rfft = Any()
@@ -26,7 +30,7 @@ class FFT(ac.Generator):
 
     def __init__(self, source, switch, logger=None):
         """Initialize the FFT generator.
-        
+
         Args:
             source: Input audio source.
             switch: Visibility toggle widget.
@@ -34,8 +38,8 @@ class FFT(ac.Generator):
         """
         super().__init__()
         self.log = logger or logging.getLogger(__name__)
-        self.source = source  
-        self.switch = switch 
+        self.source = source
+        self.switch = switch
 
     @observe('source')
     def _update_source(self, event):
@@ -52,8 +56,9 @@ class FFT(ac.Generator):
 
     def result(self):
         """Yield FFT spectrum data when switch is active.
-        
-        Yields:
+
+        Yields
+        ------
             ndarray: Spectrum data reshaped as (num_freq_bins, num_channels).
         """
         if self.switch.active:
@@ -61,4 +66,3 @@ class FFT(ac.Generator):
                 yield data.reshape(
                     len(self.frequencies),
                     -1).T
-        

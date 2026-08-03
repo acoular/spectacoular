@@ -8,55 +8,54 @@ This module contains:
 - Calibration state management
 """
 
-# Longterm TODO: should be to split this out into more files to make it more readable. 
+# Longterm: should be to split this out into more files to make it more readable.
 # Also it would be nice to refactor the consume_auto logic into the orchestrator or detector.
 
+import logging
+import threading
 from pathlib import Path
 
 import acoular as ac
-import threading
-from bokeh.layouts import row, column
-from bokeh.models import Div, TextAreaInput
-from spectacoular.apps.measurement_app.log import LogHandler
-from spectacoular.apps.calib_app.UI.parameter_panel import ParameterPanel
-from spectacoular.apps.calib_app.UI.buttons_save_upload_start import ButtonBar, PathInput, InputFile
-from spectacoular.apps.calib_app.save_and_parse.save import save
-from spectacoular.apps.calib_app.UI.table import CalibTable
-from spectacoular.apps.calib_app.UI.notes import NotesInput
-from spectacoular.apps.calib_app.UI.calib_ui_state import CalibUIState
-from spectacoular.apps.calib_app.UI.visibility_switch import VisibilitySwitch
-from spectacoular.apps.calib_app.save_and_parse.parse import load
-from spectacoular.apps.calib_app.calibOrchestrator import CalibOrchestrator
-from spectacoular.apps.calib_app.calibration.calib import StdCalib
-from spectacoular.apps.calib_app.preprocessor.preprocessor import CalibPreprocessor
-from spectacoular.apps.calib_app.channel_router import ChannelRouter
-from spectacoular.apps.calib_app.util import dB_to_pa, pa_to_dB
-from spectacoular.apps.calib_app.preprocessor.fft_preprocessor import FFT
-from spectacoular.apps.calib_app.UI.fft_plot import FFTViewer
 import spectacoular as sp
-import sounddevice as sd
-from bokeh.models import Select
-import logging
-from spectacoular.apps.calib_app.UI.tooltips import info_label
+from spectacoular.apps.calib_app.calib_orchestrator import CalibOrchestrator
+from spectacoular.apps.calib_app.calibration.calib import StdCalib
 from spectacoular.apps.calib_app.help import help_doc
-from tornado.web import StaticFileHandler
+from spectacoular.apps.calib_app.preprocessor.fft_preprocessor import FFT
+from spectacoular.apps.calib_app.preprocessor.preprocessor import CalibPreprocessor
+from spectacoular.apps.calib_app.save_and_parse.parse import load
+from spectacoular.apps.calib_app.save_and_parse.save import save
+from spectacoular.apps.calib_app.UI.buttons_save_upload_start import ButtonBar, InputFile, PathInput
+from spectacoular.apps.calib_app.UI.calib_ui_state import CalibUIState
+from spectacoular.apps.calib_app.UI.fft_plot import FFTViewer
+from spectacoular.apps.calib_app.UI.notes import NotesInput
+from spectacoular.apps.calib_app.UI.parameter_panel import ParameterPanel
+from spectacoular.apps.calib_app.UI.table import CalibTable
+from spectacoular.apps.calib_app.UI.tooltips import info_label
+from spectacoular.apps.calib_app.UI.visibility_switch import VisibilitySwitch
+from spectacoular.apps.calib_app.util import db_to_pa, pa_to_db
+from spectacoular.apps.measurement_app.log import LogHandler
 
+import sounddevice as sd
+from bokeh.layouts import column, row
+from bokeh.models import Div, Select, TextAreaInput
+from tornado.web import StaticFileHandler
 
 log = None  # Global logger, initialized by setup_logger()
 
 
 def build_source_select(logger, phantom_files):
     """Build a Select widget for choosing audio input source.
-    
+
     Populates options with:
     - Live audio devices (WASAPI preferred on Windows to avoid duplicates)
     - Phantom files (for testing without real audio input)
-    
+
     Args:
         logger: Logger instance for status messages.
         phantom_files: List of Path objects for phantom sound files.
-    
-    Returns:
+
+    Returns
+    -------
         Select: Bokeh Select widget configured with available sources.
     """
     hostapis = sd.query_hostapis()
@@ -69,9 +68,8 @@ def build_source_select(logger, phantom_files):
 
     devices = {}
     for i, dev in enumerate(sd.query_devices()):
-        if dev['max_input_channels'] > 0:
-            if preferred_api is None or dev['hostapi'] == preferred_api:
-                devices[str(i)] = '{name} ({max_input_channels} ch)'.format(**dev)
+        if dev['max_input_channels'] > 0 and (preferred_api is None or dev['hostapi'] == preferred_api):
+            devices[str(i)] = '{name} ({max_input_channels} ch)'.format(**dev)
 
     # WASAPI filter fallback for other platforms
     if not devices:
@@ -91,16 +89,16 @@ def build_source_select(logger, phantom_files):
     if not devices:
         logger.info("No devices connected")
     else:
-        logger.info(f"{len(devices)} Live-Device(s) found.")
+        logger.info("%d Live-Device(s) found.", len(devices))
 
     return select
 
 def setup_logger(doc):
     """Initialize the application logger with Bokeh integration.
-    
+
     Creates a LogHandler that writes to both a file (calibration.log)
     and a TextAreaInput widget for display in the UI.
-    
+
     Args:
         doc: Bokeh document for attaching the log widget.
     """
@@ -112,13 +110,13 @@ def setup_logger(doc):
 
 def consume(orchestrator, state, ui_state):
     """Background thread: reads from orchestrator and writes to CalibUIState.
-    
+
     This is the main calibration processing loop. It:
     - Reads calibration blocks from the orchestrator
     - Extracts channel data (factor, band, magnitude, etc.)
     - Updates CalibUIState which the UI reads from
     - After completion, syncs all final values from orchestrator
-    
+
     Args:
         orchestrator: CalibOrchestrator providing calibration data.
         state: Dict with 'iter' (block iterator) and 'ch' (channel index).
@@ -142,26 +140,36 @@ def consume(orchestrator, state, ui_state):
         stability_tolerance = float(channel.stability_tolerance)
 
         if unit == "dB":
-            magnitude = pa_to_dB(channel.calib.referenceMagnitude)
+            magnitude = pa_to_db(channel.calib.reference_magnitude)
         else:
-            magnitude = channel.calib.referenceMagnitude
+            magnitude = channel.calib.reference_magnitude
 
 
         is_stable = orchestrator.channels[ch].calib.is_stable()
 
-        ui_state.update(ch=ch, factor=factor, band=band, magnitude=magnitude, is_stable=is_stable, final_factor=final_factor, unit = unit, calib_time = calib_time,stability_tolerance=stability_tolerance)
-    
+        ui_state.update(
+            ch=ch,
+            factor=factor,
+            band=band,
+            magnitude=magnitude,
+            is_stable=is_stable,
+            final_factor=final_factor,
+            unit = unit,
+            calib_time = calib_time,
+            stability_tolerance=stability_tolerance
+        )
+
     # Update UI from orchestrator to ensure all final values are displayed
     ui_state.init_from_orchestrator(orchestrator)
 
 
 def update_orchestrator(orchestrator, params, ui_state):
     """Update orchestrator channels with parameters from the UI panel.
-    
+
     Creates or updates channels based on the Edit Channel selector.
     If "All" is selected, updates all channels. Otherwise, updates only
     the selected channel.
-    
+
     Args:
         orchestrator: CalibOrchestrator to update.
         params: ParameterPanel with current UI values.
@@ -175,7 +183,7 @@ def update_orchestrator(orchestrator, params, ui_state):
         unit = params.pegel_unit_select.value
         unit_log = unit
         if str(params.pegel_unit_select.value) == "dB":
-            level = dB_to_pa(float(params.pegel_input.value))
+            level = db_to_pa(float(params.pegel_input.value))
             unit_log = "Pa"
             log.logger.debug("Reference value converted from dB to Pa.")
         else:
@@ -183,20 +191,36 @@ def update_orchestrator(orchestrator, params, ui_state):
         freq = float(params.freq_input.value)
         calib_time = float(params.calib_time_input.value)
         stability_tolerance = float(params.stability_tolerance_input.value)
-        orchestrator.add_channel(edit_ch, calib=StdCalib(referenceMagnitude=level),
-                                preproc=CalibPreprocessor(band=freq),unit=unit, calib_time = calib_time,stability_tolerance=stability_tolerance)
+        orchestrator.add_channel(
+            edit_ch,
+            calib=StdCalib(reference_magnitude=level),
+            preproc=CalibPreprocessor(band=freq),
+            unit=unit,
+            calib_time = calib_time,
+            stability_tolerance=stability_tolerance
+        )
         orchestrator.configure_detector()
-        log.logger.debug(f"Orchestrator updated: ch={edit_ch}, level={level:.6f} {unit_log} , freq={freq}, calib_time = {calib_time},stability_tolerance = {stability_tolerance}")
-        ui_state.update(ch=edit_ch, band=freq, magnitude=params.pegel_input.value,final_factor=orchestrator.channels[edit_ch].calib_value_final, unit=unit, calib_time = calib_time,stability_tolerance=stability_tolerance)
+        log.logger.debug(
+            "Orchestrator updated: ch=%d, level=%.6f %s , freq=%s, calib_time = %s, stability_tolerance = %s",
+            edit_ch, level, unit_log, freq, calib_time, stability_tolerance)
+        ui_state.update(
+            ch=edit_ch,
+            band=freq,
+            magnitude=params.pegel_input.value,
+            final_factor=orchestrator.channels[edit_ch].calib_value_final,
+            unit=unit,
+            calib_time = calib_time,
+            stability_tolerance=stability_tolerance
+        )
 
 
 def consume_auto(orchestrator, params, state, ui_state):
     """Background thread for Auto mode: calibrates all channels sequentially.
-    
+
     Automatically detects which channel has the calibration signal,
     calibrates it, then moves to the next channel. Continues until all
     channels are calibrated or the thread is stopped.
-    
+
     Args:
         orchestrator: CalibOrchestrator providing calibration data.
         params: ParameterPanel for UI parameter access.
@@ -221,12 +245,12 @@ def consume_auto(orchestrator, params, state, ui_state):
 
         if idx == -1:
             return  # source exhausted without finding a candidate
-        
-    
-        log.logger.debug(f"Auto-detected calibration channel: {idx + 1}")
+
+
+        log.logger.debug("Auto-detected calibration channel: %d", idx + 1)
         params.auto_detected_channel = idx
-        
-       
+
+
 
         state['ch'] = idx
         state['iter'] = orchestrator.result(1, channel_num=idx, no_progress_blocks=300, stop_on_complete=False)
@@ -234,14 +258,14 @@ def consume_auto(orchestrator, params, state, ui_state):
 
         if orchestrator.channels[idx].calib_value_final > 0:
             completed.add(idx)
-            log.logger.debug(f"Channel {idx + 1} calibrated ")
+            log.logger.debug("Channel %d calibrated", idx + 1)
         else:
-            log.logger.debug(f"Channel {idx + 1} Timeout - re-detecting ...")
+            log.logger.debug("Channel %d Timeout - re-detecting ...", idx + 1)
 
 
 def stop_consume_thread(state):
     """Stop the currently running consume thread if any.
-    
+
     Args:
         state: Dict containing 'thread' key with the Thread object.
     """
@@ -251,12 +275,12 @@ def stop_consume_thread(state):
         log.logger.debug("Consume thread stopped")
 
 
-def start_consume_thread(doc, orchestrator, params, state, ui_state, router):
+def start_consume_thread(orchestrator, params, state, ui_state):
     """Start a consume thread for calibration processing.
-    
+
     Stops any existing thread first, then starts a new one in either
     Auto mode (if mode_toggle is active) or manual mode (single channel).
-    
+
     Args:
         doc: Bokeh document for scheduling UI updates.
         orchestrator: CalibOrchestrator providing calibration data.
@@ -273,7 +297,7 @@ def start_consume_thread(doc, orchestrator, params, state, ui_state, router):
     if params.mode_toggle.active == 1:
         state.setdefault('completed', set()).clear()
         params.auto_detected_channel = None
-        
+
         t = threading.Thread(target=consume_auto,
                              args=(orchestrator, params, state, ui_state),
                              daemon=True)
@@ -286,7 +310,7 @@ def start_consume_thread(doc, orchestrator, params, state, ui_state, router):
     ch = int(calib_ch_str.split()[-1]) - 1
 
     # Start new consume thread for selected channel
-    orchestrator.channels[ch].calib_value_final = 0.0 
+    orchestrator.channels[ch].calib_value_final = 0.0
     state['iter'] = orchestrator.result(1, channel_num=ch, stop_on_complete=False)
     state['ch'] = ch
 
@@ -294,16 +318,16 @@ def start_consume_thread(doc, orchestrator, params, state, ui_state, router):
     t.do_run = True
     state['thread'] = t
     t.start()
-    log.logger.debug(f"Consume thread started for ch={ch}")
+    log.logger.debug("Consume thread started for ch=%d", ch)
 
 
 def build_channel(orchestrator, params, ui_state):
     """Rebuild pipeline: update orchestrator and restart consume thread.
-    
+
     Called when user clicks "Set" button to apply new parameters.
     Updates the orchestrator configuration, which implicitly restarts
     the consume thread via the on_change callbacks.
-    
+
     Args:
         orchestrator: CalibOrchestrator to update.
         params: ParameterPanel with new parameter values.
@@ -314,10 +338,10 @@ def build_channel(orchestrator, params, ui_state):
 
 def refresh(calib_table, params, ui_state, fft, doc):
     """Schedule UI refresh on the main thread.
-    
+
     Uses Bokeh's add_next_tick_callback to safely update UI from
     background threads or periodic callbacks.
-    
+
     Args:
         calib_table: CalibTable to refresh with latest data.
         params: ParameterPanel to refresh with latest data.
@@ -331,11 +355,11 @@ def refresh(calib_table, params, ui_state, fft, doc):
 
 def load_callback(orchestrator, ui_state, state, logger, params, notes):
     """Create callback for loading calibration data from file.
-    
+
     Returns a function that can be used as a Bokeh FileInput on_change
     callback. When triggered, it stops the current consume thread,
     loads the data, syncs UI state, and updates parameter inputs.
-    
+
     Args:
         orchestrator: CalibOrchestrator to populate with loaded data.
         ui_state: CalibUIState to update.
@@ -343,8 +367,9 @@ def load_callback(orchestrator, ui_state, state, logger, params, notes):
         logger: Logger instance.
         params: ParameterPanel to update with loaded values.
         notes: NotesInput widget to update with loaded notes.
-    
-    Returns:
+
+    Returns
+    -------
         function: Callback for FileInput on_change event.
     """
     load_cb = load(orchestrator, notes, logger)
@@ -362,14 +387,15 @@ def load_callback(orchestrator, ui_state, state, logger, params, notes):
 
 def visibility_callback(element):
     """Create callback to toggle element visibility.
-    
+
     Args:
         element: Bokeh widget with a 'visible' property.
-    
-    Returns:
+
+    Returns
+    -------
         function: Callback that sets element.visible = new value.
     """
-    def callback(attr, old, new):
+    def callback(_attr, _old, new):
         element.visible = new
     return callback
 
@@ -377,17 +403,18 @@ def visibility_callback(element):
 
 def update_parameter_panel(params):
     """Create callback to update parameter inputs from UI state.
-    
+
     Updates all parameter inputs (level, unit, frequency, etc.) from
     the currently selected channel in ui_state.
-    
+
     Args:
         params: ParameterPanel with the input widgets to update.
-    
-    Returns:
+
+    Returns
+    -------
         function: Callback for on_change events.
     """
-    def update(attr, old, new):
+    def update(_attr, _old, _new):
         params.pegel_input.value = params.get_value_from_ui_state("magnitude")
         params.pegel_unit_select.value = params.get_value_from_ui_state("unit")
         params.freq_input.value = params.get_value_from_ui_state("band")
@@ -397,18 +424,19 @@ def update_parameter_panel(params):
 
 def deactivate_parameter_panel(params, button):
     """Create callback to disable parameter inputs in Auto mode.
-    
+
     Disables parameter inputs when Auto mode is active (mode_toggle.active == 1).
     Also disables the Start button when in Edit mode with "All" selected.
-    
+
     Args:
         params: ParameterPanel with the input widgets.
         button: Start button widget.
-    
-    Returns:
+
+    Returns
+    -------
         function: Callback for mode_toggle on_change events.
     """
-    def update(attr, old, new):
+    def update(_attr, _old, _new):
         params.pegel_input.disabled = params.mode_toggle.active == 1
         params.pegel_unit_select.disabled = params.mode_toggle.active == 1
         params.freq_input.disabled  = params.mode_toggle.active == 1
@@ -422,22 +450,23 @@ def deactivate_parameter_panel(params, button):
 
 def deactivate_start_button(button, params):
     """Create callback to disable Start button when "All" is selected.
-    
+
     Args:
         button: Start button widget.
         params: ParameterPanel with edit_channel_select.
-    
-    Returns:
+
+    Returns
+    -------
         function: Callback for edit_channel_select on_change events.
     """
-    def update(attr, old, new):
+    def update(_attr, _old, _new):
         button.disabled = params.edit_channel_select.value == "All"
     return update
 
 
 def server_doc(doc):
     """Bokeh server document factory for the calibration application.
-    
+
     This is the main entry point called by Bokeh when creating a new session.
     It sets up:
     - Logging infrastructure
@@ -447,7 +476,7 @@ def server_doc(doc):
     - All UI components (tables, panels, buttons, plots)
     - Event callbacks for user interactions
     - Periodic UI refresh
-    
+
     Args:
         doc: Bokeh document to populate with the application UI.
     """
@@ -459,9 +488,8 @@ def server_doc(doc):
 
     source_select = build_source_select(log.logger, phantom_files)
     if not source_select.options:
-        raise RuntimeError(
-            "No Phantom File nor Audio Source found."
-        )
+        msg = "No Phantom File nor Audio Source found."
+        raise RuntimeError(msg)
 
     first_value, _ = source_select.options[0]
     if first_value.endswith(".h5"):
@@ -476,13 +504,8 @@ def server_doc(doc):
             num_samples=int(info['default_samplerate']) * 36000,
         )
 
-    router = ChannelRouter(source=source, source_channel=0,
-                           calib_channel=0, logger=log.logger)
-    
-
-    
     splitted_source = ac.SampleSplitter(source = source)
-    
+
     orchestrator = CalibOrchestrator(splitted_source, logger=log.logger)
 
     graph_switch = VisibilitySwitch("FFT").widget
@@ -495,12 +518,12 @@ def server_doc(doc):
     ui_state = CalibUIState()
     calib_table = CalibTable()
     notes_input = NotesInput()
-    notes = notes_input.textarea      
+    notes = notes_input.textarea
     notes_layout = notes_input.layout
 
     def init_all_channels():
         orchestrator.init_channels(
-            calib=StdCalib(referenceMagnitude=dB_to_pa(94.0)),
+            calib=StdCalib(reference_magnitude=db_to_pa(94.0)),
             preproc=CalibPreprocessor(band=1000.0),
             unit="dB",
             calib_time = 2,
@@ -512,17 +535,17 @@ def server_doc(doc):
 
     init_all_channels()
 
-  
+
     num_channels = source.num_channels
     params = ParameterPanel(ui_state, logger=log.logger, num_channels=num_channels)
 
-    
-    def on_source_change(attr, old, new):
+
+    def on_source_change(_attr, old, new):
         stop_consume_thread(state)
         try:
             if new.endswith(".h5"):
                 new_source = sp.TimeSamplesPhantom(file=phantom_dir / new)
-                log.logger.info(f"Source Changed: Phantom ({new}).")
+                log.logger.info("Source Changed: Phantom (%s).", new)
             else:
                 dev = int(new)
                 info = sd.query_devices(dev)
@@ -534,17 +557,17 @@ def server_doc(doc):
                     sample_freq=fs,
                     num_samples=fs * 36000,
                 )
-                log.logger.info(f"Source Changed: Live-Device {new} ({max_ch} ch).")
-        except sd.PortAudioError as e:
-            log.logger.error(f"Device Change Failed: {e}")
+                log.logger.info("Source Changed: Live-Device %s (%d ch).", new, max_ch)
+        except sd.PortAudioError:
+            log.logger.exception("Device Change Failed")
             source_select.value = old
             return
-        
+
 
         new_splitted_source = ac.SampleSplitter(source = new_source)
 
         orchestrator.source = new_splitted_source
-        
+
 
 
         n = new_splitted_source.num_channels
@@ -591,8 +614,15 @@ def server_doc(doc):
     file_input = file_input_obj.widget           # für on_change → .value
     file_input_layout = file_input_obj.layout    # fürs Layout
 
-    button_bar.btn_save.on_click(lambda: save(path_input, notes, source_select,orchestrator=orchestrator, logger=log.logger))
-    button_bar.btn_start.on_click(lambda: start_consume_thread(doc, orchestrator, params, state, ui_state, router))
+    button_bar.btn_save.on_click(lambda: save(
+        path_input,
+        notes,
+        source_select,
+        orchestrator=orchestrator,
+        logger=log.logger
+    ))
+
+    button_bar.btn_start.on_click(lambda: start_consume_thread(orchestrator, params, state, ui_state))
     button_bar.btn_stop.on_click(lambda: stop_consume_thread(state))
     params.edit_channel_select.on_change("value", deactivate_start_button(button_bar.btn_start,params))
     params.mode_toggle.on_change("active", deactivate_parameter_panel(params,button_bar.btn_start))
@@ -612,7 +642,7 @@ def server_doc(doc):
     table_switch.on_change("active", visibility_callback(calib_table.layout))
     notes_switch.on_change("active", visibility_callback(notes_layout))
     log_switch.on_change("active", visibility_callback(log_group))
-    
+
     # Edit Channel + parameters changes: rebuild orchestrator and consume thread
     params.btn_set.on_click(lambda: build_channel(orchestrator, params, ui_state))
 
@@ -639,27 +669,27 @@ def server_doc(doc):
 
     middle = column(
         children=[
-            calib_table.layout, 
-            notes_layout], 
+            calib_table.layout,
+            notes_layout],
         sizing_mode="stretch_both"
         )
     right = column(
         children=[
             graph.widget(),
-            log_group], 
+            log_group],
         sizing_mode='stretch_both'
         )
     left = column(
         children=[
                 button_bar.layout,
-                path_input_layout, 
+                path_input_layout,
                 file_input_layout,
                 column(
                     info_label("Audio Source", "Select the input device or a phantom file (.h5)"),
                     source_select,
                     sizing_mode="stretch_width"
                 ),
-                switches, 
+                switches,
                 params.layout],
         sizing_mode="stretch_height",
     )
@@ -675,7 +705,7 @@ if __name__ == "__main__":
         session_token_expiration=3600,  # Token 1h gültig
         extra_patterns=[
             (r"/help_static/(.*)", StaticFileHandler, {'path': str(Path(__file__).parent / "help" / "help_static")})
-        ],    
+        ],
     )
     server.start()
     print("Starting Calib App on http://localhost:5006/")
