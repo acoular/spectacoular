@@ -1,0 +1,18 @@
+{
+  "@context": 
+    {
+      "Unit": "http://qudt.org/vocab/unit/"
+    },
+
+  "Name": null,
+
+  "Description": "Single-point calibration measurements for the specified channels.",
+  
+  "Date": null,
+
+  "Source": null,
+
+  "Notes": null,
+
+  "Channels": {}
+}
