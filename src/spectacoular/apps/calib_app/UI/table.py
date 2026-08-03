@@ -21,35 +21,43 @@ class CalibTable:
     def __init__(self):
         columns = [
             TableColumn(
-                field="channel", title="Channel",
-                formatter=StringFormatter(font_style="bold", text_color=ACC),
+                field='channel',
+                title='Channel',
+                formatter=StringFormatter(font_style='bold', text_color=ACC),
             ),
             TableColumn(
-                field="factor", title="Calib. Factor",
-                formatter=NumberFormatter(format="0.0000", font_style="bold", text_color=GRN),
+                field='factor',
+                title='Calib. Factor',
+                formatter=NumberFormatter(format='0.0000', font_style='bold', text_color=GRN),
             ),
             TableColumn(
-                field="band", title="Calib. Freq.",
-                formatter=NumberFormatter(format="0.0", text_color=T3),
+                field='band',
+                title='Calib. Freq.',
+                formatter=NumberFormatter(format='0.0', text_color=T3),
             ),
             TableColumn(
-                field="magnitude", title="Calib. Lvl.",
-                formatter=NumberFormatter(format="0.0000", text_color=T1),
+                field='magnitude',
+                title='Calib. Lvl.',
+                formatter=NumberFormatter(format='0.0000', text_color=T1),
             ),
             TableColumn(
-                field="unit", title="Calib. Lvl. Unit",
+                field='unit',
+                title='Calib. Lvl. Unit',
                 formatter=StringFormatter(text_color=T3),
             ),
             TableColumn(
-                field="calib_time", title="Calib. Time (s)",
+                field='calib_time',
+                title='Calib. Time (s)',
                 formatter=StringFormatter(text_color=T3),
             ),
             TableColumn(
-                field="stability_tolerance", title="Stab. Tol. (dB)",
+                field='stability_tolerance',
+                title='Stab. Tol. (dB)',
                 formatter=StringFormatter(text_color=T3),
-            )
+            ),
         ]
-        table_style = InlineStyleSheet(css=f"""
+        table_style = InlineStyleSheet(
+            css=f"""
             :host {{
                 font-size: .8rem;
                 font-family: inherit;
@@ -134,25 +142,28 @@ class CalibTable:
             ::-webkit-scrollbar-thumb:hover {{
                 background: {ACC};
             }}
-        """)
-        self.source = ColumnDataSource({
-            'channel': [],
-            'factor': [],
-            'band': [],
-            'magnitude': [],
-            'unit': [],
-            'calib_time': [],
-            'stability_tolerance': []
-        })
+        """
+        )
+        self.source = ColumnDataSource(
+            {
+                'channel': [],
+                'factor': [],
+                'band': [],
+                'magnitude': [],
+                'unit': [],
+                'calib_time': [],
+                'stability_tolerance': [],
+            }
+        )
         self.table = DataTable(
             source=self.source,
             columns=columns,
-            sizing_mode="stretch_width",
+            sizing_mode='stretch_width',
             height=600,
             index_position=None,
             stylesheets=[table_style],
         )
-        self.layout = column(self.table, sizing_mode="stretch_width")
+        self.layout = column(self.table, sizing_mode='stretch_width')
 
     def refresh(self, ui_state):
         """Update the table with current calibration channel data.
@@ -168,13 +179,13 @@ class CalibTable:
                 'band': [],
                 'magnitude': [],
                 'unit': [],
-                'calib_time': []
+                'calib_time': [],
             }
             return
         sorted_chs = sorted(channels.keys())
         pad_len = len(str(sorted_chs[-1]))  # Auto-pad based on channel count
         self.table.source.data = {
-            'channel': ["CH " + str(ch + 1).zfill(pad_len) for ch in sorted_chs],
+            'channel': ['CH ' + str(ch + 1).zfill(pad_len) for ch in sorted_chs],
             'factor': [channels[ch]['final_factor'] for ch in sorted_chs],
             'band': [channels[ch]['band'] for ch in sorted_chs],
             'magnitude': [channels[ch]['magnitude'] for ch in sorted_chs],

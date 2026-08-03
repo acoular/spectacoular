@@ -7,8 +7,7 @@ from .colors import ACC, T1, T2
 from bokeh.models import Div
 
 
-def info_label(label: str, tooltip: str, width: int = 160,
-               direction: str = "down") -> Div:
+def info_label(label: str, tooltip: str, width: int = 160, direction: str = 'down') -> Div:
     """Create a labeled Div with an info icon and tooltip.
 
     Args:
@@ -21,10 +20,11 @@ def info_label(label: str, tooltip: str, width: int = 160,
     -------
         Div: Bokeh Div widget with embedded HTML/CSS for the tooltip.
     """
-    cls = "tooltip-up" if direction == "up" else "tooltip-down"
-    vpos = "bottom: -5px;" if direction == "up" else "top: -5px;"
+    cls = 'tooltip-up' if direction == 'up' else 'tooltip-down'
+    vpos = 'bottom: -5px;' if direction == 'up' else 'top: -5px;'
 
-    return Div(text=f"""
+    return Div(
+        text=f"""
         <span style='font-size:.7rem;color:{T2};font-weight:600;'>{label}</span>
         <span class='info-icon'>ⓘ
             <span class='tooltip-text {cls}'>{tooltip}</span>
@@ -44,4 +44,6 @@ def info_label(label: str, tooltip: str, width: int = 160,
             .tooltip-down {{ {vpos} }}
             .info-icon:hover .tooltip-text {{ visibility: visible; }}
         </style>
-    """, sizing_mode='stretch_width')
+    """,
+        sizing_mode='stretch_width',
+    )

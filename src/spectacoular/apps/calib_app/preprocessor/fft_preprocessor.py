@@ -46,12 +46,9 @@ class FFT(ac.Generator):
         """Rebuild RFFT pipeline when source changes."""
         new_source = event.new
 
-        self.rfft = ac.RFFT(source=new_source, block_size=1024, scaling = 'amplitude')
+        self.rfft = ac.RFFT(source=new_source, block_size=1024, scaling='amplitude')
 
-        new_source.register_object(
-            self.rfft,
-            buffer_overflow_treatment='none'
-        )
+        new_source.register_object(self.rfft, buffer_overflow_treatment='none')
         self.frequencies = self.rfft.freqs
 
     def result(self):
@@ -63,6 +60,4 @@ class FFT(ac.Generator):
         """
         if self.switch.active:
             for data in self.rfft.result(1):
-                yield data.reshape(
-                    len(self.frequencies),
-                    -1).T
+                yield data.reshape(len(self.frequencies), -1).T

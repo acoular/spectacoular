@@ -29,11 +29,11 @@ class ChannelDetector(ac.TimeOut):
     """
 
     source = Instance(ac.SampleSplitter)
-    required_stable = Int(50, desc="consecutive matching blocks required to confirm a channel")
+    required_stable = Int(50, desc='consecutive matching blocks required to confirm a channel')
 
     # channel indices to ignore (already calibrated)
     exclude_channels = List(Int)
-    detected_channel = Int(-1, desc="index of the detected calibration channel, -1 if none yet")
+    detected_channel = Int(-1, desc='index of the detected calibration channel, -1 if none yet')
 
     _stable_count = Int(0)
     _candidate = Int(-1)
@@ -44,9 +44,7 @@ class ChannelDetector(ac.TimeOut):
     @observe('source')
     def _update_source(self, _event):
         """Initialize detection preprocessor when source is set."""
-        self._detection_preproc = PerChannelDetectionPreprocessor(
-            channel_freqs=self.channel_freqs
-        )
+        self._detection_preproc = PerChannelDetectionPreprocessor(channel_freqs=self.channel_freqs)
         self._detection_preproc.source = self.source
         self.source.register_object(self._detection_preproc, buffer_overflow_treatment='none')
 
@@ -180,7 +178,9 @@ class CalibOrchestrator:
             if self.detector.detected_channel != -1:
                 break
 
-    def add_channel(self, i: int, calib: Calib, preproc: ac.TimeOut, unit: str, calib_time: float, stability_tolerance: float):
+    def add_channel(
+        self, i: int, calib: Calib, preproc: ac.TimeOut, unit: str, calib_time: float, stability_tolerance: float
+    ):
         """Add a new calibration channel.
 
         Creates a Channel object with the given calibration and preprocessor,
@@ -195,21 +195,20 @@ class CalibOrchestrator:
             calib_time: Required stable time for calibration (seconds).
             stability_tolerance: Allowed variance for stability detection (dB).
         """
-        self.channels[i] = Channel(calib, preproc, unit, calib_time,stability_tolerance)
+        self.channels[i] = Channel(calib, preproc, unit, calib_time, stability_tolerance)
         block_duration = preproc.num_per_average / self.source.sample_freq
         n_blocks = int(float(calib_time) / block_duration)
         calib.buffer_size = n_blocks
         calib.required_stable = 100
         calib.calibstd = 10 ** (stability_tolerance / 20) - 1
         masked = ac.MaskedTimeOut(
-            source=self.source,
-            invalid_channels=[j for j in range(self.source.num_channels) if j != i]
+            source=self.source, invalid_channels=[j for j in range(self.source.num_channels) if j != i]
         )
-        self.source.register_object(masked,buffer_overflow_treatment = 'none')
+        self.source.register_object(masked, buffer_overflow_treatment='none')
         preproc.source = masked
         calib.source = preproc
         self.log.debug(
-            "CalibOrchestrator: added channel %d (calib=%s, preproc=%s, unit = %s, calib_time = %f, stability_tolerance = %f)",
+            'CalibOrchestrator: added channel %d (calib=%s, preproc=%s, unit = %s, calib_time = %f, stability_tolerance = %f)',
             i,
             type(calib).__name__,
             type(preproc).__name__,
@@ -218,8 +217,7 @@ class CalibOrchestrator:
             stability_tolerance,
         )
 
-
-    def init_channels(self, calib: Calib, preproc: ac.TimeOut, unit, calib_time,stability_tolerance: float):
+    def init_channels(self, calib: Calib, preproc: ac.TimeOut, unit, calib_time, stability_tolerance: float):
         """Initialize all source channels with the given calib and preproc config.
 
         Each channel gets its own clone, otherwise every channel's masking would
@@ -227,8 +225,8 @@ class CalibOrchestrator:
         """
         self.channels.clear()
         for i in range(self.source.num_channels):
-            self.add_channel(i, calib.clone_traits(), preproc.clone_traits(), unit, calib_time,stability_tolerance)
-        self.log.debug("CalibOrchestrator: initialized %d channels", self.source.num_channels)
+            self.add_channel(i, calib.clone_traits(), preproc.clone_traits(), unit, calib_time, stability_tolerance)
+        self.log.debug('CalibOrchestrator: initialized %d channels', self.source.num_channels)
 
     def result(self, _num, channel_num: int, no_progress_blocks: int | None, *, stop_on_complete: bool = True):
         """Yield calibration blocks for a specific channel.
@@ -251,9 +249,9 @@ class CalibOrchestrator:
             KeyError: If channel_num doesn't exist.
         """
         if channel_num not in self.channels:
-            msg = f"Channel {channel_num} does not exist"
+            msg = f'Channel {channel_num} does not exist'
             raise KeyError(msg)
-        self.log.debug("CalibOrchestrator: starting result for channel %d", channel_num + 1)
+        self.log.debug('CalibOrchestrator: starting result for channel %d', channel_num + 1)
         buffer_size = self.channels[channel_num].calib.buffer_size
         no_progress_count = 0
         for block_count, block in enumerate(self.channels[channel_num].calib.result(1), 1):
@@ -271,8 +269,8 @@ class CalibOrchestrator:
                     no_progress_count = 0
                 if no_progress_count >= no_progress_blocks:
                     self.log.debug(
-                        "CalibOrchestrator: no progress after %d blocks for channel %d",
-                        no_progress_count, channel_num + 1
+                        'CalibOrchestrator: no progress after %d blocks for channel %d',
+                        no_progress_count,
+                        channel_num + 1,
                     )
                     break
-

@@ -31,26 +31,22 @@ class Calib(ac.TimeOut):
 
     #: calibration level of calibration device
     reference_magnitude = Float(
-        0.0, desc="reference magnitude of calibration device (Pa, m/s², N or V depending on sensor)"
+        0.0, desc='reference magnitude of calibration device (Pa, m/s², N or V depending on sensor)'
     )
 
     #: max elements/averaged blocks to calculate calibration value.
-    buffer_size = Int(
-        100, desc="number of blocks considered to determine calibration value"
-    )
+    buffer_size = Int(100, desc='number of blocks considered to determine calibration value')
 
     #: channel-wise allowed standard deviation of calibration values in buffer
-    calibstd = Float(
-        0.058, desc="allowed relative standard deviation (std/mean) of calibration values in buffer"
-    )
-    calibstd_measured = Float(float("inf"), desc="measured standard deviation of the current buffer")
+    calibstd = Float(0.058, desc='allowed relative standard deviation (std/mean) of calibration values in buffer')
+    calibstd_measured = Float(float('inf'), desc='measured standard deviation of the current buffer')
 
     #: calibration factor S_hat determined during result()
-    calibfactor = Float(0.0, desc="determined calibration factor")
-    current_estimate = Float(0.0, desc="current live estimate of calibration factor")
+    calibfactor = Float(0.0, desc='determined calibration factor')
+    current_estimate = Float(0.0, desc='current live estimate of calibration factor')
 
     #: stability criteria
-    required_stable = Int(100, desc="consecutive stable blocks to complete calibration")
+    required_stable = Int(100, desc='consecutive stable blocks to complete calibration')
     stable_count = Int(0)
 
     def is_stable(self) -> bool:
@@ -70,7 +66,6 @@ class Calib(ac.TimeOut):
             bool: True if required number of stable blocks have been achieved.
         """
         return self.stable_count >= self.required_stable
-
 
 
 class StdCalib(Calib):
@@ -99,7 +94,7 @@ class StdCalib(Calib):
             ndarray: Processed audio blocks.
         """
         buffer = np.zeros(self.buffer_size)
-        self.calibfactor = 0.0          # result array
+        self.calibfactor = 0.0  # result array
         self.current_estimate = 0.0
         self.stable_count = 0
 

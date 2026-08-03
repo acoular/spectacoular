@@ -25,7 +25,7 @@ class CalibPreprocessor(ac.TimeOut):
     """
 
     band = Float(1000.0, transient=True)
-    num_per_average = Int(512, desc="Number of samples to be averaged")
+    num_per_average = Int(512, desc='Number of samples to be averaged')
 
     _filt = Instance(sp.FiltOctave, transient=True)
     _square = Instance(ac.TimePower, transient=True)

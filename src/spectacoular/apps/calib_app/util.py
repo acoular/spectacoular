@@ -1,4 +1,5 @@
 """Utility functions."""
+
 import json
 import math
 from pathlib import Path
@@ -18,13 +19,13 @@ def pa_to_db(level_pa: float) -> float:
         return -350.0
     return 10 * math.log10(level_pa**2 / 4e-10)
 
+
 def v_to_dbv(level_volt: float) -> float:
     """Convert Volt to decibel volt."""
     # Return -350 for non-positive values to avoid math domain error (Acoular convention see L_p)
     if np.any(level_volt <= 0):
-        return np.full_like(level_volt,-350.0)
+        return np.full_like(level_volt, -350.0)
     return 20 * np.log10(level_volt)
-
 
 
 def load_calib_factors(json_file, array_length=None, default_value=1.0):
@@ -42,7 +43,7 @@ def load_calib_factors(json_file, array_length=None, default_value=1.0):
     with Path.open(json_file) as f:
         data = json.load(f)
 
-    channels = data["Channels"]
+    channels = data['Channels']
 
     channel_numbers = [int(ch) for ch in channels]
 
@@ -52,9 +53,9 @@ def load_calib_factors(json_file, array_length=None, default_value=1.0):
     calib_array = np.full(array_length, default_value, dtype=float)
 
     for ch, channel_data in channels.items():
-        channel_index = int(ch)-1
+        channel_index = int(ch) - 1
 
         if channel_index < array_length:
-            calib_array[channel_index] = channel_data["CalibFactor"]["Value"]
+            calib_array[channel_index] = channel_data['CalibFactor']['Value']
 
     return calib_array

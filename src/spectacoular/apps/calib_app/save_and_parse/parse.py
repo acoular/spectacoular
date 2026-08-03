@@ -27,9 +27,9 @@ def load(orchestrator, notes, logger):
 
     def load_json_from_file(_attr, _old, new):
         decoded = base64.b64decode(new)
-        calib_data = json.loads(decoded.decode("utf-8"))
+        calib_data = json.loads(decoded.decode('utf-8'))
         set_calib_data(orchestrator, calib_data, logger)
-        notes_str = calib_data["Notes"]
+        notes_str = calib_data['Notes']
         notes.value = notes_str
 
     return load_json_from_file
@@ -47,28 +47,39 @@ def set_calib_data(orchestrator, calib_data, logger):
         calib_data: Parsed JSON data with Channels dict.
         logger: Logger instance for debugging.
     """
-    for channel_num in calib_data["Channels"]:
-        channel_num_int = int(channel_num)-1
-        unit =  calib_data["Channels"][channel_num]["CalibLevel"]["Unit"]
+    for channel_num in calib_data['Channels']:
+        channel_num_int = int(channel_num) - 1
+        unit = calib_data['Channels'][channel_num]['CalibLevel']['Unit']
         unit_log = unit
-        if unit =="dB":
-            level = db_to_pa(calib_data["Channels"][channel_num]["CalibLevel"]["Value"])
-            unit_log = "Pa"
+        if unit == 'dB':
+            level = db_to_pa(calib_data['Channels'][channel_num]['CalibLevel']['Value'])
+            unit_log = 'Pa'
         else:
-            level = calib_data["Channels"][channel_num]["CalibLevel"]["Value"]
-        freq = calib_data["Channels"][channel_num]["CalibFrequency"]["Value"]
-        calib_time = calib_data["Channels"][channel_num]["CalibTime"]["Value"]
-        stability_tolerance = calib_data["Channels"][channel_num]["StabilityTolerance"]["Value"]
+            level = calib_data['Channels'][channel_num]['CalibLevel']['Value']
+        freq = calib_data['Channels'][channel_num]['CalibFrequency']['Value']
+        calib_time = calib_data['Channels'][channel_num]['CalibTime']['Value']
+        stability_tolerance = calib_data['Channels'][channel_num]['StabilityTolerance']['Value']
         orchestrator.add_channel(
             channel_num_int,
             calib=StdCalib(reference_magnitude=level),
             preproc=CalibPreprocessor(band=freq),
-            unit=unit, calib_time = calib_time,
-            stability_tolerance=stability_tolerance
+            unit=unit,
+            calib_time=calib_time,
+            stability_tolerance=stability_tolerance,
         )
-        logger.debug("Orchestrator updated: ch=%d, level=%.6f %s , freq=%s, calib_time = %s,  stability_tolerance = %s",
-                     channel_num_int, level, unit_log, freq, calib_time, stability_tolerance)
-        calib_value_final = calib_data["Channels"][channel_num]["CalibFactor"]["Value"]
+        logger.debug(
+            'Orchestrator updated: ch=%d, level=%.6f %s , freq=%s, calib_time = %s,  stability_tolerance = %s',
+            channel_num_int,
+            level,
+            unit_log,
+            freq,
+            calib_time,
+            stability_tolerance,
+        )
+        calib_value_final = calib_data['Channels'][channel_num]['CalibFactor']['Value']
         orchestrator.channels[channel_num_int].calib_value_final = calib_value_final
-        logger.debug("%s saved as the final calibration factor for channel %s",
-                     calib_data["Channels"][channel_num]["CalibFactor"]["Value"], channel_num)
+        logger.debug(
+            '%s saved as the final calibration factor for channel %s',
+            calib_data['Channels'][channel_num]['CalibFactor']['Value'],
+            channel_num,
+        )

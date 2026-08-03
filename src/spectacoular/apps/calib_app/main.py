@@ -61,10 +61,7 @@ def build_source_select(logger, phantom_files):
     hostapis = sd.query_hostapis()
 
     # On Windows: only show WASAPI to avoid duplicates
-    preferred_api = next(
-        (i for i, h in enumerate(hostapis) if 'WASAPI' in h['name']),
-        None
-    )
+    preferred_api = next((i for i, h in enumerate(hostapis) if 'WASAPI' in h['name']), None)
 
     devices = {}
     for i, dev in enumerate(sd.query_devices()):
@@ -76,22 +73,22 @@ def build_source_select(logger, phantom_files):
         for i, dev in enumerate(sd.query_devices()):
             if dev['max_input_channels'] > 0:
                 api = hostapis[dev['hostapi']]['name']
-                devices[str(i)] = f"{dev['name']} ({dev['max_input_channels']} ch) [{api}]"
+                devices[str(i)] = f'{dev["name"]} ({dev["max_input_channels"]} ch) [{api}]'
 
     # Phantoms last
     options = list(devices.items())
-    options += [(f.name, f"Phantom: {f.name}") for f in phantom_files]
+    options += [(f.name, f'Phantom: {f.name}') for f in phantom_files]
 
     initial_value = options[0][0] if options else None
-    select = Select(
-        options=options, value=initial_value, sizing_mode="stretch_width")
+    select = Select(options=options, value=initial_value, sizing_mode='stretch_width')
 
     if not devices:
-        logger.info("No devices connected")
+        logger.info('No devices connected')
     else:
-        logger.info("%d Live-Device(s) found.", len(devices))
+        logger.info('%d Live-Device(s) found.', len(devices))
 
     return select
+
 
 def setup_logger(doc):
     """Initialize the application logger with Bokeh integration.
@@ -102,11 +99,10 @@ def setup_logger(doc):
     Args:
         doc: Bokeh document for attaching the log widget.
     """
-    log_widget = TextAreaInput(value="", disabled=True,
-                               width=300, sizing_mode='stretch_both')
+    log_widget = TextAreaInput(value='', disabled=True, width=300, sizing_mode='stretch_both')
     global log
-    log = LogHandler(doc=doc, logname="calibration.log", log_widget=log_widget,
-                     loglevel=logging.DEBUG, loglength=20)
+    log = LogHandler(doc=doc, logname='calibration.log', log_widget=log_widget, loglevel=logging.DEBUG, loglength=20)
+
 
 def consume(orchestrator, state, ui_state):
     """Background thread: reads from orchestrator and writes to CalibUIState.
@@ -135,15 +131,14 @@ def consume(orchestrator, state, ui_state):
         final_factor = channel.calib_value_final
 
         band = channel.preprocess.band
-        unit =  channel.unit
+        unit = channel.unit
         calib_time = float(channel.calib_time)
         stability_tolerance = float(channel.stability_tolerance)
 
-        if unit == "dB":
+        if unit == 'dB':
             magnitude = pa_to_db(channel.calib.reference_magnitude)
         else:
             magnitude = channel.calib.reference_magnitude
-
 
         is_stable = orchestrator.channels[ch].calib.is_stable()
 
@@ -154,9 +149,9 @@ def consume(orchestrator, state, ui_state):
             magnitude=magnitude,
             is_stable=is_stable,
             final_factor=final_factor,
-            unit = unit,
-            calib_time = calib_time,
-            stability_tolerance=stability_tolerance
+            unit=unit,
+            calib_time=calib_time,
+            stability_tolerance=stability_tolerance,
         )
 
     # Update UI from orchestrator to ensure all final values are displayed
@@ -175,17 +170,17 @@ def update_orchestrator(orchestrator, params, ui_state):
         params: ParameterPanel with current UI values.
         ui_state: CalibUIState to update with new values.
     """
-    if str(params.edit_channel_select.value) == "All":
-        edit_channels = [int(ch.split()[-1])-1 for ch in params.edit_channel_select.options[1:]]
+    if str(params.edit_channel_select.value) == 'All':
+        edit_channels = [int(ch.split()[-1]) - 1 for ch in params.edit_channel_select.options[1:]]
     else:
         edit_channels = [int(params.edit_channel_select.value.split()[-1]) - 1]
     for edit_ch in edit_channels:
         unit = params.pegel_unit_select.value
         unit_log = unit
-        if str(params.pegel_unit_select.value) == "dB":
+        if str(params.pegel_unit_select.value) == 'dB':
             level = db_to_pa(float(params.pegel_input.value))
-            unit_log = "Pa"
-            log.logger.debug("Reference value converted from dB to Pa.")
+            unit_log = 'Pa'
+            log.logger.debug('Reference value converted from dB to Pa.')
         else:
             level = float(params.pegel_input.value)
         freq = float(params.freq_input.value)
@@ -196,21 +191,27 @@ def update_orchestrator(orchestrator, params, ui_state):
             calib=StdCalib(reference_magnitude=level),
             preproc=CalibPreprocessor(band=freq),
             unit=unit,
-            calib_time = calib_time,
-            stability_tolerance=stability_tolerance
+            calib_time=calib_time,
+            stability_tolerance=stability_tolerance,
         )
         orchestrator.configure_detector()
         log.logger.debug(
-            "Orchestrator updated: ch=%d, level=%.6f %s , freq=%s, calib_time = %s, stability_tolerance = %s",
-            edit_ch, level, unit_log, freq, calib_time, stability_tolerance)
+            'Orchestrator updated: ch=%d, level=%.6f %s , freq=%s, calib_time = %s, stability_tolerance = %s',
+            edit_ch,
+            level,
+            unit_log,
+            freq,
+            calib_time,
+            stability_tolerance,
+        )
         ui_state.update(
             ch=edit_ch,
             band=freq,
             magnitude=params.pegel_input.value,
             final_factor=orchestrator.channels[edit_ch].calib_value_final,
             unit=unit,
-            calib_time = calib_time,
-            stability_tolerance=stability_tolerance
+            calib_time=calib_time,
+            stability_tolerance=stability_tolerance,
         )
 
 
@@ -230,7 +231,7 @@ def consume_auto(orchestrator, params, state, ui_state):
     completed = state.setdefault('completed', set())
     while getattr(state.get('thread'), 'do_run', True):
         if len(completed) >= orchestrator.source.num_channels:
-            log.logger.debug("Auto: all channels calibrated.")
+            log.logger.debug('Auto: all channels calibrated.')
             return
 
         orchestrator.detector.exclude_channels = list(completed)
@@ -246,11 +247,8 @@ def consume_auto(orchestrator, params, state, ui_state):
         if idx == -1:
             return  # source exhausted without finding a candidate
 
-
-        log.logger.debug("Auto-detected calibration channel: %d", idx + 1)
+        log.logger.debug('Auto-detected calibration channel: %d', idx + 1)
         params.auto_detected_channel = idx
-
-
 
         state['ch'] = idx
         state['iter'] = orchestrator.result(1, channel_num=idx, no_progress_blocks=300, stop_on_complete=False)
@@ -258,9 +256,9 @@ def consume_auto(orchestrator, params, state, ui_state):
 
         if orchestrator.channels[idx].calib_value_final > 0:
             completed.add(idx)
-            log.logger.debug("Channel %d calibrated", idx + 1)
+            log.logger.debug('Channel %d calibrated', idx + 1)
         else:
-            log.logger.debug("Channel %d Timeout - re-detecting ...", idx + 1)
+            log.logger.debug('Channel %d Timeout - re-detecting ...', idx + 1)
 
 
 def stop_consume_thread(state):
@@ -272,7 +270,7 @@ def stop_consume_thread(state):
     if 'thread' in state and state['thread'].is_alive():
         state['thread'].do_run = False
         state['thread'].join(timeout=2.0)  # wait for thread to really end
-        log.logger.debug("Consume thread stopped")
+        log.logger.debug('Consume thread stopped')
 
 
 def start_consume_thread(orchestrator, params, state, ui_state):
@@ -298,13 +296,11 @@ def start_consume_thread(orchestrator, params, state, ui_state):
         state.setdefault('completed', set()).clear()
         params.auto_detected_channel = None
 
-        t = threading.Thread(target=consume_auto,
-                             args=(orchestrator, params, state, ui_state),
-                             daemon=True)
+        t = threading.Thread(target=consume_auto, args=(orchestrator, params, state, ui_state), daemon=True)
         t.do_run = True
         state['thread'] = t
         t.start()
-        log.logger.debug("Consume thread started in Auto mode")
+        log.logger.debug('Consume thread started in Auto mode')
         return
 
     ch = int(calib_ch_str.split()[-1]) - 1
@@ -318,7 +314,7 @@ def start_consume_thread(orchestrator, params, state, ui_state):
     t.do_run = True
     state['thread'] = t
     t.start()
-    log.logger.debug("Consume thread started for ch=%d", ch)
+    log.logger.debug('Consume thread started for ch=%d', ch)
 
 
 def build_channel(orchestrator, params, ui_state):
@@ -353,6 +349,7 @@ def refresh(calib_table, params, ui_state, fft, doc):
     doc.add_next_tick_callback(lambda: params.refresh(ui_state))
     doc.add_next_tick_callback(lambda: fft.update(params.edit_channel_select.value))
 
+
 def load_callback(orchestrator, ui_state, state, logger, params, notes):
     """Create callback for loading calibration data from file.
 
@@ -373,17 +370,20 @@ def load_callback(orchestrator, ui_state, state, logger, params, notes):
         function: Callback for FileInput on_change event.
     """
     load_cb = load(orchestrator, notes, logger)
+
     def callback(attr, old, new):
         # Stop any running consume thread
         stop_consume_thread(state)
         load_cb(attr, old, new)
         ui_state.init_from_orchestrator(orchestrator)
-        params.pegel_input.value = params.get_value_from_ui_state("magnitude")
-        params.pegel_unit_select.value = params.get_value_from_ui_state("unit")
-        params.freq_input.value = params.get_value_from_ui_state("band")
-        params.calib_time_input.value = params.get_value_from_ui_state("calib_time")
-        params.stability_tolerance_input.value = params.get_value_from_ui_state("stability_tolerance")
+        params.pegel_input.value = params.get_value_from_ui_state('magnitude')
+        params.pegel_unit_select.value = params.get_value_from_ui_state('unit')
+        params.freq_input.value = params.get_value_from_ui_state('band')
+        params.calib_time_input.value = params.get_value_from_ui_state('calib_time')
+        params.stability_tolerance_input.value = params.get_value_from_ui_state('stability_tolerance')
+
     return callback
+
 
 def visibility_callback(element):
     """Create callback to toggle element visibility.
@@ -395,10 +395,11 @@ def visibility_callback(element):
     -------
         function: Callback that sets element.visible = new value.
     """
+
     def callback(_attr, _old, new):
         element.visible = new
-    return callback
 
+    return callback
 
 
 def update_parameter_panel(params):
@@ -414,13 +415,16 @@ def update_parameter_panel(params):
     -------
         function: Callback for on_change events.
     """
+
     def update(_attr, _old, _new):
-        params.pegel_input.value = params.get_value_from_ui_state("magnitude")
-        params.pegel_unit_select.value = params.get_value_from_ui_state("unit")
-        params.freq_input.value = params.get_value_from_ui_state("band")
-        params.calib_time_input.value = params.get_value_from_ui_state("calib_time")
-        params.stability_tolerance_input.value = params.get_value_from_ui_state("stability_tolerance")
+        params.pegel_input.value = params.get_value_from_ui_state('magnitude')
+        params.pegel_unit_select.value = params.get_value_from_ui_state('unit')
+        params.freq_input.value = params.get_value_from_ui_state('band')
+        params.calib_time_input.value = params.get_value_from_ui_state('calib_time')
+        params.stability_tolerance_input.value = params.get_value_from_ui_state('stability_tolerance')
+
     return update
+
 
 def deactivate_parameter_panel(params, button):
     """Create callback to disable parameter inputs in Auto mode.
@@ -436,17 +440,20 @@ def deactivate_parameter_panel(params, button):
     -------
         function: Callback for mode_toggle on_change events.
     """
+
     def update(_attr, _old, _new):
         params.pegel_input.disabled = params.mode_toggle.active == 1
         params.pegel_unit_select.disabled = params.mode_toggle.active == 1
-        params.freq_input.disabled  = params.mode_toggle.active == 1
-        params.edit_channel_select.disabled  = params.mode_toggle.active == 1
-        params.bew_select.disabled  = params.mode_toggle.active == 1
-        params.btn_set.disabled  = params.mode_toggle.active == 1
-        params.calib_time_input.disabled  = params.mode_toggle.active == 1
-        params.stability_tolerance_input.disabled  = params.mode_toggle.active == 1
-        button.disabled = params.mode_toggle.active == 0 and params.edit_channel_select.value == "All"
+        params.freq_input.disabled = params.mode_toggle.active == 1
+        params.edit_channel_select.disabled = params.mode_toggle.active == 1
+        params.bew_select.disabled = params.mode_toggle.active == 1
+        params.btn_set.disabled = params.mode_toggle.active == 1
+        params.calib_time_input.disabled = params.mode_toggle.active == 1
+        params.stability_tolerance_input.disabled = params.mode_toggle.active == 1
+        button.disabled = params.mode_toggle.active == 0 and params.edit_channel_select.value == 'All'
+
     return update
+
 
 def deactivate_start_button(button, params):
     """Create callback to disable Start button when "All" is selected.
@@ -459,8 +466,10 @@ def deactivate_start_button(button, params):
     -------
         function: Callback for edit_channel_select on_change events.
     """
+
     def update(_attr, _old, _new):
-        button.disabled = params.edit_channel_select.value == "All"
+        button.disabled = params.edit_channel_select.value == 'All'
+
     return update
 
 
@@ -481,18 +490,18 @@ def server_doc(doc):
         doc: Bokeh document to populate with the application UI.
     """
     setup_logger(doc)
-    log.logger.info("Start with first Device in the List.")
+    log.logger.info('Start with first Device in the List.')
 
     phantom_dir = Path(__file__).parent.parent
-    phantom_files = sorted(phantom_dir.glob("*.h5"))
+    phantom_files = sorted(phantom_dir.glob('*.h5'))
 
     source_select = build_source_select(log.logger, phantom_files)
     if not source_select.options:
-        msg = "No Phantom File nor Audio Source found."
+        msg = 'No Phantom File nor Audio Source found.'
         raise RuntimeError(msg)
 
     first_value, _ = source_select.options[0]
-    if first_value.endswith(".h5"):
+    if first_value.endswith('.h5'):
         source = sp.TimeSamplesPhantom(file=phantom_dir / first_value)
     else:
         dev = int(first_value)
@@ -504,15 +513,14 @@ def server_doc(doc):
             num_samples=int(info['default_samplerate']) * 36000,
         )
 
-    splitted_source = ac.SampleSplitter(source = source)
+    splitted_source = ac.SampleSplitter(source=source)
 
     orchestrator = CalibOrchestrator(splitted_source, logger=log.logger)
 
-    graph_switch = VisibilitySwitch("FFT").widget
+    graph_switch = VisibilitySwitch('FFT').widget
 
-
-    fft = FFT(source= splitted_source, switch=graph_switch,logger=log.logger)
-    splitted_source.register_object(fft, buffer_overflow_treatment = 'none')
+    fft = FFT(source=splitted_source, switch=graph_switch, logger=log.logger)
+    splitted_source.register_object(fft, buffer_overflow_treatment='none')
 
     state = {}
     ui_state = CalibUIState()
@@ -525,27 +533,24 @@ def server_doc(doc):
         orchestrator.init_channels(
             calib=StdCalib(reference_magnitude=db_to_pa(94.0)),
             preproc=CalibPreprocessor(band=1000.0),
-            unit="dB",
-            calib_time = 2,
-            stability_tolerance = 0.5
+            unit='dB',
+            calib_time=2,
+            stability_tolerance=0.5,
         )
         orchestrator.configure_detector()
         ui_state.init_from_orchestrator(orchestrator)
 
-
     init_all_channels()
-
 
     num_channels = source.num_channels
     params = ParameterPanel(ui_state, logger=log.logger, num_channels=num_channels)
 
-
     def on_source_change(_attr, old, new):
         stop_consume_thread(state)
         try:
-            if new.endswith(".h5"):
+            if new.endswith('.h5'):
                 new_source = sp.TimeSamplesPhantom(file=phantom_dir / new)
-                log.logger.info("Source Changed: Phantom (%s).", new)
+                log.logger.info('Source Changed: Phantom (%s).', new)
             else:
                 dev = int(new)
                 info = sd.query_devices(dev)
@@ -557,22 +562,19 @@ def server_doc(doc):
                     sample_freq=fs,
                     num_samples=fs * 36000,
                 )
-                log.logger.info("Source Changed: Live-Device %s (%d ch).", new, max_ch)
+                log.logger.info('Source Changed: Live-Device %s (%d ch).', new, max_ch)
         except sd.PortAudioError:
-            log.logger.exception("Device Change Failed")
+            log.logger.exception('Device Change Failed')
             source_select.value = old
             return
 
-
-        new_splitted_source = ac.SampleSplitter(source = new_source)
+        new_splitted_source = ac.SampleSplitter(source=new_source)
 
         orchestrator.source = new_splitted_source
 
-
-
         n = new_splitted_source.num_channels
         fft.source = new_splitted_source
-        new_splitted_source.register_object(fft,buffer_overflow_treatment = 'none')
+        new_splitted_source.register_object(fft, buffer_overflow_treatment='none')
 
         # # Kanalindizes in gültigen Bereich zwingen
         # if router.calib_channel >= n:
@@ -596,119 +598,106 @@ def server_doc(doc):
         ui_state.init_from_orchestrator(orchestrator)
         calib_table.refresh(ui_state)
 
-    source_select.on_change("value", on_source_change)
+    source_select.on_change('value', on_source_change)
     # Standard-Konfiguration aller Kanäle
 
-    params.edit_channel_select.on_change("value",update_parameter_panel(params))
+    params.edit_channel_select.on_change('value', update_parameter_panel(params))
 
     # --- Buttons / Pfade / Datei-Input ---
     button_bar = ButtonBar(logger=log.logger)
-    default_path = Path.home() / "CalibResults" / "CalibData.json"
+    default_path = Path.home() / 'CalibResults' / 'CalibData.json'
     (default_path.parent).mkdir(exist_ok=True)
 
     path_input_obj = PathInput(default_path)
-    path_input = path_input_obj.widget          # für save() → .value
-    path_input_layout = path_input_obj.layout   # fürs Layout
+    path_input = path_input_obj.widget  # für save() → .value
+    path_input_layout = path_input_obj.layout  # fürs Layout
 
     file_input_obj = InputFile()
-    file_input = file_input_obj.widget           # für on_change → .value
-    file_input_layout = file_input_obj.layout    # fürs Layout
+    file_input = file_input_obj.widget  # für on_change → .value
+    file_input_layout = file_input_obj.layout  # fürs Layout
 
-    button_bar.btn_save.on_click(lambda: save(
-        path_input,
-        notes,
-        source_select,
-        orchestrator=orchestrator,
-        logger=log.logger
-    ))
+    button_bar.btn_save.on_click(
+        lambda: save(path_input, notes, source_select, orchestrator=orchestrator, logger=log.logger)
+    )
 
     button_bar.btn_start.on_click(lambda: start_consume_thread(orchestrator, params, state, ui_state))
     button_bar.btn_stop.on_click(lambda: stop_consume_thread(state))
-    params.edit_channel_select.on_change("value", deactivate_start_button(button_bar.btn_start,params))
-    params.mode_toggle.on_change("active", deactivate_parameter_panel(params,button_bar.btn_start))
+    params.edit_channel_select.on_change('value', deactivate_start_button(button_bar.btn_start, params))
+    params.mode_toggle.on_change('active', deactivate_parameter_panel(params, button_bar.btn_start))
 
     # --- Sichtbarkeits-Switches ---
-    table_switch = VisibilitySwitch("Table").widget
-    geom_switch = VisibilitySwitch("Geom").widget
-    log_switch = VisibilitySwitch("Log").widget
-    notes_switch = VisibilitySwitch("Notes").widget
+    table_switch = VisibilitySwitch('Table').widget
+    geom_switch = VisibilitySwitch('Geom').widget
+    log_switch = VisibilitySwitch('Log').widget
+    notes_switch = VisibilitySwitch('Notes').widget
 
     log_group = column(
-        info_label("Log window", "Displays all log messages from the calibration app "),
+        info_label('Log window', 'Displays all log messages from the calibration app '),
         log.log_widget,
-        sizing_mode="stretch_both"
+        sizing_mode='stretch_both',
     )
 
-    table_switch.on_change("active", visibility_callback(calib_table.layout))
-    notes_switch.on_change("active", visibility_callback(notes_layout))
-    log_switch.on_change("active", visibility_callback(log_group))
+    table_switch.on_change('active', visibility_callback(calib_table.layout))
+    notes_switch.on_change('active', visibility_callback(notes_layout))
+    log_switch.on_change('active', visibility_callback(log_group))
 
     # Edit Channel + parameters changes: rebuild orchestrator and consume thread
     params.btn_set.on_click(lambda: build_channel(orchestrator, params, ui_state))
 
-    doc.add_periodic_callback(lambda: refresh(calib_table, params, ui_state, graph,doc), 50)
+    doc.add_periodic_callback(lambda: refresh(calib_table, params, ui_state, graph, doc), 50)
 
-    file_input.on_change("value", load_callback(orchestrator, ui_state, state, log.logger, params, notes))
+    file_input.on_change('value', load_callback(orchestrator, ui_state, state, log.logger, params, notes))
 
     # --- Layout ---
-    switches = column(info_label("Display Options", "Toggle visibility of the panels below"),
+    switches = column(
+        info_label('Display Options', 'Toggle visibility of the panels below'),
         row(
             graph_switch,
             table_switch,
             log_switch,
             notes_switch,
-            sizing_mode="stretch_width",
+            sizing_mode='stretch_width',
         ),
-        sizing_mode="stretch_width"
+        sizing_mode='stretch_width',
     )
 
-    graph =FFTViewer(fft)
-    graph_switch.on_change("active", visibility_callback(graph.widget()))
-    geom = Div(text="geom", sizing_mode='stretch_height')
-    geom_switch.on_change("active", visibility_callback(geom))
+    graph = FFTViewer(fft)
+    graph_switch.on_change('active', visibility_callback(graph.widget()))
+    geom = Div(text='geom', sizing_mode='stretch_height')
+    geom_switch.on_change('active', visibility_callback(geom))
 
-    middle = column(
-        children=[
-            calib_table.layout,
-            notes_layout],
-        sizing_mode="stretch_both"
-        )
-    right = column(
-        children=[
-            graph.widget(),
-            log_group],
-        sizing_mode='stretch_both'
-        )
+    middle = column(children=[calib_table.layout, notes_layout], sizing_mode='stretch_both')
+    right = column(children=[graph.widget(), log_group], sizing_mode='stretch_both')
     left = column(
         children=[
-                button_bar.layout,
-                path_input_layout,
-                file_input_layout,
-                column(
-                    info_label("Audio Source", "Select the input device or a phantom file (.h5)"),
-                    source_select,
-                    sizing_mode="stretch_width"
-                ),
-                switches,
-                params.layout],
-        sizing_mode="stretch_height",
+            button_bar.layout,
+            path_input_layout,
+            file_input_layout,
+            column(
+                info_label('Audio Source', 'Select the input device or a phantom file (.h5)'),
+                source_select,
+                sizing_mode='stretch_width',
+            ),
+            switches,
+            params.layout,
+        ],
+        sizing_mode='stretch_height',
     )
     doc.add_root(row(children=[left, middle, right], sizing_mode='stretch_both'))
-    log.logger.debug("Loaded layout")
+    log.logger.debug('Loaded layout')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     from bokeh.server.server import Server
 
     server = Server(
-        {"/": server_doc, "/help": help_doc},
+        {'/': server_doc, '/help': help_doc},
         session_token_expiration=3600,  # Token 1h gültig
         extra_patterns=[
-            (r"/help_static/(.*)", StaticFileHandler, {'path': str(Path(__file__).parent / "help" / "help_static")})
+            (r'/help_static/(.*)', StaticFileHandler, {'path': str(Path(__file__).parent / 'help' / 'help_static')})
         ],
     )
     server.start()
-    print("Starting Calib App on http://localhost:5006/")
-    server.io_loop.add_callback(server.show, "/")
+    print('Starting Calib App on http://localhost:5006/')
+    server.io_loop.add_callback(server.show, '/')
     server.io_loop.start()
-

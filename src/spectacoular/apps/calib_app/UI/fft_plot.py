@@ -37,43 +37,36 @@ class FFTViewer:
         """
         self.fft = fft_generator
 
-        self.source = ColumnDataSource(
-            data={"frequency": [], "amplitude": []}
-        )
+        self.source = ColumnDataSource(data={'frequency': [], 'amplitude': []})
 
         self.plot = figure(
             height=583,
-            sizing_mode="stretch_width",
-            x_axis_label="Frequency (Hz)",
-            y_axis_label="Amplitude  (dBV)",
+            sizing_mode='stretch_width',
+            x_axis_label='Frequency (Hz)',
+            y_axis_label='Amplitude  (dBV)',
             x_range=(-100, 8000),
             y_range=(-150, 0),
-            background_fill_color="#fafafa",
-            border_fill_color="white",
+            background_fill_color='#fafafa',
+            border_fill_color='white',
         )
 
+        self.title = info_label('FFT Spectrum', 'Live-Spectrum of the active Channel.', direction='down')
 
-        self.title = info_label(
-            "FFT Spectrum",
-            "Live-Spectrum of the active Channel.",
-            direction="down"
-        )
-
-
-
-        self.plot.xgrid.grid_line_color = "#e0e0e0"
-        self.plot.ygrid.grid_line_color = "#e0e0e0"
-        self.plot.ygrid.grid_line_dash = "dashed"
-        self.plot.xgrid.grid_line_dash = "dashed"
+        self.plot.xgrid.grid_line_color = '#e0e0e0'
+        self.plot.ygrid.grid_line_color = '#e0e0e0'
+        self.plot.ygrid.grid_line_dash = 'dashed'
+        self.plot.xgrid.grid_line_dash = 'dashed'
         self.plot.outline_line_color = None
-        self.plot.xaxis.axis_label_text_font_style = "bold"
-        self.plot.yaxis.axis_label_text_font_style = "bold"
-
+        self.plot.xaxis.axis_label_text_font_style = 'bold'
+        self.plot.yaxis.axis_label_text_font_style = 'bold'
 
         # ---- Line ----
         self.plot.line(
-            x="frequency", y="amplitude", source=self.source,
-            line_width=2, line_color="#1f77b4",
+            x='frequency',
+            y='amplitude',
+            source=self.source,
+            line_width=2,
+            line_color='#1f77b4',
         )
         self._widget = None
 
@@ -90,11 +83,11 @@ class FFTViewer:
             frequency = self.fft.frequencies
 
             self.source.data = {
-                "frequency": frequency,
-                "amplitude": amplitude,
+                'frequency': frequency,
+                'amplitude': amplitude,
             }
         except Exception:
-            self.source.data = {"frequency": [], "amplitude": []}
+            self.source.data = {'frequency': [], 'amplitude': []}
 
     def widget(self):
         """Get the plot widget layout (cached after first call).
@@ -108,6 +101,6 @@ class FFTViewer:
             self._widget = column(
                 self.title,
                 self.plot,
-                sizing_mode="stretch_width",
+                sizing_mode='stretch_width',
             )
         return self._widget

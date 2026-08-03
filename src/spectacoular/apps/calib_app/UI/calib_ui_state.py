@@ -18,7 +18,7 @@ class CalibUIState:
       STOP background thread BEFORE modifying orchestrator or calling init_from_orchestrator()
     """
 
-    #ch[i]={factor, band, magnitude, unit, is_stable, final_factor, calib_time, stability_tolerance}
+    # ch[i]={factor, band, magnitude, unit, is_stable, final_factor, calib_time, stability_tolerance}
     def __init__(self):
         """Initialize empty channel state."""
         self._channels = {}
@@ -26,7 +26,7 @@ class CalibUIState:
     def update(
         self,
         ch: int,
-        * ,
+        *,
         factor: float | None = None,
         band: float | None = None,
         magnitude: float | None = None,
@@ -69,7 +69,7 @@ class CalibUIState:
             channel_data['calib_time'] = calib_time
         if stability_tolerance is not None:
             channel_data['stability_tolerance'] = stability_tolerance
-        channel_data['timestamp'] = datetime.now(tz=UTC).strftime("%H:%M:%S")
+        channel_data['timestamp'] = datetime.now(tz=UTC).strftime('%H:%M:%S')
 
     def get(self, ch: int):
         """Get channel data dict, or None if channel doesn't exist.
@@ -116,20 +116,19 @@ class CalibUIState:
             unit = str(channel_obj.unit)
             calib_time = float(channel_obj.calib_time)
             stability_tolerance = float(channel_obj.stability_tolerance)
-            if unit == "dB":
+            if unit == 'dB':
                 magnitude = pa_to_db(channel_obj.calib.reference_magnitude)
             else:
                 magnitude = channel_obj.calib.reference_magnitude
             is_stable = channel_obj.calib.is_stable()
             self.update(
                 ch,
-                factor,
-                band,
-                magnitude,
-                is_stable,
+                factor=factor,
+                band=band,
+                magnitude=magnitude,
+                is_stable=is_stable,
                 final_factor=final_factor,
                 unit=unit,
                 calib_time=calib_time,
-                stability_tolerance=stability_tolerance
+                stability_tolerance=stability_tolerance,
             )
-

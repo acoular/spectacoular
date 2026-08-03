@@ -21,7 +21,7 @@ class PerChannelDetectionPreprocessor(ac.TimeOut):
         _num_per_average: Number of samples to average for energy computation.
     """
 
-    channel_freqs = Dict()          # {channel_idx: frequency_hz}
+    channel_freqs = Dict()  # {channel_idx: frequency_hz}
     _num_per_average = Int(512)
 
     def _make_filter(self, freq):
@@ -72,9 +72,7 @@ class PerChannelDetectionPreprocessor(ac.TimeOut):
                     if ch >= num_channels:
                         continue
                     filtered[:, ch], zi[ch] = sosfilt(
-                        sos,
-                        block[: number_of_averages * self._num_per_average, ch],
-                        zi=zi[ch]
+                        sos, block[: number_of_averages * self._num_per_average, ch], zi=zi[ch]
                     )
-                filtered_squared = filtered ** 2
+                filtered_squared = filtered**2
                 yield filtered_squared.reshape((number_of_averages, -1, num_channels)).mean(axis=1)

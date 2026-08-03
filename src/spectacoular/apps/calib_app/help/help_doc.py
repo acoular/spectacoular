@@ -18,12 +18,12 @@ def help_doc(doc, log=None):
     """
     try:
         # Read the help HTML file
-        help_path = Path(__file__).parent / "help.html"
+        help_path = Path(__file__).parent / 'help.html'
         with Path.open(help_path, encoding='utf-8') as f:
             html_content = f.read()
     except OSError as e:
         if log:
-            log.logger.warning("Could not load help.html: %s. Using fallback content.", e)
+            log.logger.warning('Could not load help.html: %s. Using fallback content.', e)
         # Fallback content if the file is not found or there's an error
         html_content = """
         <style>
@@ -45,6 +45,4 @@ def help_doc(doc, log=None):
 
     help_content = Div(text=html_content, sizing_mode='stretch_both')
     doc.add_root(column(help_content, sizing_mode='stretch_both'))
-    doc.title = "Calibration App Help"
-
-
+    doc.title = 'Calibration App Help'

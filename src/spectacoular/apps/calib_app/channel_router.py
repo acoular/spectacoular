@@ -45,7 +45,7 @@ class ChannelRouter(ac.TimeOut):
         self.noise_enabled = False
 
         self.calib_channel = channel - 1
-        self.logger.debug("Switched to channel %d.", channel)
+        self.logger.debug('Switched to channel %d.', channel)
 
     def schedule_switch(self, delay, channel):
         """Schedule a channel switch after a delay.
@@ -66,14 +66,11 @@ class ChannelRouter(ac.TimeOut):
             channel: Channel number (1-based) for calibration.
         """
         self.calib_channel = channel - 1
-        self.noise_channel = random.choice(
-            [i for i in range(self.num_channels) if i != self.source_channel]
-        )
+        self.noise_channel = random.choice([i for i in range(self.num_channels) if i != self.source_channel])
 
         self.noise_enabled = True
         self.logger.debug(
-            "Noise enabled: calib_channel=%d, noise_channel=%d",
-            self.calib_channel+1, self.noise_channel+1
+            'Noise enabled: calib_channel=%d, noise_channel=%d', self.calib_channel + 1, self.noise_channel + 1
         )
 
     def schedule_noise(self, delay, channel):

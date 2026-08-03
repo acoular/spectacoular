@@ -28,15 +28,13 @@ class PathInput:
         Args:
             default: Default path value to display. (is converted to a string with str())
         """
-        self.widget = TextInput(
-            value=str(default),
-            sizing_mode="stretch_width"
-        )
+        self.widget = TextInput(value=str(default), sizing_mode='stretch_width')
         self.layout = column(
-            info_label("Save Path", "Target path for saving the calibration results (.json)"),
+            info_label('Save Path', 'Target path for saving the calibration results (.json)'),
             self.widget,
-            sizing_mode="stretch_width"
+            sizing_mode='stretch_width',
         )
+
 
 class InputFile:
     """File input widget for loading calibration data from JSON files.
@@ -49,11 +47,11 @@ class InputFile:
 
     def __init__(self):
         """Initialize the file input widget."""
-        self.widget = FileInput(accept=".json", sizing_mode="stretch_width")
+        self.widget = FileInput(accept='.json', sizing_mode='stretch_width')
         self.layout = column(
-            info_label("Load File", "Select a .json file to load a calibration"),
+            info_label('Load File', 'Select a .json file to load a calibration'),
             self.widget,
-            sizing_mode="stretch_width"
+            sizing_mode='stretch_width',
         )
 
 
@@ -78,7 +76,8 @@ class ButtonBar:
         self.logger = logger
 
         # Shared button style
-        self.button_style = InlineStyleSheet(css="""
+        self.button_style = InlineStyleSheet(
+            css="""
             :host {
                 --bokeh-base-font-size: .72rem;
             }
@@ -87,38 +86,25 @@ class ButtonBar:
                 font-size: .72rem;
                 font-weight: 600;
             }
-        """)
-
-        self.btn_start = Button(label="Start", button_type="primary",
-                                sizing_mode="stretch_width",
-                                stylesheets=[self.button_style])
-        self.btn_stop = Button(label="Stop", button_type="danger",
-                               sizing_mode="stretch_width",
-                               stylesheets=[self.button_style])
-        self.btn_save = Button(label="Save",
-                               sizing_mode="stretch_width",
-                               stylesheets=[self.button_style])
-
-        self.layout = row(
-            column(
-                info_label("Start", "Starts the calibration process"),
-                self.btn_start,
-                sizing_mode="stretch_width"
-            ),
-            column(
-                info_label("Stop", "Stops the current calibration"),
-                self.btn_stop,
-                sizing_mode="stretch_width"
-            ),
-            column(
-                info_label("Save", "Saves the calibration results in a .json"),
-                self.btn_save,
-                sizing_mode="stretch_width"
-            ),
-            column(
-                Div(text="""<a href="http://localhost:5006/help" target="_blank">Help</a>""")
-            ),
-
-            sizing_mode="stretch_width"
+        """
         )
 
+        self.btn_start = Button(
+            label='Start', button_type='primary', sizing_mode='stretch_width', stylesheets=[self.button_style]
+        )
+        self.btn_stop = Button(
+            label='Stop', button_type='danger', sizing_mode='stretch_width', stylesheets=[self.button_style]
+        )
+        self.btn_save = Button(label='Save', sizing_mode='stretch_width', stylesheets=[self.button_style])
+
+        self.layout = row(
+            column(info_label('Start', 'Starts the calibration process'), self.btn_start, sizing_mode='stretch_width'),
+            column(info_label('Stop', 'Stops the current calibration'), self.btn_stop, sizing_mode='stretch_width'),
+            column(
+                info_label('Save', 'Saves the calibration results in a .json'),
+                self.btn_save,
+                sizing_mode='stretch_width',
+            ),
+            column(Div(text="""<a href="http://localhost:5006/help" target="_blank">Help</a>""")),
+            sizing_mode='stretch_width',
+        )
