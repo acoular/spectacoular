@@ -1,4 +1,4 @@
-"""Measurement app controls, calibration helpers, and phantom data sources."""
+"""Measurement app controls and phantom data sources."""
 
 import contextlib
 import importlib
@@ -17,18 +17,13 @@ from .layout import button_height, plot_colors, toggle_labels
 from .threads import EventThread, SamplesThread
 
 import numpy as np
-from bokeh.layouts import Spacer, column, row
+from bokeh.layouts import Spacer, column
 from bokeh.models import CustomJS
-from bokeh.models import TabPanel as Panel
 from bokeh.models.widgets import (
     Button,
     CheckboxGroup,
-    DataTable,
-    Div,
-    NumberEditor,
     NumericInput,
     Select,
-    TableColumn,
     TextInput,
     Toggle,
 )
@@ -56,7 +51,7 @@ def _get_channel_labels(source, ltype='Number'):
 
 
 class MeasurementControl:
-    """Control measurement, display, calibration, and beamforming actions."""
+    """Control measurement, display, and beamforming actions."""
 
     def __init__(self, doc, source, logger, blocksize=1024, steer=None, cfreq=1000):  # noqa: PLR0913
         self.modecolor = None
@@ -69,12 +64,6 @@ class MeasurementControl:
             source=ac.Average(source=ac.TimePower(source=self.splitter), num_per_average=blocksize)
         )
         self.msm = ac.WriteH5(source=self.splitter)
-        self.calib = sp.CalibHelper(
-            source=ac.Average(
-                source=ac.TimePower(source=sp.FiltOctave(source=self.splitter, band=1000.0)),
-                num_per_average=blocksize,
-            )
-        )
         if steer is not None:
             self.beamf = sp.TimeOutPresenter(
                 source=ac.Average(
@@ -102,14 +91,6 @@ class MeasurementControl:
             active=False,
             disabled=True,
             button_type='danger',
-            sizing_mode='stretch_width',
-            height=button_height,
-        )
-        self.calib_toggle = Toggle(
-            label='Calibration',
-            active=False,
-            disabled=True,
-            button_type='warning',
             sizing_mode='stretch_width',
             height=button_height,
         )
@@ -148,18 +129,15 @@ class MeasurementControl:
                 self.current_time_checkbox,
                 self.ti_savename,
                 self.display_toggle,
-                self.calib_toggle,
                 self.beamf_toggle,
             ],
             'display': [self.update_period],  # maybe unfinished!
-            'calib': [self.msm_toggle],
             'beamf': [],
         }
 
         self.widgets_enable = {
             'msm': [],
-            'display': [self.calib_toggle, self.msm_toggle, self.beamf_toggle],
-            'calib': [],
+            'display': [self.msm_toggle, self.beamf_toggle],
             'beamf': [],
         }
         self.set_callbacks()
@@ -266,35 +244,6 @@ class MeasurementControl:
             self._msm_thread.join()
             self.logger.info('finished recording')
 
-    def calibtoggle_handler(self, arg):
-        """Start or stop the calibration worker threads."""
-        if arg:
-            self._calibEvent = Event()
-            self._calibEventThread = EventThread(
-                post_callback=partial(self._change_mode, self.calib_toggle, 'calib', active=False),
-                pre_callback=partial(self._change_mode, self.calib_toggle, 'calib', active=True),
-                doc=self.doc,
-                event=self._calibEvent,
-            )
-            self._calib_thread = SamplesThread(
-                gen=self.calib.result(1),
-                splitter=self.splitter,
-                register=self.calib.source.source.source,
-                register_args={
-                    'buffer_size': BUFFERSIZE,
-                    'buffer_overflow_treatment': 'none',
-                },
-                event=self._calibEvent,
-            )
-            self._calib_thread.start()
-            self._calibEventThread.start()
-            self.logger.info('calibrating...')
-        if not arg:
-            self._calib_thread.breakThread = True
-            self._calib_thread.join()
-            self._calibEventThread.join()
-            self.logger.info('finished calibration...')
-
     def beamftoggle_handler(self, arg):
         """Start or stop the beamforming worker threads."""
         if arg:
@@ -331,7 +280,6 @@ class MeasurementControl:
                 self.current_time_checkbox,
                 self.ti_msmtime,
                 self.display_toggle,
-                self.calib_toggle,
                 self.beamf_toggle,
                 self.msm_toggle,
                 self.update_period,
@@ -343,7 +291,6 @@ class MeasurementControl:
         """Attach all widget callbacks for the control panel."""
         self.msm_toggle.on_click(self.msmtoggle_handler)
         self.display_toggle.on_click(self.displaytoggle_handler)
-        self.calib_toggle.on_click(self.calibtoggle_handler)
         self.beamf_toggle.on_click(self.beamftoggle_handler)
         self.current_time_checkbox.on_change('active', self.checkbox_use_current_time_callback)
         self.ti_savename.on_change('value', self.savename_callback)
@@ -365,7 +312,6 @@ class PhantomControl(MeasurementControl):
     def __init__(
         self,
         h5path=Path(__file__).parent / 'data',
-        initial_file='rotating.h5',
         **kwargs,
     ):
         self.sfreq = 25600
@@ -380,11 +326,8 @@ class PhantomControl(MeasurementControl):
 
         self.select_file = Select(
             title='Select Source Case',
-            value=initial_file,
-            options=[
-                ('rotating.h5', 'Rotating Source'),
-                ('calib.h5', 'Calibration Signal'),
-            ],
+            value='rotating.h5',
+            options=[('rotating.h5', 'Rotating Source')],
         )
         self.change_file(None, None, None)
         self.select_file.on_change('value', self.change_file)
@@ -394,10 +337,7 @@ class PhantomControl(MeasurementControl):
         h5f = self.h5path / self.select_file.value
         if not h5f.exists():
             self.logger.info('file does not exist. Create file...')
-            if self.select_file.value == 'rotating.h5':
-                self.create_three_sources_moving(h5f)
-            elif self.select_file.value == 'calib.h5':
-                self.create_calibration_signal(h5f)
+            self.create_three_sources_moving(h5f)
         self.source.file = Path(h5f)
 
     def create_three_sources_moving(self, h5f):
@@ -422,23 +362,6 @@ class PhantomControl(MeasurementControl):
         wh5 = ac.WriteH5(source=pa, file=h5f)
         wh5.save()
 
-    def create_calibration_signal(self, h5f):
-        """Create a synthetic calibration-signal measurement file."""
-        n1 = ac.SineGenerator(
-            sample_freq=self.sfreq,
-            num_samples=self.num_samples,
-            freq=1000,
-            amplitude=20.0,
-        )
-        n2 = ac.WNoiseGenerator(sample_freq=self.sfreq, num_samples=self.num_samples, seed=1, rms=0.0001)
-        noise = ac.UncorrelatedNoiseSource(signal=n2, mics=self.mics)
-        d = np.zeros((n1.num_samples, self.mics.num_mics))
-        d[:, 0] = n1.signal()
-        sine = ac.TimeSamples(data=d, sample_freq=self.sfreq)
-        mix = ac.SourceMixer(sources=[sine, noise])
-        wh5 = ac.WriteH5(source=mix, file=h5f)
-        wh5.save()
-
     def get_widgets(self):
         """Return the phantom-source control widget column."""
         return column(
@@ -450,7 +373,6 @@ class PhantomControl(MeasurementControl):
                 self.current_time_checkbox,
                 self.ti_msmtime,
                 self.display_toggle,
-                self.calib_toggle,
                 self.beamf_toggle,
                 self.msm_toggle,
                 self.update_period,
@@ -512,84 +434,9 @@ class SoundDeviceControl(MeasurementControl):
                 self.current_time_checkbox,
                 self.ti_msmtime,
                 self.display_toggle,
-                self.calib_toggle,
                 self.beamf_toggle,
                 self.msm_toggle,
                 self.update_period,
             ],
             width=150,
         )
-
-
-class Calibration:
-    """Calibration table and file-save controls for the measurement app."""
-
-    def __init__(self, doc, control):
-        self.doc = doc
-        self.control = control
-        self.cal_widgets = control.calib.get_widgets()
-        self.cal_filter_widgets = self.control.calib.source.source.source.get_widgets()
-        # save button
-        self.savecal = Button(label='save to .xml', button_type='warning', height=button_height)
-        self.savecal.on_click(self._save_calib_callback)
-        # calibration table
-        columns = [
-            TableColumn(field='channel', title='channel'),
-            TableColumn(field='calibvalue', title='calibvalue', editor=NumberEditor()),
-            TableColumn(field='caliblevel', title='caliblevel', editor=NumberEditor()),
-            TableColumn(field='calibfactor', title='calibfactor', editor=NumberEditor()),
-        ]
-        self.cal_table = DataTable(columns=columns, sizing_mode='stretch_both')
-        self._calibtable_callback()
-        self.control.calib.on_trait_change(self.calibtable_callback, 'calibdata')
-
-    def _calibtable_callback(self):
-        cal_fac = self.control.calib.calibfactor
-        if cal_fac.size == 0:
-            cal_fac = np.ones(self.control.calib.calibdata.shape[0])
-        self.cal_table.source.data = {
-            'calibvalue': self.control.calib.calibdata[:, 0],
-            'caliblevel': self.control.calib.calibdata[:, 1],
-            'calibfactor': cal_fac,
-            'channel': np.arange(1, self.control.calib.calibdata.shape[0] + 1),
-        }
-
-    def calibtable_callback(self):
-        """Schedule a calibration table refresh on the next document tick."""
-        return self.doc.add_next_tick_callback(self._calibtable_callback)
-
-    def _save_calib_callback(self):
-        file_value = self.cal_widgets['file'].value
-        if not file_value:
-            fname = Path('measurement_app') / 'metadata' / f'calibdata_{current_time()}.xml'
-        else:
-            fname = Path(file_value)
-
-        fname.parent.mkdir(parents=True, exist_ok=True)
-        self.cal_widgets['file'].value = str(fname)
-        self.control.calib.file = str(fname)
-        self.control.calib.save()
-
-    def get_widgets(self):
-        """Return the calibration tab widget layout."""
-        return column(
-            Div(text=r"""<b style="font-size:15px;">Save Calibration Data</b>"""),
-            row(
-                self.cal_table,
-                column(
-                    row(self.savecal, self.cal_widgets['file']),
-                    Spacer(height=50),
-                    Div(text=r"""<b style="font-size:15px;">Calibration Filter Settings</b>"""),
-                    *self.cal_filter_widgets.values(),
-                    Spacer(height=50),
-                    Div(text=r"""<b style="font-size:15px;">Basic Calibration Settings</b>"""),
-                    *self.cal_widgets.values(),
-                ),
-                sizing_mode='stretch_both',
-            ),
-            sizing_mode='stretch_both',
-        )
-
-    def get_tab(self):
-        """Return the calibration panel tab."""
-        return Panel(child=self.get_widgets(), title='Calibration')

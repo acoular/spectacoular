@@ -10,13 +10,10 @@ Some of these classes might move to the Acoular module in the future.
 
     TimeSamplesPhantom
     TimeOutPresenter
-    CalibHelper
     TimeSamplesPlayback
 """
 
-from datetime import UTC, datetime
-from pathlib import Path
-from time import sleep, time
+from time import sleep
 from typing import ClassVar
 
 import acoular as ac
@@ -36,15 +33,11 @@ from bokeh.models.widgets import (
 )
 from traits.api import (
     Bool,
-    CArray,
-    File,
     Float,
     Instance,
-    Int,
     List,
     Property,
     cached_property,
-    on_trait_change,
 )
 
 invch_columns = [
@@ -149,137 +142,6 @@ class TimeOutPresenter(ac.TimeOut, BasePresenter):
         """
         for temp in self.source.result(num):
             self.cdsource.data['data'] = temp
-            yield temp
-
-
-@deprecated_alias({'name': 'file'})
-class CalibHelper(ac.TimeOut, BaseSpectacoular):
-    """Calibrate individual source channels."""
-
-    #: Data source; :class:`~acoular.sources.Average` or derived object.
-    source = Instance(ac.Average)
-
-    #: Name of the file to be saved. If none is given, the name will be
-    #: automatically generated from a time stamp.
-    file = File(filter=['*.xml'], desc='name of data file')
-
-    #: calibration level (e. g. dB or Pa) of calibration device
-    magnitude = Float(114, desc='calibration level of calibration device')
-
-    #: calibration values determined during evaluation of :meth:`result`.
-    #: array of floats with dimension (num_channels, 2)
-    calibdata = CArray(dtype=float, desc='determined calibration values')
-
-    #: calibration factor determined during evaluation of :meth:`save`.
-    #: array of floats with dimension (num_channels)
-    calibfactor = CArray(dtype=float, desc='determined calibration factor')
-
-    #: max elements/averaged blocks to calculate calibration value.
-    buffer_size = Int(100, desc='number of blocks considered to determine calibration value')
-
-    #: channel-wise allowed standard deviation of calibration values in buffer
-    calibstd = Float(0.5, desc='allowed standard deviation of calibration values in buffer')
-
-    #: minimum allowed difference in magnitude between the channel to be
-    #: calibrated and remaining channels.
-    delta = Float(
-        10,
-        desc='magnitude difference between calibrating channel and remaining channels',
-    )
-
-    # internal identifier
-    digest = Property(depends_on=['source.digest', '__class__'])
-
-    trait_widget_mapper: ClassVar[dict[str, type]] = {
-        'file': TextInput,
-        'magnitude': NumericInput,
-        'buffer_size': NumericInput,
-        'calibstd': NumericInput,
-        'delta': NumericInput,
-    }
-
-    trait_widget_args: ClassVar[dict[str, dict[str, object]]] = {
-        'file': {'disabled': False},
-        'magnitude': {'disabled': False, 'mode': 'float'},
-        'buffer_size': {'disabled': False, 'mode': 'int'},
-        'calibstd': {'disabled': False, 'mode': 'float'},
-        'delta': {'disabled': False, 'mode': 'float'},
-    }
-
-    def to_pa(self, level):
-        """Convert a sound level to pressure in pascal."""
-        return (10 ** (level / 10)) * (4e-10)
-
-    @cached_property
-    def _get_digest(self):
-        return ac.internal.digest(self)
-
-    @on_trait_change('source, source.num_channels')
-    def adjust_calib_values(self):
-        """Resize calibration arrays to match the number of source channels."""
-        diff = self.num_channels - self.calibdata.shape[0]
-        if self.calibdata.size == 0 or diff != 0:
-            self.calibdata = np.zeros((self.num_channels, 2))
-
-    def create_filename(self):
-        """Create a default filename for calibration output if none is set."""
-        if self.name == '':
-            stamp = datetime.fromtimestamp(time(), tz=UTC).strftime('%H:%M:%S')
-            self.name = 'calib_file_' + stamp.replace(':', '') + '.xml'
-
-    def save(self):
-        """Save the current calibration factors as an XML file."""
-        self.create_filename()
-
-        with Path(self.name).open('w') as f:
-            f.write(f'<?xml version="1.0" encoding="utf-8"?>\n<Calib name="{self.name}">\n')
-            for i in range(self.num_channels):
-                channel_string = str(i + 1)
-                fac = self.calibfactor[i]
-                f.write(f'	<pos Name="Point {channel_string}" factor="{fac}"/>\n')
-            f.write('</Calib>')
-        # savetxt(self.name,self.calibdata,'%f')
-
-    def result(self, num):
-        """
-        Python generator that yields the output block-wise.
-
-        Parameters
-        ----------
-        num : integer, defaults to 128
-            This parameter defines the size of the blocks to be yielded
-            (i.e. the number of samples per block) .
-
-        Returns
-        -------
-        Samples in blocks of shape (num, num_channels).
-            The last block may be shorter than num.
-        """
-        self.adjust_calib_values()
-        nc = self.num_channels
-        self.calibfactor = np.zeros(self.num_channels)
-        buffer = np.zeros((self.buffer_size, nc))
-        for temp in self.source.result(num):
-            ns = temp.shape[0]
-            bufferidx = self.buffer_size - ns
-            buffer[0:bufferidx] = buffer[-bufferidx:]  # copy remaining samples in front of next block
-            buffer[-ns:, :] = ac.L_p(temp)
-            calibmask = np.logical_and(
-                buffer > (self.magnitude - self.delta),
-                buffer < (self.magnitude + self.delta),
-            ).sum(0)
-            # print(calibmask)
-            if (calibmask.max() == self.buffer_size) and (calibmask.sum() == self.buffer_size):
-                idx = calibmask.argmax()
-                # print(buffer[:,idx].std())
-                if buffer[:, idx].std() < self.calibstd:
-                    calibdata = self.calibdata.copy()
-                    calibdata[idx, :] = [np.mean(buffer[:, idx]), self.magnitude]
-                    # self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
-                    self.calibdata = calibdata
-
-            for i in np.arange(self.num_channels):
-                self.calibfactor[i] = self.to_pa(self.magnitude) / self.to_pa(float(self.calibdata[i, 0]))
             yield temp
 
 

@@ -3,8 +3,8 @@
 from bokeh.palettes import Spectral11
 
 COLOR = Spectral11
-MODE_COLORS = {'display': COLOR[1], 'calib': COLOR[5], 'msm': COLOR[8]}
-CLIP_COLORS = {'display': COLOR[8], 'calib': COLOR[8], 'msm': COLOR[8]}
+MODE_COLORS = {'display': COLOR[1], 'msm': COLOR[8]}
+CLIP_COLORS = {'display': COLOR[8], 'msm': COLOR[8]}
 
 button_height = 80
 
@@ -14,8 +14,6 @@ toggle_labels = {
     ('msm', True): 'STOP MEASUREMENT',
     ('display', False): 'Display',
     ('display', True): 'Stop Display',
-    ('calib', True): 'Stop Calibration',
-    ('calib', False): 'Calibration',
     ('beamf', True): 'Stop Beamforming',
     ('beamf', False): 'Beamforming',
 }
@@ -25,8 +23,6 @@ plot_colors = {
     ('msm', False): [MODE_COLORS['display'], CLIP_COLORS['display']],
     ('display', True): [MODE_COLORS['display'], CLIP_COLORS['display']],
     ('display', False): [MODE_COLORS['display'], CLIP_COLORS['display']],
-    ('calib', True): [MODE_COLORS['calib'], CLIP_COLORS['calib']],
-    ('calib', False): [MODE_COLORS['display'], CLIP_COLORS['display']],
     ('beamf', True): [],
     ('beamf', False): [],
 }
