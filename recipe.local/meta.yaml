@@ -16,10 +16,9 @@ requirements:
     - hatchling
     - wheel
   run:
-    - python >=3.10
-    - acoular >=25.01
+    - python >=3.11,<3.15
+    - acoular >=26.01
     - bokeh >=3.0
-    - python-sounddevice
 
 test:
   # Python imports
@@ -31,7 +30,7 @@ test:
     - spectacoular
 
 about:
-  home: https://acoular.github.io/spectacoular/
+  home: https://acoular.org/spectacoular/
   license: BSD License
   summary: 'Library for SpectAcoular interactive applications with Acoular'
 
