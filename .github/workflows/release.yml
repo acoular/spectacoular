@@ -12,46 +12,30 @@ jobs:
     with:
       deploy: true
 
-  docs_build_versioned:
+  docs_versioned:
     uses: acoular/ci/.github/workflows/docs.yml@main
     with:
+      deploy: true
+      package: spectacoular
+      version: ${{ github.ref_name }}
       artifact_name: build-docs-versioned
       artifact_path: ./docs/_build/html
       html_baseurl: "https://acoular.org/spectacoular/${{ github.ref_name }}/"
+      min_version: v26.06
+      deploy_switcher: true
       setup_portaudio: false
+    secrets:
+      website_gh_pages_token: ${{ secrets.WEBSITE_GH_PAGES_TOKEN }}
 
-  docs_build_stable:
+  docs_stable:
     uses: acoular/ci/.github/workflows/docs.yml@main
     with:
+      deploy: true
+      package: spectacoular
       artifact_name: build-docs-stable
       artifact_path: ./docs/_build/html
       html_baseurl: "https://acoular.org/spectacoular/"
       setup_portaudio: false
-
-  docs_deploy_versioned:
-    needs: docs_build_versioned
-    uses: acoular/ci/.github/workflows/package-docs-deploy.yml@main
-    with:
-      artifact_name: build-docs-versioned
-      artifact_path: ./docs/_build/html
-      destination_dir: spectacoular/${{ github.ref_name }}
-      package_path: /spectacoular
-      min_version: v26.06
-      deploy_switcher: true
-      switcher_destination_dir: spectacoular/_static
-    secrets:
-      website_gh_pages_token: ${{ secrets.WEBSITE_GH_PAGES_TOKEN }}
-
-  docs_deploy_stable:
-    needs: docs_build_stable
-    uses: acoular/ci/.github/workflows/package-docs-deploy.yml@main
-    with:
-      artifact_name: build-docs-stable
-      artifact_path: ./docs/_build/html
-      destination_dir: spectacoular
-      package_path: /spectacoular
-      min_version: v26.06
-      deploy_switcher: false
     secrets:
       website_gh_pages_token: ${{ secrets.WEBSITE_GH_PAGES_TOKEN }}
 

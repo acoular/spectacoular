@@ -9,21 +9,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  docs:
     uses: acoular/ci/.github/workflows/docs.yml@main
     with:
+      deploy: true
+      package: spectacoular
+      version: dev
       artifact_name: build-docs-dev
       artifact_path: ./docs/_build/html
       html_baseurl: "https://acoular.org/spectacoular/dev/"
       docs_version_match: "dev"
-
-  deploy:
-    needs: build
-    uses: acoular/ci/.github/workflows/package-docs-deploy.yml@main
-    with:
-      artifact_name: build-docs-dev
-      package: spectacoular
-      version: dev
       min_version: v26.06
       deploy_switcher: true
     secrets:
