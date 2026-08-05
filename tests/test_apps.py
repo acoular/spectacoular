@@ -54,7 +54,6 @@ def bokeh_server(request):
         'bf_example_app',
         'rotating_example_app',
         'data_viewer_app',
-        'measurement_app',
     ],
     indirect=True,
 )
