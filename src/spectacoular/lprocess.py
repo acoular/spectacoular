@@ -17,7 +17,6 @@ from time import sleep
 from typing import ClassVar
 
 import acoular as ac
-from acoular.deprecation import deprecated_alias
 
 from .dprocess import BasePresenter
 from .factory import BaseSpectacoular
