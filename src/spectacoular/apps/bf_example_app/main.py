@@ -57,11 +57,16 @@ ts = sp.MaskedTimeSamples(
     start=0,
     stop=16000,
 )
+cal = sp.Calib(
+    source=ts,
+    file=Path(__file__).parent / 'example_calib.xml',
+    invalid_channels=ts.invalid_channels,
+)
 mg = sp.MicGeom(
     file=Path(ac.__file__).parent / 'xml' / 'array_56.xml',
     invalid_channels=ts.invalid_channels,
 )
-ps = sp.PowerSpectra(source=ts, block_size=1024, overlap='50%')
+ps = sp.PowerSpectra(source=cal, block_size=1024, overlap='50%')
 rg = sp.RectGrid(x_min=-0.6, x_max=-0.1, y_min=-0.3, y_max=0.3, z=0.68, increment=0.01)
 env = sp.Environment(c=346.04)
 st = sp.SteeringVector(grid=rg, mics=mg, env=env)
@@ -252,6 +257,7 @@ bv.trait_widget_args.update({'num': {'width': 40}, 'freq': {'width': 100}})
 ts_widgets = ts.get_widgets()
 mg_widgets = mic_layout.widgets
 env_widgets = env.get_widgets()
+cal_widgets = cal.get_widgets()
 ps_widgets = ps.get_widgets()
 rg_widgets = rg.get_widgets()
 st_widgets = st.get_widgets()
@@ -261,11 +267,13 @@ ts_widgets.pop('invalid_channels')
 
 invalid_widget = mg_widgets['invalid_channels']
 ts.set_widgets(invalid_channels=invalid_widget)
+cal.set_widgets(invalid_channels=invalid_widget)
 
 settings_dict = {
     'Time Data': ts_widgets,
     'Microphone Geometry': mg_widgets,
     'Environment': env_widgets,
+    'Calibration': cal_widgets,
     'FFT/CSM': ps_widgets,
     'Focus Grid': rg_widgets,
     'Steering Vector': st_widgets,
