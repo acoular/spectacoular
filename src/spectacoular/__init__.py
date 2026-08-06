@@ -22,7 +22,6 @@ from .bokehview import (
     RectGrid,
     RectGrid3D,
     MicGeom,
-    Calib,
     Environment,
     SteeringVector,
     PowerSpectra,
@@ -58,7 +57,6 @@ from .dprocess import (
     TimeSamplesPresenter,
 )
 from .lprocess import (
-    CalibHelper,
     TimeOutPresenter,
     TimeSamplesPhantom,
 )
@@ -81,7 +79,6 @@ __all__ = [
     'BeamformerGIB',
     'BeamformerMusic',
     'BeamformerOrth',
-    'Calib',
     'Environment',
     'FiltOctave',
     'MaskedTimeOut',
@@ -103,7 +100,6 @@ __all__ = [
     # SpectAcoular
     'BaseSpectacoular',
     'BeamformerPresenter',
-    'CalibHelper',
     'DataTableMapper',
     'MicGeomComponent',
     'MicGeomPresenter',

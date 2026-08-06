@@ -26,7 +26,6 @@ from acoular import (
     BeamformerGIB,
     BeamformerMusic,
     BeamformerOrth,
-    Calib,
     Environment,
     FiltOctave,
     MaskedTimeOut,
@@ -103,25 +102,6 @@ trait_widget_args = {
 
 add_bokeh_attr(SampleSplitter, trait_widget_mapper, trait_widget_args)
 
-
-# %% calib.py
-
-cal_columns = [
-    TableColumn(field='data', title='calib factors', editor=NumberEditor()),
-]
-
-trait_widget_mapper = {
-    'file': TextInput,
-    'num_mics': NumericInput,
-    'data': DataTable,
-}
-trait_widget_args = {
-    'file': {'disabled': False},
-    'num_mics': {'disabled': True, 'mode': 'int'},
-    'data': {'disabled': True, 'editable': False, 'columns': cal_columns},
-}
-
-add_bokeh_attr(Calib, trait_widget_mapper, trait_widget_args)
 
 # %% environments.py
 

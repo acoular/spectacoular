@@ -9,7 +9,7 @@ from pathlib import Path
 import acoular as ac
 import spectacoular as sp
 
-from .app import Calibration, PhantomControl, SoundDeviceControl, _get_channel_labels
+from .app import PhantomControl, SoundDeviceControl, _get_channel_labels
 from .cam import CameraComponent
 from .layout import COLOR
 from .log import LogHandler
@@ -46,7 +46,7 @@ parser.add_argument(
     '--device',
     type=str,
     default='phantom',
-    choices=['phantom', 'calib', 'sounddevice'],
+    choices=['phantom', 'sounddevice'],
     help='Connected device.',
 )
 parser.add_argument('--blocksize', type=int, default=512, help='Size of data blocks to be processed')
@@ -104,14 +104,13 @@ def server_doc(doc):  # noqa: PLR0915
             steer=ac.SteeringVector(grid=grid, mics=mics),
         )
 
-    elif args.device in ('phantom', 'calib'):
+    elif args.device == 'phantom':
         grid = sp.RectGrid(x_min=-0.75, x_max=0.75, y_min=-0.75, y_max=0.75, z=0.75, increment=0.05)
         control = PhantomControl(
             doc=doc,
             logger=log.logger,
             blocksize=args.blocksize,
             steer=ac.SteeringVector(grid=grid, mics=mics),
-            initial_file='calib.h5' if args.device == 'calib' else 'rotating.h5',
         )
 
     # =============================================================================
@@ -168,7 +167,6 @@ def server_doc(doc):  # noqa: PLR0915
     # =============================================================================
 
     mic_presenter = sp.MicGeomPresenter(source=mics, auto_update=True)
-    calibration = Calibration(doc=doc, control=control)
     camera = CameraComponent(doc=doc, figure=mics_beamf_fig)
 
     # Amplitude Bar Plot
@@ -353,9 +351,6 @@ def server_doc(doc):  # noqa: PLR0915
         )
         amp_fig.x_range.factors = labels  # Set x_range as categorical
         amp_fig.xaxis.major_label_overrides = {label: label for label in labels}
-        # update calibration table
-        if label_select.value in ['Physical', 'Number']:
-            calibration.cal_table.source.data['channel'] = labels
         # update invalid channels
         invalid_input_channels.options = [
             (index_label, display_label)
@@ -485,7 +480,6 @@ def server_doc(doc):  # noqa: PLR0915
     control_tabs = [
         amplitudes_tab,
         mics_bf_tab,
-        calibration.get_tab(),
     ]
 
     tabs = Tabs(tabs=control_tabs, sizing_mode='inherit', width=1700, height=800)
