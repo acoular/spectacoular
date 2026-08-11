@@ -47,6 +47,14 @@ def set_calib_data(orchestrator, calib_data, logger):
         calib_data: Parsed JSON data with Channels dict.
         logger: Logger instance for debugging.
     """
+    # reset all channels
+    orchestrator.init_channels(
+        calib=StdCalib(reference_magnitude=db_to_pa(94.0)),
+        preproc=CalibPreprocessor(band=1000.0),
+        unit='dB',
+        calib_time=2,
+        stability_tolerance=0.5,
+    )
     for channel_num in calib_data['Channels']:
         channel_num_int = int(channel_num) - 1
         unit = calib_data['Channels'][channel_num]['CalibLevel']['Unit']
