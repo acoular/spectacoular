@@ -27,7 +27,7 @@ def main():
         {'/': Application(FunctionHandler(server_doc)), '/help': Application(FunctionHandler(help_doc))},
         # Static handler for serving images/css to the help page
         extra_patterns=[
-            (r'/help_static/(.*)', StaticFileHandler, {'path': str(Path(__file__).parent / 'help_static')})
+            (r'/help_static/(.*)', StaticFileHandler, {'path': str(Path(__file__).parent / 'help' / 'help_static')})
         ],
         session_token_expiration=3600,  # 1 hour
     )
