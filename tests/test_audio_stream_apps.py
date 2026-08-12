@@ -1,10 +1,14 @@
 """Tests for audio stream app controls and lifecycle."""
 
+from types import SimpleNamespace
+
+import pytest
 from bokeh.document import Document
 from bokeh.layouts import column
 
 from spectacoular.apps.base import AudioStreamApp
 from spectacoular.apps.controls import BaseAudioStreamControl, discover_controls
+from spectacoular.apps.measurement_app.controls import SoundDeviceControl
 from spectacoular.apps.measurement_app.main import MeasurementApp
 
 
@@ -40,7 +44,17 @@ class _FailingCloseControl(_TestControl):
     """Control that cannot cleanly release its backend."""
 
     def close(self):
-        raise RuntimeError('close failed')
+        message = 'close failed'
+        raise RuntimeError(message)
+
+
+class _FailingStopControl(_TestControl):
+    """Control that fails to stop but still records close."""
+
+    def stop(self):
+        self.stopped = True
+        message = 'stop failed'
+        raise RuntimeError(message)
 
 
 class _TestApp(AudioStreamApp):
@@ -117,6 +131,40 @@ def test_failed_old_cleanup_leaves_no_active_control():
     assert 'Unable to close audio stream control' in app._error.text
 
 
+def test_stop_failure_still_closes_old_control():
+    """A stop failure does not skip the required close attempt."""
+
+    class FailingControl(_FailingStopControl):
+        id = 'test'
+
+    app = _TestApp(Document(), controls={'test': FailingControl, 'other': _TestControl})
+    control = app.control
+    app._running = True
+
+    with pytest.raises(RuntimeError, match='stop failed'):
+        app._stop_and_close(control)
+
+    assert control.stopped
+    assert control.closed
+
+
+def test_failed_initial_control_construction_stays_blank():
+    """Initial construction failure resets the selector without retrying."""
+
+    class FailingControl(_TestControl):
+        id = 'test'
+
+        def __init__(self, *args, **kwargs):
+            message = 'construction failed'
+            raise RuntimeError(message)
+
+    app = _TestApp(Document(), controls={'test': FailingControl})
+
+    assert app.control is None
+    assert app.control_select.value == ''
+    assert 'Unable to create audio stream control' in app._error.text
+
+
 def test_session_destroy_closes_control_once():
     """Session teardown follows the idempotent close path."""
     app = _TestApp(Document(), controls={'test': _TestControl})
@@ -137,6 +185,18 @@ def test_source_changed_rebuilds_while_stopped():
     app.control.source_changed()
 
     assert len(app.sources) == 2
+
+
+def test_channel_count_edit_notifies_source_change():
+    """Direct channel-count edits update the stream and notify the app."""
+    source = SimpleNamespace(num_channels=2)
+    changes = []
+    control = SimpleNamespace(source=source, source_changed=lambda: changes.append(True))
+
+    SoundDeviceControl._num_channels_changed(control, 'value', 2, 4)
+
+    assert source.num_channels == 4
+    assert changes == [True]
 
 
 def test_measurement_app_document_constructs_and_locks_workflows():

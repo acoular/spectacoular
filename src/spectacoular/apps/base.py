@@ -38,6 +38,7 @@ class AudioStreamApp(BaseApp):
         super().__init__(doc, logger)
         self.controls = available_controls if controls is None else controls
         self.control = None
+        self._unreleased_control = None
         self._closed = False
         self._running = False
         self._changing_control = False
@@ -54,6 +55,20 @@ class AudioStreamApp(BaseApp):
         options = [('', 'Select audio stream')]
         options.extend((key, control.label) for key, control in self.controls.items())
         self.control_select.options = options
+
+    def _set_selector(self, value):
+        self._changing_control = True
+        try:
+            self.control_select.value = value
+        finally:
+            self._changing_control = False
+
+    def _clear_control(self, message):
+        self.control = None
+        self._control_content.children = []
+        self._stream_content.children = []
+        self._set_selector('')
+        self._show_error(message)
 
     def _create_initial_control(self):
         if not self.controls:
@@ -72,6 +87,7 @@ class AudioStreamApp(BaseApp):
         return self.controls[control_id](doc=self.doc, logger=self.logger)
 
     def _activate_control(self, control_id):
+        control = None
         try:
             control = self._new_control(control_id)
             control.on_source_changed(self._source_changed)
@@ -79,47 +95,63 @@ class AudioStreamApp(BaseApp):
             stream_content = self.build_stream_content(control.source)
         except Exception as exc:  # pragma: no cover - requires broken hardware backend
             self.logger.exception('Unable to create audio stream control')
-            self.control = None
-            self.control_select.value = ''
-            self._control_content.children = []
-            self._stream_content.children = []
-            self._show_error(f'Unable to create audio stream control: {exc}')
+            if control is not None:
+                try:
+                    control.close()
+                except Exception:
+                    self.logger.exception('Unable to close failed audio stream control')
+                    self._unreleased_control = control
+            self._clear_control(f'Unable to create audio stream control: {exc}')
             return False
         self.control = control
-        self._changing_control = True
-        try:
-            self.control_select.value = control_id
-        finally:
-            self._changing_control = False
+        self._set_selector(control_id)
         self._control_content.children = [content]
         self._stream_content.children = [stream_content]
         self._clear_error()
         return True
 
+    def _stop_and_close(self, control):
+        error = None
+        try:
+            self.stop_consumers()
+        except Exception as exc:  # noqa: BLE001  # pragma: no cover - consumer teardown failure
+            error = exc
+        if self._running:
+            try:
+                control.stop()
+            except Exception as exc:  # noqa: BLE001  # pragma: no cover - requires broken hardware backend
+                if error is None:
+                    error = exc
+            try:
+                control.set_config_enabled(True)
+            except Exception as exc:  # noqa: BLE001  # pragma: no cover - requires broken hardware backend
+                if error is None:
+                    error = exc
+            finally:
+                self.control_select.disabled = False
+                self._running = False
+        try:
+            control.close()
+        except Exception as exc:  # noqa: BLE001  # pragma: no cover - requires broken hardware backend
+            if error is None:
+                error = exc
+        if error is not None:
+            raise error
+
     def _select_control(self, _attr, old, new):
         if self._changing_control:
             return
-        if new == old or self._running:
-            self.control_select.value = old
+        if new == old or self._running or not new:
+            self._set_selector(old)
             return
-        if not new:
-            self.control_select.value = old
-            return
-        if self.control is not None:
+        old_control = self.control
+        if old_control is not None:
             try:
-                self.stop()
-                self.control.close()
+                self._stop_and_close(old_control)
             except Exception as exc:  # pragma: no cover - requires broken hardware backend
                 self.logger.exception('Unable to stop and close audio stream control')
-                self.control = None
-                self._control_content.children = []
-                self._stream_content.children = []
-                self._changing_control = True
-                try:
-                    self.control_select.value = ''
-                finally:
-                    self._changing_control = False
-                self._show_error(f'Unable to close audio stream control: {exc}')
+                self._unreleased_control = old_control
+                self._clear_control(f'Unable to close audio stream control: {exc}')
                 return
             self.control = None
         self._activate_control(new)
@@ -175,12 +207,10 @@ class AudioStreamApp(BaseApp):
         if self._closed:
             return
         self._closed = True
-        try:
-            self.stop()
-        except Exception:  # pragma: no cover - backend failure during teardown
-            self.logger.exception('Unable to stop audio stream control')
         if self.control is not None:
             try:
-                self.control.close()
-            except Exception:  # pragma: no cover - backend failure during teardown
+                self._stop_and_close(self.control)
+            except Exception:
                 self.logger.exception('Unable to close audio stream control')
+                self._unreleased_control = self.control
+            self.control = None

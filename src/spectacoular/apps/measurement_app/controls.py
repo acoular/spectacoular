@@ -69,6 +69,7 @@ class SoundDeviceControl(BaseAudioStreamControl):
         self.device_select = widgets['device']
         self.num_channels_input = widgets['num_channels']
         self.device_select.on_change('value', self._device_changed)
+        self.num_channels_input.on_change('value', self._num_channels_changed)
 
     def create_source(self):
         """Create the live sounddevice source."""
@@ -89,6 +90,12 @@ class SoundDeviceControl(BaseAudioStreamControl):
     def _device_changed(self, _attr, _old, _new):
         self.source.num_channels = sd.query_devices(self.source.device)['max_input_channels']
         self.source_changed()
+
+    def _num_channels_changed(self, _attr, old, new):
+        """Notify the app after an editable channel-count change."""
+        if new != old:
+            self.source.num_channels = new
+            self.source_changed()
 
     def get_widgets(self):
         """Return live-device configuration widgets."""
