@@ -58,7 +58,7 @@ class MeasurementApp(AudioStreamApp):
             title='Select Update Period [ms]', value='50', options=['25', '50', '100', '200', '400', '800']
         )
         self.exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width')
-        self._measurement_controls = column(width=150)
+        self._measurement_controls = column(width=300)
         self.current_time_checkbox.on_change('active', self._toggle_filename)
         self.filename.on_change('value', self._set_filename)
         self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
@@ -340,7 +340,7 @@ class MeasurementApp(AudioStreamApp):
             self._error,
             self._control_content,
             self._measurement_controls,
-            width=150,
+            width=300,
         )
         return column(row(Spacer(width=10), sidebar, Spacer(width=20), self._stream_content))
 
