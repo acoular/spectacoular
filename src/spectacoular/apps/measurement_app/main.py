@@ -76,9 +76,7 @@ class MeasurementApp(AudioStreamApp):
             source=ac.Average(source=ac.TimePower(source=self.splitter), num_per_average=self.blocksize)
         )
         self.msm = ac.WriteH5(source=self.splitter)
-        self.beamforming_input = self.splitter
-        if source.num_samples >= 0:
-            self.beamforming_input = MaskedTimeOut(source=self.splitter)
+        self.beamforming_input = MaskedTimeOut(source=self.splitter)
         self.beamf = sp.TimeOutPresenter(
             source=ac.Average(
                 source=ac.TimePower(
@@ -184,13 +182,9 @@ class MeasurementApp(AudioStreamApp):
 
         self.invalid_input_channels = MultiSelect(title='Not-Array Channels', height=150, value=[])
         self.invalid_input_channels.description = 'Select which input channels should not be used for beamforming'
-        self.invalid_input_channels.disabled = source.num_samples < 0
-        if isinstance(self.beamforming_input, MaskedTimeOut):
-            self.beamforming_input.set_widgets(invalid_channels=self.invalid_input_channels)
+        self.beamforming_input.set_widgets(invalid_channels=self.invalid_input_channels)
         self.all_bf_valid = Button(label='All Valid', button_type='success', sizing_mode='stretch_width')
-        self.all_bf_valid.disabled = source.num_samples < 0
-        if isinstance(self.beamforming_input, MaskedTimeOut):
-            self.all_bf_valid.on_click(lambda: setattr(self.beamforming_input, 'invalid_channels', []))
+        self.all_bf_valid.on_click(lambda: setattr(self.beamforming_input, 'invalid_channels', []))
         self.auto_level_toggle = Toggle(label='Auto Level', button_type='success', active=True)
         self.dynamic_range = NumericInput(value=10, title='Dynamic Range/dB')
         self.snapshot_avg = NumericInput(value=1, title='Snapshots to Average')
@@ -400,7 +394,7 @@ class MeasurementApp(AudioStreamApp):
             self.start()
             self._start_consumer(
                 self.beamf.result(1),
-                self.beamf.source.source.source.source.source,
+                self.beamforming_input,
                 {'buffer_size': 1, 'buffer_overflow_treatment': 'none'},
             )
             self._start_updates()

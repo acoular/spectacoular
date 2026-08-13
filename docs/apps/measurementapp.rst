@@ -40,13 +40,17 @@ or:
 
     $ uv pip install 'spectacoular[full]'
 
-Choose the desired input device and channel count in the backend settings.
-Backend settings and the stream selector are disabled while a display,
+Choose the desired input device, channel count, sampling frequency, and sample
+format in the backend settings. Backend settings and the stream selector are disabled while a display,
 measurement, or beamforming workflow is running. Stop that workflow before
 changing stream backend or settings.
 
 The application uses its built-in processing defaults. Persistent configuration
 is not yet provided.
+
+Custom audio-stream controllers are documented in
+:doc:`../user_guide/audio_stream_controls`. They are discovered by every
+SpectAcoular application based on ``AudioStreamApp``.
 
 .. figure:: measurementapp.mp4
     :align: center

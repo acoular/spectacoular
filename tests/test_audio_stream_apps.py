@@ -8,8 +8,7 @@ from bokeh.layouts import column
 from bokeh.models import Tabs
 
 from spectacoular.apps.base import AudioStreamApp
-from spectacoular.apps.controls import BaseAudioStreamControl, discover_controls
-from spectacoular.apps.measurement_app.controls import SoundDeviceControl
+from spectacoular.apps.controls import BaseAudioStreamControl, SoundDeviceControl, discover_controls
 from spectacoular.apps.measurement_app.main import MeasurementApp
 
 
@@ -218,9 +217,11 @@ def test_measurement_app_beamforming_starts_plot_updates(monkeypatch):
     app = MeasurementApp(Document())
     app.server_doc()
     monkeypatch.setattr(app, 'start', lambda: None)
-    monkeypatch.setattr(app, '_start_consumer', lambda *_args: None)
+    calls = []
+    monkeypatch.setattr(app, '_start_consumer', lambda *_args: calls.append(_args))
 
     app._beamform_toggled(True)
 
+    assert calls[0][1] is app.beamforming_input
     assert app._periodic_callback is not None
     app.stop_consumers()

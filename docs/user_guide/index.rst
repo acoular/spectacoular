@@ -14,6 +14,7 @@ visualization and analysis.
     Basic plotting with Bokeh <../auto_examples/basic_mic_geom_plot>
     Basic widget building <../auto_examples/basic_mic_geom_widgets>
     Basic interactive applications <../auto_examples/interactive_apps>
+    Audio-stream controllers <audio_stream_controls>
     MicGeom example <../apps/micgeomexample>
 
 
@@ -33,6 +34,9 @@ visualization and analysis.
       
       - Demonstrates how to build client-server based applications with SpectAcoular.
 
+    * - :doc:`audio_stream_controls`
+
+      - Add a reusable audio-stream backend to all audio-stream applications.
 
 
 Applications
