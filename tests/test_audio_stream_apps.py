@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 from bokeh.document import Document
 from bokeh.layouts import column
+from bokeh.models import Tabs
 
 from spectacoular.apps.base import AudioStreamApp
 from spectacoular.apps.controls import BaseAudioStreamControl, discover_controls
@@ -205,6 +206,21 @@ def test_measurement_app_document_constructs_and_locks_workflows():
     app.server_doc()
 
     assert app.doc.roots
+    tabs = next(iter(app.doc.select({'type': Tabs})))
+    assert [tab.title for tab in tabs.tabs] == ['Channel Levels', 'Microphone Geometry / Beamforming']
     app._set_workflow(app.display_toggle)
     assert not app.display_toggle.disabled
     assert app.record_toggle.disabled and app.beamform_toggle.disabled
+
+
+def test_measurement_app_beamforming_starts_plot_updates(monkeypatch):
+    """Beamforming must schedule the callback that renders its result."""
+    app = MeasurementApp(Document())
+    app.server_doc()
+    monkeypatch.setattr(app, 'start', lambda: None)
+    monkeypatch.setattr(app, '_start_consumer', lambda *_args: None)
+
+    app._beamform_toggled(True)
+
+    assert app._periodic_callback is not None
+    app.stop_consumers()
