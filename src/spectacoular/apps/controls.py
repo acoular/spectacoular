@@ -44,6 +44,16 @@ class BaseAudioStreamControl:
         """Create the source after the control widget renders."""
         self.source = self.create_source()
 
+    def source_initialized(self):
+        """Finish UI setup after the source is created."""
+
+    def build_loading_widget(self):
+        """Return a widget displayed while this control's source initializes."""
+        return Div(text=f'⏳ Initializing {self.label}…', styles={'font-style': 'italic'})
+
+    def loading_finished(self):
+        """Release resources used only while the source initializes."""
+
     def widget_panel(self, *widgets):
         """Return a labelled, bounded panel shared by every audio control."""
         return column(
@@ -132,6 +142,9 @@ class SoundDeviceControl(BaseAudioStreamControl):
             raise RuntimeError(message)
         self.devices, self.default_index, self.num_channels = self._get_devices()
         super().initialize_source()
+
+    def source_initialized(self):
+        """Build the device settings widgets on Bokeh's event loop."""
         widgets = self.source.get_widgets(
             trait_widget_mapper={
                 'device': Select,

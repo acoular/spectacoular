@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from threading import Thread
 
 from .controls import available_controls
 
@@ -87,9 +88,11 @@ class AudioStreamApp(BaseApp):
 
     def build_loading_widget(self, control):
         """Return the complete source-initialization widget for *control*."""
-        return Div(text=f'⏳ Initializing {control.label}…', styles={'font-style': 'italic'})
+        return control.build_loading_widget()
 
-    def _hide_loading(self):
+    def _hide_loading(self, control=None):
+        if control or self.control:
+            (control or self.control).loading_finished()
         self._loading.children = [self._empty_loading]
 
     def _new_control(self, control_id):
@@ -172,19 +175,36 @@ class AudioStreamApp(BaseApp):
         self._activate_control(new)
 
     def _initialize_control(self, control):
-        """Initialize a deferred source after its control has rendered."""
+        """Initialize a deferred source without blocking Bokeh's event loop."""
+        Thread(target=self._create_source, args=(control,), daemon=True).start()
+
+    def _create_source(self, control):
+        try:
+            control.initialize_source()
+        except Exception as exc:  # noqa: BLE001  # pragma: no cover - requires broken hardware backend
+            self.doc.add_next_tick_callback(lambda error=exc: self._finish_source(control, error))
+        else:
+            self.doc.add_next_tick_callback(lambda: self._finish_source(control))
+
+    def _finish_source(self, control, error=None):
+        """Apply a background source-initialization result on Bokeh's event loop."""
         if control is not self.control or self._closed:
             return
         try:
-            control.initialize_source()
-            control.set_config_enabled(True)
-            self._control_content.children = [control.get_widgets()]
-            self.rebuild_stream_content()
-        except Exception as exc:  # pragma: no cover - requires broken hardware backend
-            self.logger.exception('Unable to create audio stream control')
-            self._clear_control(f'Unable to create audio stream control: {exc}')
+            if error is not None:
+                self.logger.error('Unable to create audio stream control: %s', error)
+                self._clear_control(f'Unable to create audio stream control: {error}')
+            else:
+                try:
+                    control.source_initialized()
+                    control.set_config_enabled(True)
+                    self._control_content.children = [control.get_widgets()]
+                    self.rebuild_stream_content()
+                except Exception as exc:  # pragma: no cover - requires broken hardware backend
+                    self.logger.exception('Unable to create audio stream control')
+                    self._clear_control(f'Unable to create audio stream control: {exc}')
         finally:
-            self._hide_loading()
+            self._hide_loading(control)
             self.control_select.disabled = False
 
     def _source_changed(self):

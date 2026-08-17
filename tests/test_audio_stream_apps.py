@@ -1,6 +1,7 @@
 """Tests for audio stream app controls and lifecycle."""
 
 from pathlib import Path
+from time import sleep
 from types import SimpleNamespace
 
 from spectacoular.apps import controls
@@ -69,6 +70,10 @@ class _TestApp(AudioStreamApp):
         for callback in tuple(self.doc.session_callbacks):
             callback.callback()
 
+    def _initialize_control(self, control):
+        control.initialize_source()
+        self._finish_source(control)
+
     def build_stream_content(self, source):
         self.sources.append(source)
         return column()
@@ -78,8 +83,14 @@ class _TestApp(AudioStreamApp):
 
 
 def _run_next_ticks(doc):
-    for callback in tuple(doc.session_callbacks):
-        callback.callback()
+    for _ in range(50):
+        callbacks = tuple(doc.session_callbacks)
+        for callback in callbacks:
+            callback.callback()
+        if not doc.session_callbacks:
+            sleep(0.01)
+        else:
+            return
 
 
 class _EntryPoint:
