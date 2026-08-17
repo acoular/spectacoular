@@ -2,14 +2,14 @@
 
 from types import SimpleNamespace
 
+from spectacoular.apps.base import AudioStreamApp
+from spectacoular.apps.controls import BaseAudioStreamControl, SoundDeviceControl, discover_controls
+from spectacoular.apps.measurement_app.main import MeasurementApp
+
 import pytest
 from bokeh.document import Document
 from bokeh.layouts import column
 from bokeh.models import Tabs
-
-from spectacoular.apps.base import AudioStreamApp
-from spectacoular.apps.controls import BaseAudioStreamControl, SoundDeviceControl, discover_controls
-from spectacoular.apps.measurement_app.main import MeasurementApp
 
 
 class _TestControl(BaseAudioStreamControl):
@@ -108,7 +108,8 @@ def test_audio_stream_app_switches_controls_after_closing_old_control():
     app.stop()
     app.control_select.value = 'other'
 
-    assert first.stopped and first.closed
+    assert first.stopped
+    assert first.closed
     assert isinstance(app.control, OtherControl)
     assert len(app.sources) == 2
 
@@ -154,7 +155,7 @@ def test_failed_initial_control_construction_stays_blank():
     class FailingControl(_TestControl):
         id = 'test'
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *_args, **_kwargs):
             message = 'construction failed'
             raise RuntimeError(message)
 
@@ -209,7 +210,8 @@ def test_measurement_app_document_constructs_and_locks_workflows():
     assert [tab.title for tab in tabs.tabs] == ['Channel Levels', 'Microphone Geometry / Beamforming']
     app._set_workflow(app.display_toggle)
     assert not app.display_toggle.disabled
-    assert app.record_toggle.disabled and app.beamform_toggle.disabled
+    assert app.record_toggle.disabled
+    assert app.beamform_toggle.disabled
 
 
 def test_measurement_app_beamforming_starts_plot_updates(monkeypatch):

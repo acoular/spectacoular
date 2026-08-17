@@ -30,7 +30,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    'acoular>=26.01',
+    'acoular>=26.08',
     'bokeh >=3.0',
 ]
 
@@ -129,3 +129,6 @@ banned-module-level-imports = ["sounddevice"]
 "src/spectacoular/version.py" = ["ALL"]
 "src/spectacoular/apps/**/*.py" = ["T201"]
 "src/spectacoular/apps/measurement_app/acoular_future/fastFuncs.py" = ["N999"]
+"tests/test_audio_stream_apps.py" = ["S101", "SLF001", "PLR2004", "FBT003"]
+
+
