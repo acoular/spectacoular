@@ -46,9 +46,6 @@ class AudioStreamApp(BaseApp):
         self._stream_content = column()
         self._control_content = column()
         self._error = Div()
-        self._empty_loading = Div(visible=False)
-        self._loading = column(self._empty_loading)
-        self._loading_parent = None
         self.control_select = Select(title='Audio stream', options=[('', 'Select audio stream')], value='')
         self.control_select.on_change('value', self._select_control)
         self._set_control_options()
@@ -87,20 +84,6 @@ class AudioStreamApp(BaseApp):
     def _clear_error(self):
         self._error.text = ''
 
-    def build_loading_widget(self, control):
-        """Return the complete source-initialization widget for *control*."""
-        return control.build_loading_widget()
-
-    def _hide_loading(self, control=None):
-        if control or self.control:
-            (control or self.control).loading_finished()
-        if self._loading_parent and self._loading in self._loading_parent.children:
-            self._loading_parent.children = [
-                child for child in self._loading_parent.children if child is not self._loading
-            ]
-        self._loading_parent = None
-        self._loading.children = [self._empty_loading]
-
     def _new_control(self, control_id):
         return self.controls[control_id](doc=self.doc, logger=self.logger)
 
@@ -120,7 +103,8 @@ class AudioStreamApp(BaseApp):
                     self.logger.exception('Unable to close failed audio stream control')
                     self._unreleased_control = control
             self._clear_control(f'Unable to create audio stream control: {exc}')
-            self._hide_loading()
+            if control is not None:
+                control.loading_finished()
             self.control_select.disabled = False
             return False
         self.control = control
@@ -128,9 +112,6 @@ class AudioStreamApp(BaseApp):
         self._control_content.children = [content]
         self._stream_content.children = [stream_content]
         self._clear_error()
-        self._loading.children = [self.build_loading_widget(control)]
-        self._loading_parent = content
-        content.children = [*content.children, self._loading]
         self.control_select.disabled = True
         control.set_config_enabled(False)
         self.doc.add_next_tick_callback(lambda: self._initialize_control(control))
@@ -212,7 +193,7 @@ class AudioStreamApp(BaseApp):
                     self.logger.exception('Unable to create audio stream control')
                     self._clear_control(f'Unable to create audio stream control: {exc}')
         finally:
-            self._hide_loading(control)
+            control.loading_finished()
             self.control_select.disabled = False
 
     def _source_changed(self):

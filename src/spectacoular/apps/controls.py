@@ -35,6 +35,7 @@ class BaseAudioStreamControl:
         self.logger = logger or logging.getLogger(type(self).__module__)
         self._source_changed_callbacks = []
         self.source = None
+        self._loading_widget = self.build_loading_widget()
 
     def create_source(self):
         """Create and return the Acoular-compatible stream source."""
@@ -52,13 +53,15 @@ class BaseAudioStreamControl:
         return Div(text=f'⏳ Initializing {self.label}…', styles={'font-style': 'italic'})
 
     def loading_finished(self):
-        """Release resources used only while the source initializes."""
+        """Hide the source-initialization widget."""
+        self._loading_widget.visible = False
 
     def widget_panel(self, *widgets):
         """Return a labelled, bounded panel shared by every audio control."""
         return column(
             Div(text='<b>Audio stream control</b>'),
             Div(text=self.label),
+            self._loading_widget,
             *widgets,
             width=CONTROL_WIDTH,
             styles=CONTROL_STYLES,

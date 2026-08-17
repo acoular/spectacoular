@@ -136,23 +136,22 @@ def test_control_shows_status_before_source_initialization():
         def set_config_enabled(self, _enabled):
             pass
 
-    class DetailedApp(_TestApp):
-        def build_loading_widget(self, control):
-            return Div(text=f'Connecting to {control.label}…')
+        def build_loading_widget(self):
+            return Div(text='Connecting…')
 
-    app = DetailedApp(Document(), controls={'test': _TestControl, 'loading': LoadingControl})
+    app = _TestApp(Document(), controls={'test': _TestControl, 'loading': LoadingControl})
     app.control_select.value = 'loading'
 
     assert isinstance(app.control, LoadingControl)
     assert app._control_content.children
     assert not app._stream_content.children[0].children
-    assert app._loading.children[0].text == 'Connecting to Loading…'
+    assert app.control._loading_widget.text == 'Connecting…'
     assert app.control_select.disabled
 
     next(iter(app.doc.session_callbacks)).callback()
 
     assert isinstance(app.control, LoadingControl)
-    assert app._loading.children == [app._empty_loading]
+    assert not app.control._loading_widget.visible
     assert not app.control_select.disabled
 
 
