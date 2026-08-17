@@ -82,10 +82,10 @@ class PhantomControl(BaseAudioStreamControl):
     id = 'phantom'
     label = 'Phantom input'
 
-    def __init__(self, doc, logger=None, h5path=Path(__file__).parent / 'measurement_app' / 'data'):
+    def __init__(self, doc, logger=None, h5path=Path(__file__).parent / 'measurement_app'):
         self.h5path = h5path
         super().__init__(doc, logger)
-        self.select_file = Select(title='Select source case', value='rotating.h5', options=['rotating.h5'])
+        self.select_file = Select(title='Select source case', value='example_data.h5', options=['example_data.h5'])
         self.select_file.on_change('value', self._change_file)
         self._change_file(None, None, self.select_file.value)
 

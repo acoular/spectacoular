@@ -1,9 +1,11 @@
 """Tests for audio stream app controls and lifecycle."""
 
+from pathlib import Path
 from types import SimpleNamespace
 
+from spectacoular.apps import controls
 from spectacoular.apps.base import AudioStreamApp
-from spectacoular.apps.controls import BaseAudioStreamControl, SoundDeviceControl, discover_controls
+from spectacoular.apps.controls import BaseAudioStreamControl, PhantomControl, SoundDeviceControl, discover_controls
 from spectacoular.apps.measurement_app.main import MeasurementApp
 
 import pytest
@@ -82,6 +84,13 @@ class _EntryPoint:
 
     def load(self):
         return self.value
+
+
+def test_phantom_control_uses_bundled_example_data():
+    """The default phantom stream must exist in an installed package."""
+    control = PhantomControl(Document())
+
+    assert Path(control.source.file) == Path(controls.__file__).parent / 'measurement_app' / 'example_data.h5'
 
 
 def test_discover_controls_adds_valid_controls_and_rejects_duplicates():
