@@ -45,6 +45,8 @@ class AudioStreamApp(BaseApp):
         self._stream_content = column()
         self._control_content = column()
         self._error = Div()
+        self._empty_loading = Div(visible=False)
+        self._loading = column(self._empty_loading)
         self.control_select = Select(title='Audio stream', options=[('', 'Select audio stream')], value='')
         self.control_select.on_change('value', self._select_control)
         self._set_control_options()
@@ -83,6 +85,13 @@ class AudioStreamApp(BaseApp):
     def _clear_error(self):
         self._error.text = ''
 
+    def build_loading_widget(self, control):
+        """Return the complete source-initialization widget for *control*."""
+        return Div(text=f'⏳ Initializing {control.label}…', styles={'font-style': 'italic'})
+
+    def _hide_loading(self):
+        self._loading.children = [self._empty_loading]
+
     def _new_control(self, control_id):
         return self.controls[control_id](doc=self.doc, logger=self.logger)
 
@@ -92,7 +101,7 @@ class AudioStreamApp(BaseApp):
             control = self._new_control(control_id)
             control.on_source_changed(self._source_changed)
             content = control.get_widgets()
-            stream_content = self.build_stream_content(control.source)
+            stream_content = column()
         except Exception as exc:  # pragma: no cover - requires broken hardware backend
             self.logger.exception('Unable to create audio stream control')
             if control is not None:
@@ -102,12 +111,18 @@ class AudioStreamApp(BaseApp):
                     self.logger.exception('Unable to close failed audio stream control')
                     self._unreleased_control = control
             self._clear_control(f'Unable to create audio stream control: {exc}')
+            self._hide_loading()
+            self.control_select.disabled = False
             return False
         self.control = control
         self._set_selector(control_id)
         self._control_content.children = [content]
         self._stream_content.children = [stream_content]
         self._clear_error()
+        self._loading.children = [self.build_loading_widget(control)]
+        self.control_select.disabled = True
+        control.set_config_enabled(False)
+        self.doc.add_next_tick_callback(lambda: self._initialize_control(control))
         return True
 
     def _stop_and_close(self, control):
@@ -156,6 +171,22 @@ class AudioStreamApp(BaseApp):
             self.control = None
         self._activate_control(new)
 
+    def _initialize_control(self, control):
+        """Initialize a deferred source after its control has rendered."""
+        if control is not self.control or self._closed:
+            return
+        try:
+            control.initialize_source()
+            control.set_config_enabled(True)
+            self._control_content.children = [control.get_widgets()]
+            self.rebuild_stream_content()
+        except Exception as exc:  # pragma: no cover - requires broken hardware backend
+            self.logger.exception('Unable to create audio stream control')
+            self._clear_control(f'Unable to create audio stream control: {exc}')
+        finally:
+            self._hide_loading()
+            self.control_select.disabled = False
+
     def _source_changed(self):
         if self._running:
             self.logger.warning('Ignoring source change while audio stream is running')
@@ -173,7 +204,7 @@ class AudioStreamApp(BaseApp):
 
     def build_root(self):
         """Build the selector, error message, settings, and stream content."""
-        return column(self.control_select, self._error, self._control_content, self._stream_content)
+        return column(self.control_select, self._loading, self._error, self._control_content, self._stream_content)
 
     def start(self):
         """Start the selected backend and lock source configuration."""

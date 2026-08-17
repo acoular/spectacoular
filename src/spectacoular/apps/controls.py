@@ -34,11 +34,15 @@ class BaseAudioStreamControl:
         self.doc = doc
         self.logger = logger or logging.getLogger(type(self).__module__)
         self._source_changed_callbacks = []
-        self.source = self.create_source()
+        self.source = None
 
     def create_source(self):
         """Create and return the Acoular-compatible stream source."""
         raise NotImplementedError
+
+    def initialize_source(self):
+        """Create the source after the control widget renders."""
+        self.source = self.create_source()
 
     def widget_panel(self, *widgets):
         """Return a labelled, bounded panel shared by every audio control."""
@@ -84,17 +88,22 @@ class PhantomControl(BaseAudioStreamControl):
 
     def __init__(self, doc, logger=None, h5path=Path(__file__).parent / 'measurement_app'):
         self.h5path = h5path
-        super().__init__(doc, logger)
         self.select_file = Select(title='Select source case', value='example_data.h5', options=['example_data.h5'])
         self.select_file.on_change('value', self._change_file)
-        self._change_file(None, None, self.select_file.value)
+        super().__init__(doc, logger)
 
     def create_source(self):
         """Create the selected phantom source."""
         return sp.TimeSamplesPhantom()
 
+    def initialize_source(self):
+        """Create the selected phantom source."""
+        super().initialize_source()
+        self._change_file(None, None, self.select_file.value)
+
     def _change_file(self, _attr, _old, value):
-        self.source.file = self.h5path / value
+        if self.source is not None:
+            self.source.file = self.h5path / value
 
     def get_widgets(self):
         """Return phantom-source settings."""
@@ -112,13 +121,17 @@ class SoundDeviceControl(BaseAudioStreamControl):
     label = 'Sound device input'
 
     def __init__(self, doc, logger=None):
+        super().__init__(doc, logger)
+
+    def initialize_source(self):
+        """Discover an input device and create its source."""
         with contextlib.suppress(ModuleNotFoundError):
             self.sd = importlib.import_module('sounddevice')
         if not hasattr(self, 'sd'):
             message = 'sounddevice is not installed'
             raise RuntimeError(message)
         self.devices, self.default_index, self.num_channels = self._get_devices()
-        super().__init__(doc, logger)
+        super().initialize_source()
         widgets = self.source.get_widgets(
             trait_widget_mapper={
                 'device': Select,
@@ -176,7 +189,9 @@ class SoundDeviceControl(BaseAudioStreamControl):
             self.source_changed()
 
     def get_widgets(self):
-        """Return live-device settings."""
+        """Return live-device settings once the source is ready."""
+        if self.source is None:
+            return self.widget_panel()
         return self.widget_panel(
             self.device_select,
             self.num_channels_input,
@@ -186,10 +201,11 @@ class SoundDeviceControl(BaseAudioStreamControl):
 
     def set_config_enabled(self, enabled):
         """Enable or disable live-device selection."""
-        self.device_select.disabled = not enabled
-        self.num_channels_input.disabled = not enabled
-        self.sample_freq_input.disabled = not enabled
-        self.precision_select.disabled = not enabled
+        if self.source is not None:
+            self.device_select.disabled = not enabled
+            self.num_channels_input.disabled = not enabled
+            self.sample_freq_input.disabled = not enabled
+            self.precision_select.disabled = not enabled
 
 
 def discover_controls(builtins, eps=None):

@@ -331,6 +331,7 @@ class MeasurementApp(AudioStreamApp):
             self.exit_button,
             Spacer(height=100),
             self.control_select,
+            self._loading,
             self._error,
             self._control_content,
             self._measurement_controls,

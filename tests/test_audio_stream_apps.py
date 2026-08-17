@@ -11,7 +11,7 @@ from spectacoular.apps.measurement_app.main import MeasurementApp
 import pytest
 from bokeh.document import Document
 from bokeh.layouts import column
-from bokeh.models import Tabs
+from bokeh.models import Div, Tabs
 
 
 class _TestControl(BaseAudioStreamControl):
@@ -66,6 +66,8 @@ class _TestApp(AudioStreamApp):
         self.sources = []
         self.consumers_stopped = 0
         super().__init__(*args, **kwargs)
+        for callback in tuple(self.doc.session_callbacks):
+            callback.callback()
 
     def build_stream_content(self, source):
         self.sources.append(source)
@@ -73,6 +75,11 @@ class _TestApp(AudioStreamApp):
 
     def stop_consumers(self):
         self.consumers_stopped += 1
+
+
+def _run_next_ticks(doc):
+    for callback in tuple(doc.session_callbacks):
+        callback.callback()
 
 
 class _EntryPoint:
@@ -89,6 +96,7 @@ class _EntryPoint:
 def test_phantom_control_uses_bundled_example_data():
     """The default phantom stream must exist in an installed package."""
     control = PhantomControl(Document())
+    control.initialize_source()
 
     assert Path(control.source.file) == Path(controls.__file__).parent / 'measurement_app' / 'example_data.h5'
 
@@ -104,6 +112,39 @@ def test_discover_controls_adds_valid_controls_and_rejects_duplicates():
     assert controls == {'test': _TestControl, 'plugin': Plugin}
 
 
+def test_control_shows_status_before_source_initialization():
+    """Controllers render before their source initializes on the next Bokeh tick."""
+
+    class LoadingControl(BaseAudioStreamControl):
+        id = 'loading'
+        label = 'Loading'
+
+        def create_source(self):
+            return object()
+
+        def set_config_enabled(self, _enabled):
+            pass
+
+    class DetailedApp(_TestApp):
+        def build_loading_widget(self, control):
+            return Div(text=f'Connecting to {control.label}…')
+
+    app = DetailedApp(Document(), controls={'test': _TestControl, 'loading': LoadingControl})
+    app.control_select.value = 'loading'
+
+    assert isinstance(app.control, LoadingControl)
+    assert app._control_content.children
+    assert not app._stream_content.children[0].children
+    assert app._loading.children[0].text == 'Connecting to Loading…'
+    assert app.control_select.disabled
+
+    next(iter(app.doc.session_callbacks)).callback()
+
+    assert isinstance(app.control, LoadingControl)
+    assert app._loading.children == [app._empty_loading]
+    assert not app.control_select.disabled
+
+
 def test_audio_stream_app_switches_controls_after_closing_old_control():
     """A backend switch stops and closes its predecessor before activation."""
 
@@ -116,6 +157,7 @@ def test_audio_stream_app_switches_controls_after_closing_old_control():
     app.start()
     app.stop()
     app.control_select.value = 'other'
+    _run_next_ticks(app.doc)
 
     assert first.stopped
     assert first.closed
@@ -213,6 +255,7 @@ def test_measurement_app_document_constructs_and_locks_workflows():
     """Measurement app builds and prevents conflicting workflow starts."""
     app = MeasurementApp(Document())
     app.server_doc()
+    _run_next_ticks(app.doc)
 
     assert app.doc.roots
     tabs = next(iter(app.doc.select({'type': Tabs})))
@@ -227,6 +270,7 @@ def test_measurement_app_beamforming_starts_plot_updates(monkeypatch):
     """Beamforming must schedule the callback that renders its result."""
     app = MeasurementApp(Document())
     app.server_doc()
+    _run_next_ticks(app.doc)
     monkeypatch.setattr(app, 'start', lambda: None)
     calls = []
     monkeypatch.setattr(app, '_start_consumer', lambda *_args: calls.append(_args))
