@@ -60,7 +60,12 @@ class MeasurementApp(AudioStreamApp):
         self.stream_toggle = Toggle(
             label='Stream', button_type='success', sizing_mode='stretch_width', height=BUTTON_HEIGHT, disabled=True
         )
-        self.filename = TextInput(value='', title='Filename:', disabled=True)
+        self.filename = TextInput(
+            value='',
+            title='Filename:',
+            disabled=True,
+            description=self._filename_description(),
+        )
         self.current_time_checkbox = CheckboxGroup(labels=['use current time'], active=[0])
         self.measurement_time = TextInput(value='10', title='Measurement Time [s]:')
         self.update_period = Select(
@@ -73,6 +78,10 @@ class MeasurementApp(AudioStreamApp):
         self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
         self.stream_toggle.on_click(self._stream_toggled)
         super().__init__(doc, logger)
+
+    @staticmethod
+    def _filename_description():
+        return f'Recordings are saved in: {Path(ac.config.td_dir).resolve()}'
 
     @staticmethod
     def _labels(source, label_type='Number'):
