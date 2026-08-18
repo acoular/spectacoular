@@ -5,11 +5,14 @@ from __future__ import annotations
 import contextlib
 import importlib
 import logging
+from functools import lru_cache
 from importlib.metadata import entry_points
 from pathlib import Path
 
+import acoular as ac
 import spectacoular as sp
 
+import numpy as np
 from bokeh.layouts import column
 from bokeh.models import Div, Select
 from bokeh.models.widgets.inputs import NumericInput
@@ -22,6 +25,43 @@ CONTROL_STYLES = {
     'border-radius': '4px',
     'padding': '10px',
 }
+PHANTOM_SAMPLE_FREQ = 25600.0
+PHANTOM_ROTATIONAL_SPEED = 1.0
+PHANTOM_MICGEOM_FILE = Path(__file__).parent / 'measurement_app' / 'micgeom' / 'tub_vogel64.xml'
+PHANTOM_TRAJECTORY_NODES_PER_ROTATION = 16
+PHANTOM_NOISE_SEED = 100
+
+
+@lru_cache(maxsize=1)
+def _cached_phantom_rotation_data(sample_freq, rotational_speed, seed):
+    return create_phantom_rotation_data(
+        sample_freq=sample_freq,
+        rotational_speed=rotational_speed,
+        mics=ac.MicGeom(file=PHANTOM_MICGEOM_FILE),
+        seed=seed,
+    )
+
+
+def create_phantom_rotation_data(
+    sample_freq=PHANTOM_SAMPLE_FREQ,
+    rotational_speed=PHANTOM_ROTATIONAL_SPEED,
+    mics=None,
+    seed=PHANTOM_NOISE_SEED,
+):
+    """Return one full rotation of deterministic Acoular-generated phantom data."""
+    if mics is None:
+        return _cached_phantom_rotation_data(sample_freq, rotational_speed, seed).copy()
+    num_samples = int(sample_freq / abs(rotational_speed))
+    duration = num_samples / sample_freq
+    signal = ac.WNoiseGenerator(sample_freq=sample_freq, num_samples=num_samples, seed=seed)
+    trajectory = ac.Trajectory()
+    node_interval = 1.0 / abs(rotational_speed) / PHANTOM_TRAJECTORY_NODES_PER_ROTATION
+    radius = mics.aperture / 2
+    for timestamp in np.arange(0.0, duration * 1.001, node_interval):
+        angle = timestamp * rotational_speed * 2.0 * np.pi
+        trajectory.points[float(timestamp)] = (radius * np.cos(angle), radius * np.sin(angle), radius)
+    source = ac.MovingPointSource(signal=signal, mics=mics, trajectory=trajectory)
+    return ac.tools.return_result(source)
 
 
 class BaseAudioStreamControl:
@@ -94,37 +134,27 @@ class BaseAudioStreamControl:
 
 
 class PhantomControl(BaseAudioStreamControl):
-    """Select one of the bundled phantom audio streams."""
+    """Provide a generated repeating phantom audio stream."""
 
     id = 'phantom'
     label = 'Phantom input'
 
-    def __init__(self, doc, logger=None, h5path=Path(__file__).parent / 'measurement_app'):
-        self.h5path = h5path
-        self.select_file = Select(title='Select source case', value='example_data.h5', options=['example_data.h5'])
-        self.select_file.on_change('value', self._change_file)
-        super().__init__(doc, logger)
-
     def create_source(self):
-        """Create the selected phantom source."""
-        return sp.TimeSamplesPhantom()
-
-    def initialize_source(self):
-        """Create the selected phantom source."""
-        super().initialize_source()
-        self._change_file(None, None, self.select_file.value)
-
-    def _change_file(self, _attr, _old, value):
-        if self.source is not None:
-            self.source.file = self.h5path / value
+        """Create a repeating one-rotation phantom source in memory."""
+        return sp.TimeSamplesPhantom(
+            data=create_phantom_rotation_data(),
+            sample_freq=PHANTOM_SAMPLE_FREQ,
+            repeat=True,
+        )
 
     def get_widgets(self):
-        """Return phantom-source settings."""
-        return self.widget_panel(self.select_file)
+        """Return phantom-source information."""
+        return self.widget_panel(
+            Div(text=f'Generated rotating source: {PHANTOM_ROTATIONAL_SPEED:g} rps, {PHANTOM_SAMPLE_FREQ:g} Hz')
+        )
 
     def set_config_enabled(self, enabled):
-        """Enable or disable phantom-source selection."""
-        self.select_file.disabled = not enabled
+        """Generated phantom settings are fixed."""
 
 
 class SoundDeviceControl(BaseAudioStreamControl):

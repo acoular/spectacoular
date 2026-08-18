@@ -37,6 +37,8 @@ from bokeh.plotting import figure
 
 COLOR = Spectral11
 BUTTON_HEIGHT = 80
+ACTION_BUTTON_HEIGHT = 40
+ACTION_BUTTON_WIDTH = 100
 
 
 class MeasurementApp(AudioStreamApp):
@@ -209,13 +211,25 @@ class MeasurementApp(AudioStreamApp):
         self.label_select = Select(title='Select Channel Labeling:', value='Number', options=['Number', 'Index'])
 
         self.display_toggle = Toggle(
-            label='Display', button_type='primary', sizing_mode='stretch_width', height=BUTTON_HEIGHT, disabled=True
+            label='Display',
+            button_type='primary',
+            width=ACTION_BUTTON_WIDTH,
+            height=ACTION_BUTTON_HEIGHT,
+            disabled=True,
         )
         self.record_toggle = Toggle(
-            label='MEASURE', button_type='danger', sizing_mode='stretch_width', height=BUTTON_HEIGHT, disabled=True
+            label='Measure',
+            button_type='danger',
+            width=ACTION_BUTTON_WIDTH,
+            height=ACTION_BUTTON_HEIGHT,
+            disabled=True,
         )
         self.beamform_toggle = Toggle(
-            label='Beamforming', button_type='warning', sizing_mode='stretch_width', height=BUTTON_HEIGHT, disabled=True
+            label='Beamforming',
+            button_type='warning',
+            width=ACTION_BUTTON_WIDTH,
+            height=ACTION_BUTTON_HEIGHT,
+            disabled=True,
         )
         self.display_toggle.on_click(self._display_toggled)
         self.record_toggle.on_click(self._record_toggled)
@@ -223,13 +237,18 @@ class MeasurementApp(AudioStreamApp):
         self.stream_toggle.disabled = False
         self.stream_toggle.active = False
         self._set_child_actions_enabled(enabled=False)
+        action_buttons = row(
+            self.display_toggle,
+            self.beamform_toggle,
+            self.record_toggle,
+            width=ACTION_BUTTON_WIDTH * 3,
+            spacing=0,
+        )
         self._measurement_controls.children = [
             self.filename,
             self.current_time_checkbox,
             self.measurement_time,
-            self.display_toggle,
-            self.beamform_toggle,
-            self.record_toggle,
+            action_buttons,
             self.update_period,
         ]
 
