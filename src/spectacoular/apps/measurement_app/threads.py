@@ -1,10 +1,12 @@
-"""Thread helpers for measurement app worker coordination."""
+"""Worker helpers for measurement app stream coordination."""
 
 # ------------------------------------------------------------------------------
 # Copyright (c) 2007-2021, Acoular Development Team.
 # ------------------------------------------------------------------------------
 
 from threading import Thread
+
+import acoular as ac
 
 
 class EventThread(Thread):
@@ -24,6 +26,14 @@ class EventThread(Thread):
         self.event.wait()
         if self.post_callback:
             self.doc.add_next_tick_callback(self.post_callback)
+
+
+class StreamDrain(ac.TimeOut):
+    """Fast splitter consumer that keeps a live source drained."""
+
+    def result(self, num):
+        """Yield source blocks unchanged; callers intentionally discard them."""
+        yield from self.source.result(num)
 
 
 class SamplesThread(Thread):

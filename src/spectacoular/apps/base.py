@@ -74,9 +74,6 @@ class AudioStreamApp(BaseApp):
     def _create_initial_control(self):
         if not self.controls:
             self._show_error('No audio stream controls are available.')
-            return
-        default = 'phantom' if 'phantom' in self.controls else next(iter(self.controls))
-        self._activate_control(default)
 
     def _show_error(self, message):
         self._error.text = f'<b>{message}</b>'

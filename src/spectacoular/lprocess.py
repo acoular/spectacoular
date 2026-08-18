@@ -33,6 +33,7 @@ from bokeh.models.widgets import (
     NumericInput,
     TableColumn,
     TextInput,
+    Toggle,
 )
 from traits.api import (
     Bool,
@@ -67,6 +68,12 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
     #: Indicates if samples are collected, helper trait to break result loop
     collect_samples = Bool(default_value=True, desc='Indicates if result function is running')
 
+    #: Restart from the first sample after the selected data range is exhausted.
+    repeat = Bool(default_value=False, desc='Indicates if the data is repeated after end of file')
+
+    #: Number of available samples, or ``-1`` when repeated endlessly. (read-only)
+    num_samples = Property(depends_on=['start', 'stop', 'num_samples_total', 'repeat'])
+
     trait_widget_mapper: ClassVar[dict[str, type]] = {
         'file': TextInput,
         'basename': TextInput,
@@ -77,6 +84,7 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
         'invalid_channels': DataTable,
         'num_channels': NumericInput,
         'time_delay': NumericInput,
+        'repeat': Toggle,
     }
     trait_widget_args: ClassVar[dict[str, dict[str, object]]] = {
         'file': {'disabled': False},
@@ -92,7 +100,18 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
         },
         'num_channels': {'disabled': True, 'mode': 'int'},
         'time_delay': {'disabled': False, 'mode': 'float'},
+        'repeat': {'disabled': False},
     }
+
+    @cached_property
+    def _get_num_samples(self):
+        if self.repeat:
+            return -1
+        return self._finite_num_samples()
+
+    def _finite_num_samples(self):
+        sample_slice = slice(self.start, self.stop).indices(self.num_samples_total)
+        return sample_slice[1] - sample_slice[0]
 
     def result(self, num=128):
         """
@@ -111,14 +130,18 @@ class TimeSamplesPhantom(ac.MaskedTimeSamples, BaseSpectacoular):
         """
         slp_time = self.time_delay or (1 / self.sample_freq) * num
 
-        if self.num_samples == 0:
+        num_samples = self._finite_num_samples()
+        if num_samples == 0:
             msg = 'no samples available'
             raise OSError(msg)
-        i = 0
-        while i < self.num_samples and self.collect_samples:
-            yield self.data[i : i + num]
-            sleep(slp_time)
-            i += num
+        while self.collect_samples:
+            i = 0
+            while i < num_samples and self.collect_samples:
+                yield self.data[i : i + num]
+                sleep(slp_time)
+                i += num
+            if not self.repeat:
+                break
 
 
 class TimeOutPresenter(ac.TimeOut, BasePresenter):
