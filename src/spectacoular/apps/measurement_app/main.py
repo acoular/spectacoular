@@ -10,6 +10,7 @@ import acoular as ac
 import spectacoular as sp
 from acoular import MaskedTimeOut
 from spectacoular.apps.base import AudioStreamApp
+from spectacoular.apps.controls import CONTROL_STYLES, CONTROL_WIDTH
 
 from .cam import CameraComponent
 from .log import LogHandler
@@ -36,9 +37,10 @@ from bokeh.palettes import Spectral11, Viridis256
 from bokeh.plotting import figure
 
 COLOR = Spectral11
-BUTTON_HEIGHT = 80
+BUTTON_HEIGHT = 40
 ACTION_BUTTON_HEIGHT = 40
-ACTION_BUTTON_WIDTH = 100
+ACTION_BUTTON_WIDTH = 80
+ACTION_BUTTON_STYLESHEET = '.bk-btn { font-weight: 700; }'
 
 
 class MeasurementApp(AudioStreamApp):
@@ -58,7 +60,12 @@ class MeasurementApp(AudioStreamApp):
         self._stream_active = False
         self._updating_toggles = False
         self.stream_toggle = Toggle(
-            label='Stream', button_type='success', sizing_mode='stretch_width', height=BUTTON_HEIGHT, disabled=True
+            label='Stream',
+            button_type='success',
+            sizing_mode='stretch_width',
+            height=BUTTON_HEIGHT,
+            disabled=True,
+            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.filename = TextInput(
             value='',
@@ -72,7 +79,13 @@ class MeasurementApp(AudioStreamApp):
             title='Select Update Period [ms]', value='50', options=['25', '50', '100', '200', '400', '800']
         )
         self.exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width')
-        self._measurement_controls = column(width=300)
+        self._measurement_controls = column(width=CONTROL_WIDTH)
+        self._measurement_panel = column(
+            Div(text='<b>Measurement control</b>'),
+            self._measurement_controls,
+            width=CONTROL_WIDTH,
+            styles=CONTROL_STYLES,
+        )
         self.current_time_checkbox.on_change('active', self._toggle_filename)
         self.filename.on_change('value', self._set_filename)
         self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
@@ -87,6 +100,23 @@ class MeasurementApp(AudioStreamApp):
     def _labels(source, label_type='Number'):
         start = 0 if label_type == 'Index' else 1
         return [str(index) for index in range(start, source.num_channels + start)]
+
+    @staticmethod
+    def _level(mean_square, reference):
+        mean_square = np.asarray(mean_square, dtype=float)
+        return 10 * np.log10(np.maximum(mean_square / reference**2, np.finfo(mean_square.dtype).eps))
+
+    def _channel_levels(self, mean_square):
+        if self.level_label_select.value == 'dB_SPL':
+            return ac.L_p(mean_square)
+        return self._level(mean_square, reference=1.0)
+
+    def _set_amplitude_plot_labels(self):
+        level_label = self.level_label_select.value
+        self.amp_fig.title.text = 'SPL/dB' if level_label == 'dB_SPL' else 'Voltage Level/dB'
+        self.amp_fig.yaxis[0].axis_label = level_label
+        self.amp_fig.hover[0].tooltips = [(level_label, '@level'), ('Channel', '@channels')]
+        self.clip_level.title = f'Clip Level/{level_label}'
 
     def build_stream_content(self, source):  # noqa: PLR0915
         """Build the legacy measurement layout for the selected source."""
@@ -128,10 +158,11 @@ class MeasurementApp(AudioStreamApp):
 
         self.amp_fig = figure(
             title='SPL/dB',
-            tooltips=[('Lp/dB', '@level'), ('Channel', '@channels')],
+            tooltips=[('dB_SPL', '@level'), ('Channel', '@channels')],
             tools='',
             x_range=FactorRange(*labels),
             y_range=(0, 120),
+            y_axis_label='dB_SPL',
             height=750,
             sizing_mode='stretch_width',
         )
@@ -216,8 +247,11 @@ class MeasurementApp(AudioStreamApp):
         grid_widgets['z'] = z_slider
         freq_slider = Slider(start=50, end=10000, value=4000, step=1, title='Frequency')
         self.beamf.source.source.source.set_widgets(band=freq_slider)
-        self.clip_level = NumericInput(value=120, title='Clip Level/dB', width=100)
+        self.clip_level = NumericInput(value=120, title='Clip Level/dB_SPL', width=100)
+        self.amp_min_level = NumericInput(value=0, title='Bar Min/dB', width=100)
+        self.amp_max_level = NumericInput(value=120, title='Bar Max/dB', width=100)
         self.label_select = Select(title='Select Channel Labeling:', value='Number', options=['Number', 'Index'])
+        self.level_label_select = Select(title='Select Level Labeling:', value='dB_SPL', options=['dB_SPL', 'dB_V'])
 
         self.display_toggle = Toggle(
             label='Display',
@@ -225,6 +259,7 @@ class MeasurementApp(AudioStreamApp):
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,
+            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.record_toggle = Toggle(
             label='Measure',
@@ -232,13 +267,15 @@ class MeasurementApp(AudioStreamApp):
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,
+            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.beamform_toggle = Toggle(
-            label='Beamforming',
+            label='Beamf',
             button_type='warning',
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,
+            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.display_toggle.on_click(self._display_toggled)
         self.record_toggle.on_click(self._record_toggled)
@@ -254,6 +291,7 @@ class MeasurementApp(AudioStreamApp):
             spacing=0,
         )
         self._measurement_controls.children = [
+            self.stream_toggle,
             self.filename,
             self.current_time_checkbox,
             self.measurement_time,
@@ -287,7 +325,7 @@ class MeasurementApp(AudioStreamApp):
 
         def update_levels():
             if self.disp.cdsource.data['data'].size:
-                levels = ac.L_p(self.disp.cdsource.data['data'][0])
+                levels = self._channel_levels(self.disp.cdsource.data['data'][0])
                 self.amp_data.data['level'] = levels
                 self.amp_data.data['colors'] = np.where(levels < self.clip_level.value, COLOR[1], COLOR[8])
             if self.beamform_toggle.active and self.beamf.cdsource.data['data'].size:
@@ -296,7 +334,20 @@ class MeasurementApp(AudioStreamApp):
                 if self.auto_level_toggle.active:
                     mapper.high, mapper.low = image.max(), image.max() - self.dynamic_range.value
 
+        def update_amplitude_range(_attr, _old, _new):
+            if self.amp_min_level.value is not None:
+                self.amp_fig.y_range.start = self.amp_min_level.value
+            if self.amp_max_level.value is not None:
+                self.amp_fig.y_range.end = self.amp_max_level.value
+
+        def update_level_label(_attr, _old, _new):
+            self._set_amplitude_plot_labels()
+            update_levels()
+
         self.label_select.on_change('value', update_channel_labels)
+        self.level_label_select.on_change('value', update_level_label)
+        self.amp_min_level.on_change('value', update_amplitude_range)
+        self.amp_max_level.on_change('value', update_amplitude_range)
         source.on_trait_change(lambda: update_channel_labels(None, None, None), 'num_channels')
         self.dynamic_range.on_change('value', lambda _attr, _old, _new: self._set_bf_levels(mapper))
         self.bf_max_level.on_change('value', lambda _attr, _old, _new: self._set_bf_levels(mapper))
@@ -309,7 +360,18 @@ class MeasurementApp(AudioStreamApp):
 
         amplitudes_tab = Panel(
             child=column(
-                row(Spacer(width=25), self.clip_level, Spacer(width=25), self.label_select),
+                row(
+                    Spacer(width=25),
+                    self.clip_level,
+                    Spacer(width=25),
+                    self.amp_min_level,
+                    Spacer(width=25),
+                    self.amp_max_level,
+                    Spacer(width=25),
+                    self.label_select,
+                    Spacer(width=25),
+                    self.level_label_select,
+                ),
                 self.amp_fig,
                 sizing_mode='stretch_both',
             ),
@@ -369,12 +431,12 @@ class MeasurementApp(AudioStreamApp):
         """Keep the original sidebar-and-tabs arrangement around stream controls."""
         sidebar = column(
             self.exit_button,
-            self.stream_toggle,
-            Spacer(height=100),
+            Spacer(height=10),
             self.control_select,
             self._error,
             self._control_content,
-            self._measurement_controls,
+            Spacer(height=10),
+            self._measurement_panel,
             width=300,
         )
         return column(row(Spacer(width=10), sidebar, Spacer(width=20), self._stream_content))
