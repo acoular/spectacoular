@@ -261,8 +261,8 @@ def test_channel_count_edit_notifies_source_change():
     assert changes == [True]
 
 
-def test_measurement_app_document_constructs_and_locks_workflows():
-    """Measurement app builds and prevents conflicting workflow starts."""
+def test_measurement_app_document_constructs_with_stream_gate():
+    """Measurement app starts with child actions disabled until Stream is active."""
     app = MeasurementApp(Document())
     app.server_doc()
     _run_next_ticks(app.doc)
@@ -270,10 +270,76 @@ def test_measurement_app_document_constructs_and_locks_workflows():
     assert app.doc.roots
     tabs = next(iter(app.doc.select({'type': Tabs})))
     assert [tab.title for tab in tabs.tabs] == ['Channel Levels', 'Microphone Geometry / Beamforming']
-    app._set_workflow(app.display_toggle)
-    assert not app.display_toggle.disabled
+    assert app.stream_toggle.label == 'Stream'
+    assert not app.stream_toggle.disabled
+    assert app.display_toggle.disabled
     assert app.record_toggle.disabled
     assert app.beamform_toggle.disabled
+
+
+def test_measurement_app_stream_starts_drain_and_enables_child_actions(monkeypatch):
+    """Stream mode starts one lossy drain consumer and enables independent actions."""
+    app = MeasurementApp(Document())
+    app.server_doc()
+    _run_next_ticks(app.doc)
+    monkeypatch.setattr(app, 'start', lambda: None)
+    calls = []
+    monkeypatch.setattr(app, '_start_consumer', lambda *args: calls.append(args) or object())
+
+    app._stream_toggled(True)
+
+    assert len(calls) == 1
+    generator, register, args = calls[0]
+    assert hasattr(generator, '__next__')
+    assert register is app.stream_drain
+    assert args == {'buffer_size': 1, 'buffer_overflow_treatment': 'none'}
+    assert app._stream_worker is not None
+    assert not app.display_toggle.disabled
+    assert not app.record_toggle.disabled
+    assert not app.beamform_toggle.disabled
+
+
+def test_measurement_app_stream_stop_turns_off_children_and_stops_all_workers(monkeypatch):
+    """Stopping Stream disables child actions and joins every active consumer."""
+
+    class Worker:
+        def __init__(self):
+            self.breakThread = False
+            self.joined = False
+
+        def join(self):
+            self.joined = True
+
+    app = MeasurementApp(Document())
+    app.server_doc()
+    _run_next_ticks(app.doc)
+    monkeypatch.setattr(app, 'start', lambda: None)
+    monkeypatch.setattr(app.control, 'stop', lambda: None)
+    monkeypatch.setattr(app.control, 'set_config_enabled', lambda _enabled: None)
+    workers = [Worker(), Worker(), Worker(), Worker()]
+    monkeypatch.setattr(app, '_start_consumer', lambda *_args: workers.pop(0))
+    monkeypatch.setattr(app, '_start_updates', lambda: None)
+
+    app._stream_toggled(True)
+    app._display_toggled(True)
+    app._beamform_toggled(True)
+    app._record_toggled(True)
+    app.stream_toggle.active = True
+    app.display_toggle.active = True
+    app.beamform_toggle.active = True
+    app.record_toggle.active = True
+
+    started_workers = [app._stream_worker, app._display_worker, app._beamform_worker, app._record_worker]
+    app._stream_toggled(False)
+
+    assert all(worker.breakThread and worker.joined for worker in started_workers)
+    assert not app.stream_toggle.active
+    assert app.display_toggle.disabled
+    assert app.record_toggle.disabled
+    assert app.beamform_toggle.disabled
+    assert not app.display_toggle.active
+    assert not app.record_toggle.active
+    assert not app.beamform_toggle.active
 
 
 def test_measurement_app_record_stop_clears_write_flag():
@@ -288,12 +354,12 @@ def test_measurement_app_record_stop_clears_write_flag():
     assert not app.msm.write_flag
 
 
-def test_measurement_app_beamforming_starts_plot_updates(monkeypatch):
-    """Beamforming must schedule the callback that renders its result."""
+def test_measurement_app_beamforming_starts_plot_updates_when_streaming(monkeypatch):
+    """Beamforming must schedule result rendering once Stream is active."""
     app = MeasurementApp(Document())
     app.server_doc()
     _run_next_ticks(app.doc)
-    monkeypatch.setattr(app, 'start', lambda: None)
+    app._stream_active = True
     calls = []
     monkeypatch.setattr(app, '_start_consumer', lambda *_args: calls.append(_args))
 

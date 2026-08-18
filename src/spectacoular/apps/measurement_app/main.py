@@ -13,7 +13,7 @@ from spectacoular.apps.base import AudioStreamApp
 
 from .cam import CameraComponent
 from .log import LogHandler
-from .threads import SamplesThread
+from .threads import SamplesThread, StreamDrain
 
 import numpy as np
 from bokeh.layouts import Spacer, column, layout, row
@@ -48,9 +48,16 @@ class MeasurementApp(AudioStreamApp):
         self.blocksize = 512
         self.mics = sp.MicGeom(file=Path(__file__).parent / 'micgeom' / 'tub_vogel64.xml')
         self.grid = sp.RectGrid(x_min=-0.75, x_max=0.75, y_min=-0.75, y_max=0.75, z=0.75, increment=0.05)
-        self._workers = []
+        self._stream_worker = None
+        self._display_worker = None
+        self._record_worker = None
+        self._beamform_worker = None
         self._periodic_callback = None
-        self._active_workflow = None
+        self._stream_active = False
+        self._updating_toggles = False
+        self.stream_toggle = Toggle(
+            label='Stream', button_type='success', sizing_mode='stretch_width', height=BUTTON_HEIGHT, disabled=True
+        )
         self.filename = TextInput(value='', title='Filename:', disabled=True)
         self.current_time_checkbox = CheckboxGroup(labels=['use current time'], active=[0])
         self.measurement_time = TextInput(value='10', title='Measurement Time [s]:')
@@ -62,6 +69,7 @@ class MeasurementApp(AudioStreamApp):
         self.current_time_checkbox.on_change('active', self._toggle_filename)
         self.filename.on_change('value', self._set_filename)
         self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
+        self.stream_toggle.on_click(self._stream_toggled)
         super().__init__(doc, logger)
 
     @staticmethod
@@ -72,6 +80,7 @@ class MeasurementApp(AudioStreamApp):
     def build_stream_content(self, source):  # noqa: PLR0915
         """Build the legacy measurement layout for the selected source."""
         self.splitter = ac.SampleSplitter(source=source)
+        self.stream_drain = StreamDrain(source=self.splitter)
         self.disp = sp.TimeOutPresenter(
             source=ac.Average(source=ac.TimePower(source=self.splitter), num_per_average=self.blocksize)
         )
@@ -200,17 +209,20 @@ class MeasurementApp(AudioStreamApp):
         self.label_select = Select(title='Select Channel Labeling:', value='Number', options=['Number', 'Index'])
 
         self.display_toggle = Toggle(
-            label='Display', button_type='primary', sizing_mode='stretch_width', height=BUTTON_HEIGHT
+            label='Display', button_type='primary', sizing_mode='stretch_width', height=BUTTON_HEIGHT, disabled=True
         )
         self.record_toggle = Toggle(
-            label='MEASURE', button_type='danger', sizing_mode='stretch_width', height=BUTTON_HEIGHT
+            label='MEASURE', button_type='danger', sizing_mode='stretch_width', height=BUTTON_HEIGHT, disabled=True
         )
         self.beamform_toggle = Toggle(
-            label='Beamforming', button_type='warning', sizing_mode='stretch_width', height=BUTTON_HEIGHT
+            label='Beamforming', button_type='warning', sizing_mode='stretch_width', height=BUTTON_HEIGHT, disabled=True
         )
         self.display_toggle.on_click(self._display_toggled)
         self.record_toggle.on_click(self._record_toggled)
         self.beamform_toggle.on_click(self._beamform_toggled)
+        self.stream_toggle.disabled = False
+        self.stream_toggle.active = False
+        self._set_child_actions_enabled(enabled=False)
         self._measurement_controls.children = [
             self.filename,
             self.current_time_checkbox,
@@ -329,6 +341,7 @@ class MeasurementApp(AudioStreamApp):
         """Keep the original sidebar-and-tabs arrangement around stream controls."""
         sidebar = column(
             self.exit_button,
+            self.stream_toggle,
             Spacer(height=100),
             self.control_select,
             self._error,
@@ -343,84 +356,161 @@ class MeasurementApp(AudioStreamApp):
 
     def _set_filename(self, _attr, _old, value):
         if hasattr(self, 'msm'):
-            self.msm.name = Path(ac.config.td_dir) / f'{value}.h5'
+            self.msm.file = Path(ac.config.td_dir) / f'{value}.h5'
 
     def _num_samples(self):
         if self.measurement_time.value in {'', '-1'}:
             return -1
         return int(float(self.measurement_time.value) * self.msm.sample_freq)
 
-    def _set_workflow(self, workflow):
-        self._active_workflow = workflow
-        for toggle in (self.display_toggle, self.record_toggle, self.beamform_toggle):
-            toggle.disabled = workflow is not None and toggle is not workflow
-
-    def _start_consumer(self, generator, register, args):
-        worker = SamplesThread(generator, self.splitter, register, args, Event())
-        worker.start()
-        self._workers.append(worker)
-
-    def _start_updates(self):
-        self._periodic_callback = self.doc.add_periodic_callback(self._update_levels, int(self.update_period.value))
-
-    def _display_toggled(self, active):
-        if active:
-            self._set_workflow(self.display_toggle)
-            self.start()
-            self._start_consumer(
-                self.disp.result(1), self.disp.source.source, {'buffer_size': 400, 'buffer_overflow_treatment': 'none'}
-            )
-            self._start_updates()
-        else:
-            self.stop()
-
-    def _record_toggled(self, active):
-        if active:
-            self._set_workflow(self.record_toggle)
-            self.start()
-            if self.current_time_checkbox.active == [0]:
-                self.filename.value = datetime.now(tz=UTC).isoformat('_').replace(':', '-').replace('.', '_')
-            self.msm.num_samples_write = self._num_samples()
-            self._start_consumer(
-                self.msm.result(self.blocksize), self.msm, {'buffer_size': 400, 'buffer_overflow_treatment': 'error'}
-            )
-        else:
-            self.msm.write_flag = False
-            self.stop()
-
-    def _beamform_toggled(self, active):
-        if active:
-            self._set_workflow(self.beamform_toggle)
-            self.start()
-            self._start_consumer(
-                self.beamf.result(1),
-                self.beamforming_input,
-                {'buffer_size': 1, 'buffer_overflow_treatment': 'none'},
-            )
-            self._start_updates()
-        else:
-            self.beamf_data.data = {'level': []}
-            self.stop()
-
-    def stop_consumers(self):
-        """Stop and join app-owned pipeline consumers."""
-        for worker in self._workers:
-            worker.breakThread = True
-        for worker in self._workers:
-            worker.join()
-        self._workers = []
-        if self._periodic_callback is not None:
-            self.doc.remove_periodic_callback(self._periodic_callback)
-            self._periodic_callback = None
-        self._active_workflow = None
+    def _set_child_actions_enabled(self, *, enabled):
         for toggle in (
             getattr(self, 'display_toggle', None),
             getattr(self, 'record_toggle', None),
             getattr(self, 'beamform_toggle', None),
         ):
             if toggle is not None:
-                toggle.active = False
-                toggle.disabled = False
+                toggle.disabled = not enabled
+
+    def _start_consumer(self, generator, register, args):
+        worker = SamplesThread(generator, self.splitter, register, args, Event())
+        worker.start()
+        return worker
+
+    def _stop_worker(self, worker_name):
+        worker = getattr(self, worker_name)
+        if worker is not None:
+            worker.breakThread = True
+            worker.join()
+            setattr(self, worker_name, None)
+
+    def _set_toggle_active(self, toggle, *, active):
+        if toggle.active != active:
+            self._updating_toggles = True
+            try:
+                toggle.active = active
+            finally:
+                self._updating_toggles = False
+
+    def _start_updates(self):
+        if self._periodic_callback is None:
+            self._periodic_callback = self.doc.add_periodic_callback(self._update_levels, int(self.update_period.value))
+
+    def _stop_updates_if_idle(self):
+        display_active = getattr(self, 'display_toggle', None) is not None and self.display_toggle.active
+        beamform_active = getattr(self, 'beamform_toggle', None) is not None and self.beamform_toggle.active
+        if self._periodic_callback is not None and not display_active and not beamform_active:
+            self.doc.remove_periodic_callback(self._periodic_callback)
+            self._periodic_callback = None
+
+    def _stream_toggled(self, active):
+        if self._updating_toggles:
+            return
+        if active:
+            self.start()
+            if self._stream_worker is None:
+                self._stream_worker = self._start_consumer(
+                    self.stream_drain.result(self.blocksize),
+                    self.stream_drain,
+                    {'buffer_size': 1, 'buffer_overflow_treatment': 'none'},
+                )
+            self._stream_active = True
+            self._set_toggle_active(self.stream_toggle, active=True)
+            self._set_child_actions_enabled(enabled=True)
+        else:
+            self.stop_consumers()
+            if self._running and self.control is not None:
+                try:
+                    self.control.stop()
+                finally:
+                    self.control.set_config_enabled(True)
+                    self.control_select.disabled = False
+                    self._running = False
+
+    def _require_stream(self, toggle):
+        if not self._stream_active:
+            self._set_toggle_active(toggle, active=False)
+            return False
+        return True
+
+    def _display_toggled(self, active):
+        if self._updating_toggles:
+            return
+        if active:
+            if not self._require_stream(self.display_toggle):
+                return
+            if self._display_worker is None:
+                self._display_worker = self._start_consumer(
+                    self.disp.result(1),
+                    self.disp.source.source,
+                    {'buffer_size': 400, 'buffer_overflow_treatment': 'none'},
+                )
+            self._set_toggle_active(self.display_toggle, active=True)
+            self._start_updates()
+        else:
+            self._set_toggle_active(self.display_toggle, active=False)
+            self._stop_worker('_display_worker')
+            self._stop_updates_if_idle()
+
+    def _record_toggled(self, active):
+        if self._updating_toggles:
+            return
+        if active:
+            if not self._require_stream(self.record_toggle):
+                return
+            if self.current_time_checkbox.active == [0]:
+                self.filename.value = datetime.now(tz=UTC).isoformat('_').replace(':', '-').replace('.', '_')
+            self.msm.num_samples_write = self._num_samples()
+            if self._record_worker is None:
+                self._record_worker = self._start_consumer(
+                    self.msm.result(self.blocksize),
+                    self.msm,
+                    {'buffer_size': 400, 'buffer_overflow_treatment': 'error'},
+                )
+            self._set_toggle_active(self.record_toggle, active=True)
+        else:
+            self.msm.write_flag = False
+            self._set_toggle_active(self.record_toggle, active=False)
+            self._stop_worker('_record_worker')
+
+    def _beamform_toggled(self, active):
+        if self._updating_toggles:
+            return
+        if active:
+            if not self._require_stream(self.beamform_toggle):
+                return
+            if self._beamform_worker is None:
+                self._beamform_worker = self._start_consumer(
+                    self.beamf.result(1),
+                    self.beamforming_input,
+                    {'buffer_size': 1, 'buffer_overflow_treatment': 'none'},
+                )
+            self._set_toggle_active(self.beamform_toggle, active=True)
+            self._start_updates()
+        else:
+            self._set_toggle_active(self.beamform_toggle, active=False)
+            self.beamf_data.data = {'level': []}
+            self._stop_worker('_beamform_worker')
+            self._stop_updates_if_idle()
+
+    def stop_consumers(self):
+        """Stop and join app-owned pipeline consumers."""
+        if getattr(self, 'record_toggle', None) is not None:
+            self.msm.write_flag = False
+            self._set_toggle_active(self.record_toggle, active=False)
+        if getattr(self, 'display_toggle', None) is not None:
+            self._set_toggle_active(self.display_toggle, active=False)
+        if getattr(self, 'beamform_toggle', None) is not None:
+            self._set_toggle_active(self.beamform_toggle, active=False)
+            self.beamf_data.data = {'level': []}
+        for worker_name in ('_display_worker', '_beamform_worker', '_record_worker', '_stream_worker'):
+            self._stop_worker(worker_name)
+        if self._periodic_callback is not None:
+            self.doc.remove_periodic_callback(self._periodic_callback)
+            self._periodic_callback = None
+        self._stream_active = False
+        self._set_toggle_active(self.stream_toggle, active=False)
+        self._set_child_actions_enabled(enabled=False)
 
 
 def server_doc(doc):
