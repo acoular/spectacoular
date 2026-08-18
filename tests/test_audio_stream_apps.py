@@ -276,6 +276,18 @@ def test_measurement_app_document_constructs_and_locks_workflows():
     assert app.beamform_toggle.disabled
 
 
+def test_measurement_app_record_stop_clears_write_flag():
+    """Stopping measurement must ask the Acoular writer to finish cleanly."""
+    app = MeasurementApp(Document())
+    app.server_doc()
+    _run_next_ticks(app.doc)
+    app.msm.write_flag = True
+
+    app._record_toggled(False)
+
+    assert not app.msm.write_flag
+
+
 def test_measurement_app_beamforming_starts_plot_updates(monkeypatch):
     """Beamforming must schedule the callback that renders its result."""
     app = MeasurementApp(Document())

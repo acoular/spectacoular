@@ -385,7 +385,7 @@ class MeasurementApp(AudioStreamApp):
                 self.msm.result(self.blocksize), self.msm, {'buffer_size': 400, 'buffer_overflow_treatment': 'error'}
             )
         else:
-            self.msm.writeflag = False
+            self.msm.write_flag = False
             self.stop()
 
     def _beamform_toggled(self, active):
