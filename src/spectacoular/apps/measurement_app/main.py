@@ -84,7 +84,7 @@ class MeasurementApp(AudioStreamApp):
             sizing_mode='stretch_width',
         )
         self.exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width')
-        self._measurement_controls = column(width=CONTROL_WIDTH)
+        self._measurement_controls = column(Spacer(width=0, height=0), width=CONTROL_WIDTH)
         self._measurement_panel = column(
             Div(text='<b>Measurement control</b>'),
             self._measurement_controls,

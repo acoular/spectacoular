@@ -16,8 +16,9 @@ from spectacoular.apps.measurement_app.main import MeasurementApp
 
 import numpy as np
 import pytest
+from bokeh.core.validation import check_integrity
 from bokeh.document import Document
-from bokeh.layouts import Row, column
+from bokeh.layouts import Row, Spacer, column
 from bokeh.models import Div, Tabs
 
 
@@ -113,7 +114,8 @@ def _select_measurement_stream(app, value='phantom'):
         if app.control is not None and not app.control_select.disabled and list(app.doc.select({'type': Tabs})):
             return app.control
         sleep(0.02)
-    raise AssertionError('measurement stream did not initialize')
+    message = 'measurement stream did not initialize'
+    raise AssertionError(message)
 
 
 class _EntryPoint:
@@ -165,8 +167,8 @@ def test_audio_stream_app_starts_without_active_control():
 
     assert app.control is None
     assert app.control_select.value == ''
-    assert not app._control_content.children
-    assert not app._stream_content.children
+    assert all(isinstance(child, Spacer) for child in app._control_content.children)
+    assert all(isinstance(child, Spacer) for child in app._stream_content.children)
     assert app.sources == []
 
 
@@ -191,7 +193,7 @@ def test_control_shows_status_before_source_initialization():
 
     assert isinstance(app.control, LoadingControl)
     assert app._control_content.children
-    assert not app._stream_content.children[0].children
+    assert all(isinstance(child, Spacer) for child in app._stream_content.children[0].children)
     assert app.control._loading_widget.text == 'Connecting…'
     assert app.control_select.disabled
 
@@ -320,6 +322,7 @@ def test_measurement_app_starts_without_selected_audio_stream():
     assert app.control is None
     assert app.control_select.value == ''
     assert not list(app.doc.select({'type': Tabs}))
+    assert not [issue for issue in check_integrity(app.doc.models).warning if issue.code == 1002]
 
 
 def test_measurement_app_document_constructs_with_stream_gate_after_selection():

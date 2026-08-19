@@ -7,7 +7,7 @@ from threading import Thread
 
 from .controls import available_controls
 
-from bokeh.layouts import column
+from bokeh.layouts import Spacer, column
 from bokeh.models import Div, Select
 
 
@@ -43,8 +43,8 @@ class AudioStreamApp(BaseApp):
         self._closed = False
         self._running = False
         self._changing_control = False
-        self._stream_content = column()
-        self._control_content = column()
+        self._stream_content = column(Spacer(width=0, height=0))
+        self._control_content = column(Spacer(width=0, height=0))
         self._error = Div()
         self.control_select = Select(
             title='Audio stream',
@@ -65,8 +65,8 @@ class AudioStreamApp(BaseApp):
 
     def _clear_control(self, message):
         self.control = None
-        self._control_content.children = []
-        self._stream_content.children = []
+        self._control_content.children = [Spacer(width=0, height=0)]
+        self._stream_content.children = [Spacer(width=0, height=0)]
         self._set_selector('')
         self._show_error(message)
 
@@ -82,7 +82,7 @@ class AudioStreamApp(BaseApp):
             control = self.controls[control_id](doc=self.doc, logger=self.logger)
             control.on_source_changed(self._source_changed)
             content = control.get_widgets()
-            stream_content = column()
+            stream_content = column(Spacer(width=0, height=0))
         except Exception as exc:  # pragma: no cover - requires broken hardware backend
             self.logger.exception('Unable to create audio stream control')
             if control is not None:
