@@ -46,16 +46,15 @@ class AudioStreamApp(BaseApp):
         self._stream_content = column()
         self._control_content = column()
         self._error = Div()
-        self.control_select = Select(title='Audio stream', options=[('', 'Select audio stream')], value='')
+        self.control_select = Select(
+            title='Audio stream',
+            options=[('', 'Select audio stream'), *[(key, control.label) for key, control in self.controls.items()]],
+            value='',
+        )
         self.control_select.on_change('value', self._select_control)
-        self._set_control_options()
-        self._create_initial_control()
+        if not self.controls:
+            self._show_error('No audio stream controls are available.')
         self.doc.on_session_destroyed(self._session_destroyed)
-
-    def _set_control_options(self):
-        options = [('', 'Select audio stream')]
-        options.extend((key, control.label) for key, control in self.controls.items())
-        self.control_select.options = options
 
     def _set_selector(self, value):
         self._changing_control = True
@@ -71,23 +70,16 @@ class AudioStreamApp(BaseApp):
         self._set_selector('')
         self._show_error(message)
 
-    def _create_initial_control(self):
-        if not self.controls:
-            self._show_error('No audio stream controls are available.')
-
     def _show_error(self, message):
         self._error.text = f'<b>{message}</b>'
 
     def _clear_error(self):
         self._error.text = ''
 
-    def _new_control(self, control_id):
-        return self.controls[control_id](doc=self.doc, logger=self.logger)
-
     def _activate_control(self, control_id):
         control = None
         try:
-            control = self._new_control(control_id)
+            control = self.controls[control_id](doc=self.doc, logger=self.logger)
             control.on_source_changed(self._source_changed)
             content = control.get_widgets()
             stream_content = column()

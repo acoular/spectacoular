@@ -153,18 +153,11 @@ class PhantomControl(BaseAudioStreamControl):
             Div(text=f'Generated rotating source: {PHANTOM_ROTATIONAL_SPEED:g} rps, {PHANTOM_SAMPLE_FREQ:g} Hz')
         )
 
-    def set_config_enabled(self, enabled):
-        """Generated phantom settings are fixed."""
-
-
 class SoundDeviceControl(BaseAudioStreamControl):
     """Configure a live sounddevice input source."""
 
     id = 'sounddevice'
     label = 'Sound device input'
-
-    def __init__(self, doc, logger=None):
-        super().__init__(doc, logger)
 
     def initialize_source(self):
         """Discover an input device and create its source."""
