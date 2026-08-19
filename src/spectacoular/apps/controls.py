@@ -153,6 +153,7 @@ class PhantomControl(BaseAudioStreamControl):
             Div(text=f'Generated rotating source: {PHANTOM_ROTATIONAL_SPEED:g} rps, {PHANTOM_SAMPLE_FREQ:g} Hz')
         )
 
+
 class SoundDeviceControl(BaseAudioStreamControl):
     """Configure a live sounddevice input source."""
 
