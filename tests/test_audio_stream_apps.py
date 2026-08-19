@@ -346,7 +346,7 @@ def test_measurement_app_action_buttons_share_one_row_with_bold_labels():
     app.server_doc()
     _select_measurement_stream(app)
 
-    action_row = app._measurement_controls.children[3]
+    action_row = app._measurement_controls.children[4]
 
     assert isinstance(action_row, Row)
     assert list(action_row.children) == [app.display_toggle, app.beamform_toggle, app.record_toggle]
@@ -397,7 +397,7 @@ def test_measurement_app_stream_stop_turns_off_children_and_stops_all_workers(mo
     monkeypatch.setattr(app.control, 'stop', lambda: None)
     monkeypatch.setattr(app.control, 'set_config_enabled', lambda _enabled: None)
     workers = [Worker(), Worker(), Worker(), Worker()]
-    monkeypatch.setattr(app, '_start_consumer', lambda *_args: workers.pop(0))
+    monkeypatch.setattr(app, '_start_consumer', lambda *_args, **_kwargs: workers.pop(0))
     monkeypatch.setattr(app, '_start_updates', lambda: None)
 
     app._stream_toggled(True)

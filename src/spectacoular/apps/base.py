@@ -8,7 +8,8 @@ from threading import Thread
 from .controls import available_controls
 
 from bokeh.layouts import Spacer, column
-from bokeh.models import Div, Select
+from bokeh.models import CustomJS, Div, Select
+from bokeh.models.widgets import Button
 
 
 class BaseApp:
@@ -20,6 +21,8 @@ class BaseApp:
         self.doc = doc
         self.logger = logger or logging.getLogger(__name__)
         self.root = None
+        self.exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width')
+        self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
 
     def build_root(self):
         """Build and return this application's root Bokeh layout."""

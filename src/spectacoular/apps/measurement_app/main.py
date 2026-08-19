@@ -18,7 +18,7 @@ from .threads import EventThread, SamplesThread, StreamDrain
 
 import numpy as np
 from bokeh.layouts import Spacer, column, layout, row
-from bokeh.models import ColorBar, ColumnDataSource, CustomJS, FactorRange, LinearColorMapper, Select, Tabs, Toggle
+from bokeh.models import ColorBar, ColumnDataSource, FactorRange, LinearColorMapper, Select, Tabs, Toggle
 from bokeh.models import TabPanel as Panel
 from bokeh.models.glyphs import Scatter
 from bokeh.models.widgets import (
@@ -83,7 +83,6 @@ class MeasurementApp(AudioStreamApp):
             options=['25', '50', '100', '200', '400', '800'],
             sizing_mode='stretch_width',
         )
-        self.exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width')
         self._measurement_controls = column(Spacer(width=0, height=0), width=CONTROL_WIDTH)
         self._measurement_panel = column(
             Div(text='<b>Measurement control</b>'),
@@ -93,7 +92,6 @@ class MeasurementApp(AudioStreamApp):
         )
         self.current_time_checkbox.on_change('active', self._toggle_filename)
         self.filename.on_change('value', self._set_filename)
-        self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
         self.stream_toggle.on_click(self._stream_toggled)
         super().__init__(doc, logger)
 
