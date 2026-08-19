@@ -14,7 +14,7 @@ from spectacoular.apps.controls import CONTROL_STYLES, CONTROL_WIDTH
 
 from .cam import CameraComponent
 from .log import LogHandler
-from .threads import SamplesThread, StreamDrain
+from .threads import EventThread, SamplesThread, StreamDrain
 
 import numpy as np
 from bokeh.layouts import Spacer, column, layout, row
@@ -56,6 +56,7 @@ class MeasurementApp(AudioStreamApp):
         self._display_worker = None
         self._record_worker = None
         self._beamform_worker = None
+        self._record_state_listener = None
         self._periodic_callback = None
         self._stream_active = False
         self._updating_toggles = False
@@ -72,11 +73,15 @@ class MeasurementApp(AudioStreamApp):
             title='Filename:',
             disabled=True,
             description=self._filename_description(),
+            sizing_mode='stretch_width',
         )
         self.current_time_checkbox = CheckboxGroup(labels=['use current time'], active=[0])
-        self.measurement_time = TextInput(value='10', title='Measurement Time [s]:')
+        self.measurement_time = TextInput(value='10', title='Measurement Time [s]:', sizing_mode='stretch_width')
         self.update_period = Select(
-            title='Select Update Period [ms]', value='50', options=['25', '50', '100', '200', '400', '800']
+            title='Select Update Period [ms]',
+            value='50',
+            options=['25', '50', '100', '200', '400', '800'],
+            sizing_mode='stretch_width',
         )
         self.exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width')
         self._measurement_controls = column(width=CONTROL_WIDTH)
@@ -117,6 +122,11 @@ class MeasurementApp(AudioStreamApp):
         self.amp_fig.yaxis[0].axis_label = level_label
         self.amp_fig.hover[0].tooltips = [(level_label, '@level'), ('Channel', '@channels')]
         self.clip_level.title = f'Clip Level/{level_label}'
+
+    def _amplitude_colors(self, levels):
+        if getattr(self, 'record_toggle', None) is not None and self.record_toggle.active:
+            return np.full(len(levels), COLOR[8])
+        return np.where(levels < self.clip_level.value, COLOR[1], COLOR[8])
 
     def build_stream_content(self, source):  # noqa: PLR0915
         """Build the legacy measurement layout for the selected source."""
@@ -327,7 +337,7 @@ class MeasurementApp(AudioStreamApp):
             if self.disp.cdsource.data['data'].size:
                 levels = self._channel_levels(self.disp.cdsource.data['data'][0])
                 self.amp_data.data['level'] = levels
-                self.amp_data.data['colors'] = np.where(levels < self.clip_level.value, COLOR[1], COLOR[8])
+                self.amp_data.data['colors'] = self._amplitude_colors(levels)
             if self.beamform_toggle.active and self.beamf.cdsource.data['data'].size:
                 image = ac.L_p(self.beamf.cdsource.data['data'].reshape(self.grid.shape)).T
                 self.beamf_data.data = {'level': [image]}
@@ -462,10 +472,21 @@ class MeasurementApp(AudioStreamApp):
             if toggle is not None:
                 toggle.disabled = not enabled
 
-    def _start_consumer(self, generator, register, args):
-        worker = SamplesThread(generator, self.splitter, register, args, Event())
+    def _start_consumer(self, generator, register, args, *, done_event=None):
+        worker = SamplesThread(generator, self.splitter, register, args, done_event or Event())
         worker.start()
         return worker
+
+    def _start_record_completion_watcher(self, done_event):
+        self._record_state_listener = EventThread(done_event, self.doc, post_callback=self._record_finished)
+        self._record_state_listener.start()
+
+    def _record_finished(self):
+        self._set_toggle_active(self.record_toggle, active=False)
+        self._record_worker = None
+        self._record_state_listener = None
+        if hasattr(self, 'disp') and self.disp.cdsource.data['data'].size:
+            self._update_levels()
 
     def _stop_worker(self, worker_name):
         worker = getattr(self, worker_name)
@@ -552,11 +573,14 @@ class MeasurementApp(AudioStreamApp):
                 self.filename.value = datetime.now(tz=UTC).isoformat('_').replace(':', '-').replace('.', '_')
             self.msm.num_samples_write = self._num_samples()
             if self._record_worker is None:
+                done_event = Event()
                 self._record_worker = self._start_consumer(
                     self.msm.result(self.blocksize),
                     self.msm,
                     {'buffer_size': 400, 'buffer_overflow_treatment': 'error'},
+                    done_event=done_event,
                 )
+                self._start_record_completion_watcher(done_event)
             self._set_toggle_active(self.record_toggle, active=True)
         else:
             self.msm.write_flag = False
