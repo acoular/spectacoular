@@ -472,13 +472,13 @@ class MeasurementApp(AudioStreamApp):
             if toggle is not None:
                 toggle.disabled = not enabled
 
-    def _start_consumer(self, generator, register, args, *, done_event=None):
-        worker = SamplesThread(generator, self.splitter, register, args, done_event or Event())
+    def _start_consumer(self, generator, register, args, *, finished_event=None):
+        worker = SamplesThread(generator, self.splitter, register, args, finished_event or Event())
         worker.start()
         return worker
 
-    def _start_record_completion_watcher(self, done_event):
-        self._record_state_listener = EventThread(done_event, self.doc, post_callback=self._record_finished)
+    def _start_record_listener(self, finished_event):
+        self._record_state_listener = EventThread(finished_event, self.doc, post_callback=self._record_finished)
         self._record_state_listener.start()
 
     def _record_finished(self):
@@ -573,14 +573,14 @@ class MeasurementApp(AudioStreamApp):
                 self.filename.value = datetime.now(tz=UTC).isoformat('_').replace(':', '-').replace('.', '_')
             self.msm.num_samples_write = self._num_samples()
             if self._record_worker is None:
-                done_event = Event()
+                finished_event = Event()
                 self._record_worker = self._start_consumer(
                     self.msm.result(self.blocksize),
                     self.msm,
                     {'buffer_size': 400, 'buffer_overflow_treatment': 'error'},
-                    done_event=done_event,
+                    finished_event=finished_event,
                 )
-                self._start_record_completion_watcher(done_event)
+                self._start_record_listener(finished_event)
             self._set_toggle_active(self.record_toggle, active=True)
         else:
             self.msm.write_flag = False
