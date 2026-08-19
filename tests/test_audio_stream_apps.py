@@ -350,10 +350,10 @@ def test_measurement_app_action_buttons_share_one_row_with_bold_labels():
 
     assert isinstance(action_row, Row)
     assert list(action_row.children) == [app.display_toggle, app.beamform_toggle, app.record_toggle]
-    assert [button.label for button in action_row.children] == ['Display', 'Beamforming', 'Measure']
+    assert [button.label for button in action_row.children] == ['Display', 'Beamf', 'Measure']
     assert all('.bk-btn' in ''.join(button.stylesheets) for button in action_row.children)
     assert all('font-weight: 700' in ''.join(button.stylesheets) for button in action_row.children)
-    assert [button.width for button in action_row.children] == [100, 100, 100]
+    assert [button.width for button in action_row.children] == [80, 80, 80]
     assert [button.height for button in action_row.children] == [40, 40, 40]
 
 
