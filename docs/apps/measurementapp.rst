@@ -4,7 +4,7 @@ Microphone Array Measurement App
 ================================
 
 This application records multichannel audio, displays channel levels, and can
-perform live beamforming. It starts with the bundled **Phantom** audio stream,
+perform live beamforming. For demonstration, it starts with a simulated **Phantom** audio stream,
 so it can be used without measurement hardware.
 
 Start the app
@@ -26,8 +26,8 @@ Selecting an audio stream
 -------------------------
 
 Use the **Audio stream** dropdown at the top of the app to select a backend.
-The **Phantom** backend is the default. It reads the bundled demonstration
-audio stream. **Sound device** captures a live input using the optional
+The **Phantom** backend is the default. It simulates an
+audio stream. **Sound device** captures a real audio input using the optional
 ``sounddevice`` dependency. Install it with:
 
 .. code-block:: console
