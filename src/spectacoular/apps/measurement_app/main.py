@@ -11,6 +11,7 @@ import spectacoular as sp
 from acoular import MaskedTimeOut
 from spectacoular.apps.base import AudioStreamApp
 from spectacoular.apps.controls import CONTROL_STYLES, CONTROL_WIDTH
+from spectacoular.themes import get_acoular_color
 
 from .cam import CameraComponent
 from .log import LogHandler
@@ -37,6 +38,8 @@ from bokeh.palettes import Spectral11, Viridis256
 from bokeh.plotting import figure
 
 COLOR = Spectral11
+AMP_BAR_COLOR = get_acoular_color('brand-light')
+RECORDING_AMP_BAR_COLOR = get_acoular_color('secondary-dark')
 BUTTON_HEIGHT = 40
 ACTION_BUTTON_HEIGHT = 40
 ACTION_BUTTON_WIDTH = 80
@@ -121,8 +124,8 @@ class MeasurementApp(AudioStreamApp):
 
     def _amplitude_colors(self, levels):
         if getattr(self, 'record_toggle', None) is not None and self.record_toggle.active:
-            return np.full(len(levels), COLOR[8])
-        return np.where(levels < self.clip_level.value, COLOR[1], COLOR[8])
+            return np.full(len(levels), RECORDING_AMP_BAR_COLOR)
+        return np.where(levels < self.clip_level.value, AMP_BAR_COLOR, COLOR[8])
 
     def build_stream_content(self, source):  # noqa: PLR0915
         """Build the legacy measurement layout for the selected source."""
@@ -150,7 +153,7 @@ class MeasurementApp(AudioStreamApp):
 
         labels = self._labels(source)
         self.amp_data = ColumnDataSource(
-            {'channels': labels, 'level': np.zeros(len(labels)), 'colors': [COLOR[1]] * len(labels)}
+            {'channels': labels, 'level': np.zeros(len(labels)), 'colors': [AMP_BAR_COLOR] * len(labels)}
         )
         self.beamf_data = ColumnDataSource({'level': []})
         self.grid_data = ColumnDataSource(
@@ -275,7 +278,7 @@ class MeasurementApp(AudioStreamApp):
         )
         self.beamform_toggle = Toggle(
             label='Beamf',
-            button_type='warning',
+            button_type='primary',
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,

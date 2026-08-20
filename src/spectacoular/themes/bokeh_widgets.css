@@ -1,120 +1,81 @@
 :host {
-  --ac-button-default: var(--ac-color-background);
-  --ac-button-default-active: color-mix(in srgb, var(--ac-button-default) 85%, black);
-  --ac-button-primary: var(--ac-color-brand);
-  --ac-button-primary-active: color-mix(in srgb, var(--ac-button-primary) 85%, black);
-  --ac-button-success: var(--ac-color-accent);
-  --ac-button-success-active: color-mix(in srgb, var(--ac-button-success) 85%, black);
-  --ac-button-warning: var(--ac-color-surface);
-  --ac-button-warning-active: color-mix(in srgb, var(--ac-button-warning) 85%, black);
-  --ac-button-danger: var(--ac-color-danger);
-  --ac-button-danger-active: color-mix(in srgb, var(--ac-button-danger) 85%, black);
-  --ac-button-light: var(--ac-color-surface);
-  --ac-button-light-active: color-mix(in srgb, var(--ac-button-light) 85%, black);
-  --ac-button-border: var(--ac-color-background);
-  --ac-button-hover-border: var(--ac-color-text);
-  --ac-button-disabled: var(--ac-color-muted);
+  --color: var(--acoular-color-background-dark);
+  --inverted-color: var(--acoular-color-background-light);
+  --default: var(--acoular-color-background-light);
+  --default-border: var(--acoular-color-muted-light);
+  --default-hover: var(--acoular-color-background-light);
+  --default-hover-border: var(--acoular-color-highlight);
+  --default-active: color-mix(in srgb, var(--acoular-color-background-light) 85%, black);
+  --default-active-border: var(--acoular-color-highlight);
+  --default-disabled: var(--acoular-color-muted);
+  --default-disabled-border: var(--acoular-color-muted);
+  --primary: var(--acoular-color-brand);
+  --primary-border: var(--acoular-color-muted-light);
+  --primary-hover: var(--acoular-color-brand);
+  --primary-hover-border: var(--acoular-color-highlight);
+  --primary-active: color-mix(in srgb, var(--acoular-color-brand) 85%, black);
+  --primary-active-border: var(--acoular-color-highlight);
+  --primary-disabled: var(--acoular-color-muted);
+  --primary-disabled-border: var(--acoular-color-muted);
+  --success: var(--acoular-color-success);
+  --success-border: var(--acoular-color-muted-light);
+  --success-hover: var(--acoular-color-success);
+  --success-hover-border: var(--acoular-color-highlight);
+  --success-active: color-mix(in srgb, var(--acoular-color-success) 85%, black);
+  --success-active-border: var(--acoular-color-highlight);
+  --success-disabled: var(--acoular-color-muted);
+  --success-disabled-border: var(--acoular-color-muted);
+  --warning: var(--acoular-color-warning);
+  --warning-border: var(--acoular-color-muted-light);
+  --warning-hover: var(--acoular-color-warning);
+  --warning-hover-border: var(--acoular-color-highlight);
+  --warning-active: color-mix(in srgb, var(--acoular-color-warning) 85%, black);
+  --warning-active-border: var(--acoular-color-highlight);
+  --warning-disabled: var(--acoular-color-muted);
+  --warning-disabled-border: var(--acoular-color-muted);
+  --danger: var(--acoular-color-secondary-dark);
+  --danger-border: var(--acoular-color-muted-light);
+  --danger-hover: var(--acoular-color-secondary-dark);
+  --danger-hover-border: var(--acoular-color-highlight);
+  --danger-active: color-mix(in srgb, var(--acoular-color-secondary-dark) 85%, black);
+  --danger-active-border: var(--acoular-color-highlight);
+  --danger-disabled: var(--acoular-color-muted);
+  --danger-disabled-border: var(--acoular-color-muted);
+  --light: var(--acoular-color-brand-light);
+  --light-border: var(--acoular-color-muted-light);
+  --light-hover: var(--acoular-color-brand-light);
+  --light-hover-border: var(--acoular-color-highlight);
+  --light-active: color-mix(in srgb, var(--acoular-color-brand-light) 85%, black);
+  --light-active-border: var(--acoular-color-highlight);
+  --light-disabled: var(--acoular-color-muted);
+  --light-disabled-border: var(--acoular-color-muted);
+  --active-bg: var(--acoular-color-brand);
+  --active-fg: var(--acoular-color-background-light);
+  --inactive-bg: var(--acoular-color-muted-dark);
+  --inactive-fg: var(--acoular-color-muted-light);
 }
+
+:host(:hover) {
+  border-color: var(--acoular-color-highlight);
+  outline-color: var(--acoular-color-highlight);
+}
+
+:host(:hover) input,
+:host(:hover) textarea,
+:host(:hover) select,
+:host(:hover) .bk-input,
+:host(:hover) .bk-input-group,
+:host(:hover) .bk-spin-wrapper,
+:host(:hover) .bk-bar,
+:host(:hover) .bk-swatch,
+.choices:hover .choices__inner,
+.noUi-target:hover,
+.noUi-handle:hover {
+  border-color: var(--acoular-color-highlight);
+  outline-color: var(--acoular-color-highlight);
+}
+
 
 :host .bk-btn {
   font-weight: 600;
-}
-
-:host .bk-btn-default {
-  background-color: var(--ac-button-default);
-  border-color: var(--ac-button-border);
-  color: var(--ac-color-text);
-}
-
-:host .bk-btn-default:hover {
-  background-color: var(--ac-button-default);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-active.bk-btn-default {
-  background-color: var(--ac-button-default-active);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-btn-primary {
-  background-color: var(--ac-button-primary);
-  border-color: var(--ac-button-border);
-}
-
-:host .bk-btn-primary:hover {
-  background-color: var(--ac-button-primary);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-active.bk-btn-primary {
-  background-color: var(--ac-button-primary-active);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-btn-success {
-  background-color: var(--ac-button-success);
-  border-color: var(--ac-button-border);
-}
-
-:host .bk-btn-success:hover {
-  background-color: var(--ac-button-success);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-active.bk-btn-success {
-  background-color: var(--ac-button-success-active);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-btn-warning {
-  background-color: var(--ac-button-warning);
-  border-color: var(--ac-button-border);
-}
-
-:host .bk-btn-warning:hover {
-  background-color: var(--ac-button-warning);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-active.bk-btn-warning {
-  background-color: var(--ac-button-warning-active);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-btn-danger {
-  background-color: var(--ac-button-danger);
-  border-color: var(--ac-button-border);
-}
-
-:host .bk-btn-danger:hover {
-  background-color: var(--ac-button-danger);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-active.bk-btn-danger {
-  background-color: var(--ac-button-danger-active);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-btn-light {
-  background-color: var(--ac-button-light);
-  border-color: var(--ac-button-border);
-  color: var(--ac-color-text);
-}
-
-:host .bk-btn-light:hover {
-  background-color: var(--ac-button-light);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-active.bk-btn-light {
-  background-color: var(--ac-button-light-active);
-  border-color: var(--ac-button-hover-border);
-}
-
-:host .bk-btn[disabled],
-:host .bk-btn[disabled]:hover,
-:host .bk-active.bk-btn[disabled] {
-  background-color: var(--ac-button-disabled);
-  border-color: var(--ac-button-disabled);
 }

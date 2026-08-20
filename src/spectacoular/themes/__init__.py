@@ -1,6 +1,15 @@
 """SpectAcoular application theme package."""
 
-from .themes import DARK, DOCUMENT_TEMPLATE, LIGHT, SpectacoularTheme, ThemeMode, document_template_variables, get_theme
+from .themes import (
+    DARK,
+    DOCUMENT_TEMPLATE,
+    LIGHT,
+    SpectacoularTheme,
+    ThemeMode,
+    document_template_variables,
+    get_acoular_color,
+    get_theme,
+)
 
 __all__ = [
     'DARK',
@@ -9,5 +18,6 @@ __all__ = [
     'SpectacoularTheme',
     'ThemeMode',
     'document_template_variables',
+    'get_acoular_color',
     'get_theme',
 ]
