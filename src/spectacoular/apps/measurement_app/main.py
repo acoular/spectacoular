@@ -438,8 +438,6 @@ class MeasurementApp(AudioStreamApp):
     def build_root(self):
         """Keep the original sidebar-and-tabs arrangement around stream controls."""
         sidebar = column(
-            self.exit_button,
-            Spacer(height=10),
             self.control_select,
             self._error,
             self._control_content,
