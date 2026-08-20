@@ -40,7 +40,6 @@ COLOR = Spectral11
 BUTTON_HEIGHT = 40
 ACTION_BUTTON_HEIGHT = 40
 ACTION_BUTTON_WIDTH = 80
-ACTION_BUTTON_STYLESHEET = '.bk-btn { font-weight: 700; }'
 
 
 class MeasurementApp(AudioStreamApp):
@@ -62,11 +61,10 @@ class MeasurementApp(AudioStreamApp):
         self._updating_toggles = False
         self.stream_toggle = Toggle(
             label='Stream',
-            button_type='success',
+            button_type='primary',
             sizing_mode='stretch_width',
             height=BUTTON_HEIGHT,
             disabled=True,
-            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.filename = TextInput(
             value='',
@@ -236,15 +234,15 @@ class MeasurementApp(AudioStreamApp):
             }
         )
         self.mics_widgets = mic_layout.widgets
-        self.all_mics_valid = Button(label='All Valid', button_type='success', sizing_mode='stretch_width')
+        self.all_mics_valid = Button(label='All Valid', button_type='primary', sizing_mode='stretch_width')
         self.all_mics_valid.on_click(lambda: setattr(self.mics, 'invalid_channels', []))
 
         self.invalid_input_channels = MultiSelect(title='Not-Array Channels', height=150, value=[])
         self.invalid_input_channels.description = 'Select which input channels should not be used for beamforming'
         self.beamforming_input.set_widgets(invalid_channels=self.invalid_input_channels)
-        self.all_bf_valid = Button(label='All Valid', button_type='success', sizing_mode='stretch_width')
+        self.all_bf_valid = Button(label='All Valid', button_type='primary', sizing_mode='stretch_width')
         self.all_bf_valid.on_click(lambda: setattr(self.beamforming_input, 'invalid_channels', []))
-        self.auto_level_toggle = Toggle(label='Auto Level', button_type='success', active=True)
+        self.auto_level_toggle = Toggle(label='Auto Level', button_type='primary', active=True)
         self.dynamic_range = NumericInput(value=10, title='Dynamic Range/dB')
         self.snapshot_avg = NumericInput(value=1, title='Snapshots to Average')
         self.bf_max_level = Slider(start=0, end=140, value=100, step=1, title='Peak Level/dB')
@@ -267,7 +265,6 @@ class MeasurementApp(AudioStreamApp):
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,
-            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.record_toggle = Toggle(
             label='Measure',
@@ -275,7 +272,6 @@ class MeasurementApp(AudioStreamApp):
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,
-            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.beamform_toggle = Toggle(
             label='Beamf',
@@ -283,7 +279,6 @@ class MeasurementApp(AudioStreamApp):
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,
-            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.display_toggle.on_click(self._display_toggled)
         self.record_toggle.on_click(self._record_toggled)

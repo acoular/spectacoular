@@ -1,0 +1,120 @@
+:host {
+  --ac-button-default: var(--ac-color-background);
+  --ac-button-default-active: color-mix(in srgb, var(--ac-button-default) 85%, black);
+  --ac-button-primary: var(--ac-color-brand);
+  --ac-button-primary-active: color-mix(in srgb, var(--ac-button-primary) 85%, black);
+  --ac-button-success: var(--ac-color-accent);
+  --ac-button-success-active: color-mix(in srgb, var(--ac-button-success) 85%, black);
+  --ac-button-warning: var(--ac-color-surface);
+  --ac-button-warning-active: color-mix(in srgb, var(--ac-button-warning) 85%, black);
+  --ac-button-danger: var(--ac-color-danger);
+  --ac-button-danger-active: color-mix(in srgb, var(--ac-button-danger) 85%, black);
+  --ac-button-light: var(--ac-color-surface);
+  --ac-button-light-active: color-mix(in srgb, var(--ac-button-light) 85%, black);
+  --ac-button-border: var(--ac-color-background);
+  --ac-button-hover-border: var(--ac-color-text);
+  --ac-button-disabled: var(--ac-color-muted);
+}
+
+:host .bk-btn {
+  font-weight: 600;
+}
+
+:host .bk-btn-default {
+  background-color: var(--ac-button-default);
+  border-color: var(--ac-button-border);
+  color: var(--ac-color-text);
+}
+
+:host .bk-btn-default:hover {
+  background-color: var(--ac-button-default);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-active.bk-btn-default {
+  background-color: var(--ac-button-default-active);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-btn-primary {
+  background-color: var(--ac-button-primary);
+  border-color: var(--ac-button-border);
+}
+
+:host .bk-btn-primary:hover {
+  background-color: var(--ac-button-primary);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-active.bk-btn-primary {
+  background-color: var(--ac-button-primary-active);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-btn-success {
+  background-color: var(--ac-button-success);
+  border-color: var(--ac-button-border);
+}
+
+:host .bk-btn-success:hover {
+  background-color: var(--ac-button-success);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-active.bk-btn-success {
+  background-color: var(--ac-button-success-active);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-btn-warning {
+  background-color: var(--ac-button-warning);
+  border-color: var(--ac-button-border);
+}
+
+:host .bk-btn-warning:hover {
+  background-color: var(--ac-button-warning);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-active.bk-btn-warning {
+  background-color: var(--ac-button-warning-active);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-btn-danger {
+  background-color: var(--ac-button-danger);
+  border-color: var(--ac-button-border);
+}
+
+:host .bk-btn-danger:hover {
+  background-color: var(--ac-button-danger);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-active.bk-btn-danger {
+  background-color: var(--ac-button-danger-active);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-btn-light {
+  background-color: var(--ac-button-light);
+  border-color: var(--ac-button-border);
+  color: var(--ac-color-text);
+}
+
+:host .bk-btn-light:hover {
+  background-color: var(--ac-button-light);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-active.bk-btn-light {
+  background-color: var(--ac-button-light-active);
+  border-color: var(--ac-button-hover-border);
+}
+
+:host .bk-btn[disabled],
+:host .bk-btn[disabled]:hover,
+:host .bk-active.bk-btn[disabled] {
+  background-color: var(--ac-button-disabled);
+  border-color: var(--ac-button-disabled);
+}

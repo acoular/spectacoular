@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from threading import Thread
 
-from spectacoular.themes import DARK, LIGHT, get_theme
+from spectacoular.themes import DARK, DOCUMENT_TEMPLATE, LIGHT, document_template_variables, get_theme
 
 from .controls import available_controls
 
@@ -22,6 +22,8 @@ class BaseApp:
 
     def __init__(self, doc, logger=None):
         self.doc = doc
+        self.doc.template = DOCUMENT_TEMPLATE
+        self.doc.template_variables.update(document_template_variables())
         self.logger = logger or logging.getLogger(__name__)
         self.root = None
         self.app_content = None
@@ -29,7 +31,17 @@ class BaseApp:
         self.exit_button = Button(label='Exit', button_type='danger', width=40)
         self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
         self.theme_switch = Switch(active=False, off_icon='dark_theme', on_icon='light_theme', width=60)
+        self.theme_switch.js_on_change(
+            'active',
+            CustomJS(
+                code="""
+                    document.documentElement.setAttribute('data-theme', cb_obj.active ? 'light' : 'dark')
+                """,
+            ),
+        )
         self.theme_switch.on_change('active', self._theme_switched)
+        self._data_theme_ready_callback = CustomJS(code='')
+        self.doc.js_on_event('document_ready', self._data_theme_ready_callback)
         self._header = None
         self._title = None
 
@@ -52,6 +64,7 @@ class BaseApp:
         theme = get_theme(mode)
         self.theme_mode = theme.mode
         self.doc.theme = theme.bokeh_theme
+        self._data_theme_ready_callback.code = theme.data_theme_script()
         self.theme_switch.active = theme.mode == LIGHT
         if self.root is not None:
             self.root.styles = theme.root_styles()
