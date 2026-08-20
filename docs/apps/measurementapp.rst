@@ -62,7 +62,7 @@ measurement, or beamforming workflow is running. Stop that workflow to change th
 .. admonition:: Info
 
    For custom audio-stream controllers, see :ref:`the B.Y.O.B. section
-   <byob-audio-stream-controllers>`. They are discovered by every :class:`~spectacoular.base.AudioStreamApp` automatically.
+   <byob-audio-stream-controllers>`. They are discovered by every :class:`~spectacoular.apps.base.AudioStreamApp` automatically.
 
 .. figure:: measurementapp.mp4
     :align: center

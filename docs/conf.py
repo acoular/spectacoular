@@ -32,6 +32,7 @@ extensions = [
     'bokeh.sphinxext.bokeh_plot',
     'sphinx.ext.doctest',
     'sphinx.ext.githubpages',
+    'sphinx.ext.intersphinx',
     'sphinx_design',
     'sphinx_copybutton',
     'sphinx_gallery.gen_gallery',
@@ -119,7 +120,8 @@ sphinx_gallery_conf = {
 }
 
 intersphinx_mapping = {
-    'acoular': ('https://acoular.org', None),
+    'acoular': ('https://acoular.org/acoular/', None),
+    'bokeh': ('https://docs.bokeh.org/en/latest/', None),
     'h5py': ('https://docs.h5py.org/en/stable/', None),
     'matplotlib': ('https://matplotlib.org/stable', None),
     'numpy': ('https://numpy.org/doc/stable', None),

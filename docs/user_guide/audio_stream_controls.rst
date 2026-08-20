@@ -1,7 +1,8 @@
 Audio-stream controllers
 ========================
 
-Any SpectAcoular application based on ``AudioStreamApp`` discovers audio-stream
+Any SpectAcoular application based on
+:class:`~spectacoular.apps.base.AudioStreamApp` discovers audio-stream
 controllers through the ``spectacoular.audio_stream_controls`` entry-point
 group. A controller provides an Acoular-compatible source and optional Bokeh
 configuration widgets for the backend audio stream.
@@ -13,9 +14,11 @@ B.Y.O.B. - Bring your own backend
 
 Built-in controllers are **Phantom**, a simulated stream, and **Sound device**,
 which captures live audio through PortAudio. In your own Python package, you
-can define a custom audio stream backend. For example, this controller makes a
-custom ``SamplesGenerator`` available as **My recorder** in every application's
-**Audio stream** dropdown:
+can define a custom audio stream backend by subclassing
+:class:`~spectacoular.apps.controls.BaseAudioStreamControl`. For example, this
+controller makes a
+custom :class:`~acoular.base.SamplesGenerator` available as **My recorder** in
+every application's **Audio stream** dropdown:
 
 .. code-block:: python
 
@@ -56,7 +59,7 @@ SpectAcoular:
     my-recorder = "my_package:MyRecorderControl"
 
 ``create_source`` must return a source accepted by the application's processing
-pipeline. Call ``source_changed()`` after replacing the source or changing a
+pipeline, i.e., an Acoular :class:`~acoular.base.SamplesGenerator`. Call ``source_changed()`` after replacing the source or changing a
 setting that requires its pipeline to be rebuilt. The application calls
 ``start()``, ``stop()``, and ``close()`` around active workflows; override them
 when the backend owns acquisition resources.

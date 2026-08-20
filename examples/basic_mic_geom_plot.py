@@ -68,7 +68,7 @@ source = ColumnDataSource(data={'x': mics.pos_total[0], 'y': mics.pos_total[1]})
 
 # %%
 # In addition, we need to decide which
-# `glyph <https://docs.bokeh.org/en/latest/docs/reference/models/glyphs.html#module-bokeh.models.glyphs>`_
+# `glyph <https://docs.bokeh.org/en/latest/docs/reference/models/glyphs.html>`_
 # to use. Glyphs are the basic building blocks of Bokeh plots and define
 # how the data is visualized. In this case, we use the
 # :meth:`~bokeh.plotting.figure.circle` method to create a

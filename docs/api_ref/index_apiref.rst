@@ -12,6 +12,8 @@ The following modules are part of SpectAcoular:
    :toctree: generated/
    :recursive:
 
+   apps.base
+   apps.controls
    bokehview
    consumer
    controller
