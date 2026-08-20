@@ -31,17 +31,18 @@ class BaseApp:
         self.theme_switch = Switch(active=False, off_icon='dark_theme', on_icon='light_theme', width=60)
         self.theme_switch.on_change('active', self._theme_switched)
         self._header = None
+        self._title = None
 
     def build_root(self):
         """Build and return this application's root Bokeh layout."""
         raise NotImplementedError
 
     def _build_header(self):
-        title = Div(text=f'<b>{self.title}</b>')
+        self._title = Div(text=f'<b>{self.title}</b>')
         spacer = Spacer(sizing_mode='stretch_width')
         actions = row(self.theme_switch, self.exit_button, width=100)
         right_padding = Spacer(width=20)
-        return row(title, spacer, actions, right_padding, sizing_mode='stretch_width')
+        return row(self._title, spacer, actions, right_padding, sizing_mode='stretch_width')
 
     def _build_root_layout(self, app_content):
         self._header = self._build_header()
@@ -56,6 +57,8 @@ class BaseApp:
             self.root.styles = theme.root_styles()
         if self._header is not None:
             self._header.styles = theme.root_styles()
+        if self._title is not None:
+            self._title.styles = theme.root_styles()
 
     def _theme_switched(self, _attr, _old, active):
         self._apply_theme(LIGHT if active else DARK)
