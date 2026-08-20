@@ -2401,12 +2401,12 @@ source = { editable = "." }
 dependencies = [
     { name = "acoular" },
     { name = "bokeh" },
+    { name = "sounddevice" },
 ]
 
 [package.optional-dependencies]
 full = [
     { name = "opencv-python" },
-    { name = "sounddevice" },
 ]
 
 [package.dev-dependencies]
@@ -2440,7 +2440,7 @@ requires-dist = [
     { name = "acoular", specifier = ">=26.8" },
     { name = "bokeh", specifier = ">=3.0" },
     { name = "opencv-python", marker = "extra == 'full'" },
-    { name = "sounddevice", marker = "extra == 'full'" },
+    { name = "sounddevice" },
 ]
 provides-extras = ["full"]
 

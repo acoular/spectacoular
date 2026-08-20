@@ -30,8 +30,9 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    'acoular>=26.08',
-    'bokeh >=3.0',
+    "acoular>=26.08",
+    "bokeh >=3.0",
+    "sounddevice",
 ]
 
 maintainers = [
@@ -47,7 +48,6 @@ maintainers = [
 [project.optional-dependencies]
 full = [
     "opencv-python", # only for msm_app
-    "sounddevice",
 ]
 
 [dependency-groups]
