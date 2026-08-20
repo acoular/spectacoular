@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from dataclasses import dataclass
 from importlib.resources import files
 from typing import Literal
@@ -50,6 +51,32 @@ def _load_brand_bokeh_theme_json() -> dict[str, object]:
     return json.loads(files('acoular_brand.assets').joinpath('acoular.bokeh.json').read_text())
 
 
+def _load_brand_theme_colors(mode: ThemeMode) -> dict[str, str]:
+    theme_toml = tomllib.loads(files('acoular_brand').joinpath('theme.toml').read_text())
+    return theme_toml[mode]
+
+
+def _apply_plot_theme_colors(theme_json: dict[str, object], mode: ThemeMode) -> None:
+    colors = _load_brand_theme_colors(mode)
+    attrs = theme_json['attrs']
+    attrs['Figure'].update(
+        {
+            'background_fill_color': colors['background'],
+            'border_fill_color': colors['background'],
+            'outline_line_color': colors['border'],
+        }
+    )
+    attrs['Axis'].update(
+        {
+            'axis_line_color': colors['border'],
+            'major_label_text_color': colors['muted'],
+            'axis_label_text_color': colors['text'],
+        }
+    )
+    attrs['Grid'].update({'grid_line_color': colors['border']})
+    attrs['Title'].update({'text_color': colors['text']})
+
+
 def _load_brand_css() -> str:
     return files('acoular_brand.assets').joinpath('acoular.css').read_text()
 
@@ -71,8 +98,9 @@ def _add_widget_theme_attrs(theme_json: dict[str, object]) -> None:
         theme_json['attrs'][model_name] = widget_attrs
 
 
-def _load_bokeh_theme_json() -> dict[str, object]:
+def _load_bokeh_theme_json(mode: ThemeMode) -> dict[str, object]:
     theme_json = _load_brand_bokeh_theme_json()
+    _apply_plot_theme_colors(theme_json, mode)
     _add_widget_theme_attrs(theme_json)
     return theme_json
 
@@ -80,7 +108,7 @@ def _load_bokeh_theme_json() -> dict[str, object]:
 def _make_theme(mode: ThemeMode) -> SpectacoularTheme:
     return SpectacoularTheme(
         mode=mode,
-        bokeh_theme=Theme(json=_load_bokeh_theme_json()),
+        bokeh_theme=Theme(json=_load_bokeh_theme_json(mode)),
     )
 
 
