@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import tomllib
 from dataclasses import dataclass
+from importlib.resources import files
 from typing import Literal
 
 from bokeh.themes import Theme
@@ -28,78 +31,51 @@ class SpectacoularTheme:
         }
 
 
-def _theme_json(colors):
+def _load_acoular_brand_colors() -> dict[str, dict[str, str]]:
+    return tomllib.loads(files('acoular_brand').joinpath('theme.toml').read_text())
+
+
+def _load_brand_bokeh_theme_json() -> dict[str, object]:
+    return json.loads(files('acoular_brand.assets').joinpath('acoular.bokeh.json').read_text())
+
+
+def _theme_json_from_tokens(colors: dict[str, str]) -> dict[str, object]:
     return {
         'attrs': {
-            'Plot': {
-                'background_fill_color': colors['plot_background'],
+            'Figure': {
+                'background_fill_color': colors['background'],
                 'border_fill_color': colors['background'],
-                'outline_line_color': colors['muted_text'],
-            },
-            'Grid': {
-                'grid_line_color': colors['grid'],
-                'grid_line_alpha': 0.35,
+                'outline_line_color': colors['border'],
             },
             'Axis': {
-                'axis_line_color': colors['muted_text'],
-                'major_label_text_color': colors['text'],
+                'axis_line_color': colors['border'],
+                'major_label_text_color': colors['muted'],
                 'axis_label_text_color': colors['text'],
-                'major_tick_line_color': colors['muted_text'],
-                'minor_tick_line_color': colors['muted_text'],
+            },
+            'Grid': {
+                'grid_line_color': colors['border'],
+                'grid_line_alpha': 0.7,
             },
             'Title': {
                 'text_color': colors['text'],
-            },
-            'Line': {
-                'line_color': colors['plot_line_primary'],
-            },
-            'Legend': {
-                'label_text_color': colors['text'],
-                'background_fill_color': colors['plot_background'],
-                'border_line_color': colors['grid'],
-            },
-            'BaseColorBar': {
-                'title_text_color': colors['text'],
-                'major_label_text_color': colors['text'],
-                'background_fill_color': colors['plot_background'],
-                'major_tick_line_color': colors['muted_text'],
             },
         },
     }
 
 
-def _make_theme(mode: ThemeMode, colors: dict[str, str]) -> SpectacoularTheme:
-    return SpectacoularTheme(mode=mode, bokeh_theme=Theme(json=_theme_json(colors)), colors=colors)
+def _make_theme(mode: ThemeMode, colors: dict[str, str], theme_json: dict[str, object]) -> SpectacoularTheme:
+    return SpectacoularTheme(mode=mode, bokeh_theme=Theme(json=theme_json), colors=colors)
 
 
-_DARK_THEME = _make_theme(
-    DARK,
-    {
-        'background': '#15191c',
-        'plot_background': '#20262b',
-        'text': '#e0e0e0',
-        'muted_text': '#b0b0b0',
-        'grid': '#4a525a',
-        'plot_line_primary': '#00a6d6',
-    },
-)
+def _build_themes() -> dict[str, SpectacoularTheme]:
+    acoular_brand_colors = _load_acoular_brand_colors()
+    return {
+        DARK: _make_theme(DARK, acoular_brand_colors[DARK], _theme_json_from_tokens(acoular_brand_colors[DARK])),
+        LIGHT: _make_theme(LIGHT, acoular_brand_colors[LIGHT], _load_brand_bokeh_theme_json()),
+    }
 
-_LIGHT_THEME = _make_theme(
-    LIGHT,
-    {
-        'background': '#ffffff',
-        'plot_background': '#ffffff',
-        'text': '#333333',
-        'muted_text': '#5b5b5b',
-        'grid': '#d9d9d9',
-        'plot_line_primary': '#0076a8',
-    },
-)
 
-_THEMES = {
-    DARK: _DARK_THEME,
-    LIGHT: _LIGHT_THEME,
-}
+_THEMES = _build_themes()
 
 
 def get_theme(mode: str) -> SpectacoularTheme:
