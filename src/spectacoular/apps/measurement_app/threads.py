@@ -13,7 +13,7 @@ class EventThread(Thread):
     """Wait for an event and trigger Bokeh callbacks before and after."""
 
     def __init__(self, event, doc, pre_callback=None, post_callback=None):
-        Thread.__init__(self)
+        Thread.__init__(self, daemon=True)
         self.pre_callback = pre_callback
         self.post_callback = post_callback
         self.doc = doc

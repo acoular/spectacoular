@@ -404,6 +404,7 @@ def test_measurement_app_stream_stop_turns_off_children_and_stops_all_workers(mo
     app._display_toggled(True)
     app._beamform_toggled(True)
     app._record_toggled(True)
+    record_listener = app._record_state_listener
     app.stream_toggle.active = True
     app.display_toggle.active = True
     app.beamform_toggle.active = True
@@ -413,6 +414,7 @@ def test_measurement_app_stream_stop_turns_off_children_and_stops_all_workers(mo
     app._stream_toggled(False)
 
     assert all(worker.breakThread and worker.joined for worker in started_workers)
+    assert record_listener.daemon
     assert not app.stream_toggle.active
     assert app.display_toggle.disabled
     assert app.record_toggle.disabled
