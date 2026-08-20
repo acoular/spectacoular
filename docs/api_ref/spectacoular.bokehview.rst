@@ -1,4 +1,0 @@
-﻿bokehview
-======================
-
-.. automodule:: spectacoular.bokehview

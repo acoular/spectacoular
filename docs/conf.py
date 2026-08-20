@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import sys
+import warnings
 from pathlib import Path
 
 sys.path.insert(0, str(Path('../..').resolve()))
@@ -70,6 +72,24 @@ html_copy_source = False
 copybutton_prompt_text = r'>>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: '  # strips prompts
 copybutton_prompt_is_regexp = True
 
+# Generated member pages are linked from their module pages but deliberately
+# omitted from the main navigation tree.
+suppress_warnings = ['toc.not_included']
+
+# Gallery pages render static Bokeh output. Their Python callbacks require a
+# Bokeh server and are explained in the examples, so the warning is expected.
+logging.getLogger('bokeh.embed.util').setLevel(logging.ERROR)
+
+# Traits exposes two inherited docstrings with a nonstandard ``Example``
+# section. Keep numpydoc strict for this project while ignoring those upstream
+# warnings only.
+warnings.filterwarnings(
+    'ignore',
+    message=r'Unknown section Example in the docstring of (Map|TraitMap) in .*traits/trait_(types|handlers)\.py\.',
+    category=UserWarning,
+    module=r'numpydoc\.docscrape',
+)
+
 autosummary_generate = True
 autosummary_generate_overwrite = True
 
@@ -80,7 +100,7 @@ autosummary_generate_overwrite = True
 autodoc_default_options = {
     'members': True,
     'member-order': 'bysource',
-    'exclude-members': 'trait_added,trait_modified',
+    'exclude-members': 'trait_added,trait_modified,warn',
     'inherited-members': 'ABCHasStrictTraits,HasStrictTraits,HasTraits,CHasTraits',
     'show-inheritance': True,  # False does not work, need to delete this line to deactivate!
 }

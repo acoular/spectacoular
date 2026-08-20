@@ -6,10 +6,16 @@ controllers through the ``spectacoular.audio_stream_controls`` entry-point
 group. A controller provides an Acoular-compatible source and optional Bokeh
 configuration widgets for the backend audio stream.
 
+.. _byob-audio-stream-controllers:
+
 B.Y.O.B. - Bring your own backend
 ---------------------------------
 
-In your own Python package, you can define a custom audio stream backend. For example, this controller makes a custom ``SamplesGenerator`` available as **My recorder** in every application's **Audio stream** dropdown:
+Built-in controllers are **Phantom**, a simulated stream, and **Sound device**,
+which captures live audio through PortAudio. In your own Python package, you
+can define a custom audio stream backend. For example, this controller makes a
+custom ``SamplesGenerator`` available as **My recorder** in every application's
+**Audio stream** dropdown:
 
 .. code-block:: python
 

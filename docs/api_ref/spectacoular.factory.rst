@@ -1,4 +1,0 @@
-﻿factory
-====================
-
-.. automodule:: spectacoular.factory

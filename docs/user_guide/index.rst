@@ -15,7 +15,6 @@ visualization and analysis.
     Basic widget building <../auto_examples/basic_mic_geom_widgets>
     Basic interactive applications <../auto_examples/interactive_apps>
     Audio-stream controllers <audio_stream_controls>
-    MicGeom example <../apps/micgeomexample>
 
 
 

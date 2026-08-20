@@ -2,6 +2,7 @@
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
 """Creating widgets with SpectAcoular.
+===================================
 
 .. _basic_mic_geom_widgets:
 
@@ -20,7 +21,7 @@ with additional control widgets using the SpectAcoular package.
 # Set up the microphone geometry plot
 # -----------------------------------
 #
-# Similar to the :ref:`basic_mic_geom_plot`, we will first import the necessary modules and set up
+# Similar to :doc:`basic_mic_geom_plot`, we will first import the necessary modules and set up
 # the microphone geometry plot.
 
 from pathlib import Path
