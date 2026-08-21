@@ -5,7 +5,12 @@ from __future__ import annotations
 import logging
 from threading import Thread
 
-from spectacoular.themes import DARK, DOCUMENT_TEMPLATE, LIGHT, document_template_variables, get_theme
+from spectacoular.themes.themes import (
+    DOCUMENT_TEMPLATE,
+    client_theme_switch_code,
+    document_template_variables,
+    get_theme,
+)
 
 from .controls import available_controls
 
@@ -18,7 +23,7 @@ class BaseApp:
     """Base class for Bokeh applications."""
 
     title = 'SpectAcoular'
-    default_theme = DARK
+    default_theme = 'dark'
 
     def __init__(self, doc, logger=None):
         self.doc = doc
@@ -31,14 +36,7 @@ class BaseApp:
         self.exit_button = Button(label='Exit', button_type='danger', width=40)
         self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
         self.theme_switch = Switch(active=False, off_icon='dark_theme', on_icon='light_theme', width=60)
-        self.theme_switch.js_on_change(
-            'active',
-            CustomJS(
-                code="""
-                    document.documentElement.setAttribute('data-theme', cb_obj.active ? 'light' : 'dark')
-                """,
-            ),
-        )
+        self.theme_switch.js_on_change('active', self._client_theme_switch_callback())
         self.theme_switch.on_change('active', self._theme_switched)
         self._data_theme_ready_callback = CustomJS(code='')
         self.doc.js_on_event('document_ready', self._data_theme_ready_callback)
@@ -60,12 +58,17 @@ class BaseApp:
         self._header = self._build_header()
         return column(self._header, app_content, sizing_mode='stretch_width')
 
-    def _apply_theme(self, mode):
+    @staticmethod
+    def _client_theme_switch_callback():
+        return CustomJS(code=client_theme_switch_code())
+
+    def _apply_theme(self, mode, *, update_bokeh_theme=False):
         theme = get_theme(mode)
         self.theme_mode = theme.mode
-        self.doc.theme = theme.bokeh_theme
+        if update_bokeh_theme:
+            self.doc.theme = theme.bokeh_theme
         self._data_theme_ready_callback.code = theme.data_theme_script()
-        self.theme_switch.active = theme.mode == LIGHT
+        self.theme_switch.active = theme.mode == 'light'
         if self.root is not None:
             self.root.styles = theme.root_styles()
         if self._header is not None:
@@ -74,14 +77,14 @@ class BaseApp:
             self._title.styles = theme.root_styles()
 
     def _theme_switched(self, _attr, _old, active):
-        self._apply_theme(LIGHT if active else DARK)
+        self._apply_theme('light' if active else 'dark')
 
     def server_doc(self):
         """Attach the application to its Bokeh document."""
         self.app_content = self.build_root()
         self.root = self._build_root_layout(self.app_content)
         self.doc.add_root(self.root)
-        self._apply_theme(self.default_theme)
+        self._apply_theme(self.default_theme, update_bokeh_theme=True)
         self.doc.title = self.title
 
 

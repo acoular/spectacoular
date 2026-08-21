@@ -15,6 +15,7 @@ DARK = 'dark'
 LIGHT = 'light'
 ThemeMode = Literal['dark', 'light']
 MODELS_WITH_THEME_CSS = ('Widget', 'Tooltip')
+PLOT_THEME_COLORS_PLACEHOLDER = '__SPECTACOULAR_PLOT_THEME_COLORS__'
 MODE_COLOR_NAMES = {
     LIGHT: {
         'background': 'background-light',
@@ -29,40 +30,6 @@ MODE_COLOR_NAMES = {
         'border': 'muted-dark',
     },
 }
-DARK_WIDGET_CSS = """
-:host {
-  color: var(--acoular-color-brand-light);
-  --color: var(--acoular-color-brand-light);
-  --icon-color: var(--acoular-color-brand-light);
-  --inverted-color: var(--acoular-color-brand-light);
-  --background-color: var(--acoular-color-background-dark);
-  --tooltip-text: var(--acoular-color-brand-light);
-  --tooltip-color: var(--acoular-color-background-dark);
-  --default: var(--acoular-color-background-dark);
-  --default-border: var(--acoular-color-muted-dark);
-  --default-hover: var(--acoular-color-background-dark);
-  --default-active: color-mix(in srgb, var(--acoular-color-background-dark) 85%, black);
-  --primary: var(--acoular-color-brand);
-  --primary-hover: var(--acoular-color-brand);
-  --primary-active: color-mix(in srgb, var(--acoular-color-brand) 85%, black);
-  --light: var(--acoular-color-background-dark);
-  --light-hover: var(--acoular-color-background-dark);
-  --light-active: color-mix(in srgb, var(--acoular-color-background-dark) 85%, black);
-  --active-bg: var(--acoular-color-brand-light);
-  --active-fg: var(--acoular-color-background-dark);
-  --inactive-bg: var(--acoular-color-muted-dark);
-  --inactive-fg: var(--acoular-color-muted-light);
-}
-
-:host .bk-btn {
-  color: var(--acoular-color-brand-light);
-}
-
-:host .bk-input {
-  background-color: var(--acoular-color-brand-light);
-  color: var(--acoular-color-background-dark);
-}
-"""
 DOCUMENT_TEMPLATE = get_env().from_string(
     """
 {% extends "file.html.jinja" %}
@@ -70,23 +37,7 @@ DOCUMENT_TEMPLATE = get_env().from_string(
 {{ super() }}
 <style>
 {{ acoular_css | safe }}
-html,
-body {
-  min-height: 100%;
-}
-
-:root,
-html[data-theme="light"],
-html[data-theme="light"] body {
-  background-color: var(--acoular-color-background-light);
-  color: var(--acoular-color-background-dark);
-}
-
-html[data-theme="dark"],
-html[data-theme="dark"] body {
-  background-color: var(--acoular-color-background-dark);
-  color: var(--acoular-color-brand-light);
-}
+{{ page_css | safe }}
 </style>
 {% endblock %}
 """
@@ -132,6 +83,17 @@ def _load_brand_theme_colors(mode: ThemeMode) -> dict[str, str]:
     return {name: color_tokens[token_name] for name, token_name in MODE_COLOR_NAMES[mode].items()}
 
 
+def client_plot_theme_colors() -> dict[ThemeMode, dict[str, str]]:
+    """Return concrete plot colors for the client-side theme switcher.
+
+    Bokeh plot colors are model properties used by canvas/SVG renderers, not
+    normal DOM CSS.  They cannot reliably be represented as inherited CSS
+    variables, so the runtime switch callback patches those properties directly
+    in the browser while keeping ``Document.theme`` stable.
+    """
+    return {mode: _load_brand_theme_colors(mode) for mode in (DARK, LIGHT)}
+
+
 def _apply_plot_theme_colors(theme_json: dict[str, object], mode: ThemeMode) -> None:
     colors = _load_brand_theme_colors(mode)
     attrs = theme_json['attrs']
@@ -166,16 +128,29 @@ def _load_brand_css() -> str:
     return files('acoular_brand.assets').joinpath('acoular.css').read_text()
 
 
+def _load_page_css() -> str:
+    return files('spectacoular.themes').joinpath('page.css').read_text()
+
+
+def _load_client_theme_js() -> str:
+    return files('spectacoular.themes').joinpath('client_theme.js').read_text()
+
+
+def client_theme_switch_code() -> str:
+    """Return runtime theme-switch JavaScript with concrete plot colors injected."""
+    return _load_client_theme_js().replace(
+        PLOT_THEME_COLORS_PLACEHOLDER,
+        json.dumps(client_plot_theme_colors()),
+    )
+
+
 def document_template_variables() -> dict[str, str]:
     """Return template variables needed by the SpectAcoular document template."""
-    return {'acoular_css': _load_brand_css()}
+    return {'acoular_css': _load_brand_css(), 'page_css': _load_page_css()}
 
 
-def _load_widget_stylesheets(mode: ThemeMode) -> list[str]:
-    stylesheets = [files('spectacoular.themes').joinpath('bokeh_widgets.css').read_text()]
-    if mode == DARK:
-        stylesheets.append(DARK_WIDGET_CSS)
-    return stylesheets
+def _load_widget_stylesheets(_mode: ThemeMode) -> list[str]:
+    return [files('spectacoular.themes').joinpath('bokeh_widgets.css').read_text()]
 
 
 def _add_widget_theme_attrs(theme_json: dict[str, object], mode: ThemeMode) -> None:
