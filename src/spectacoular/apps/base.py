@@ -7,6 +7,8 @@ from threading import Thread
 
 from spectacoular.themes.themes import (
     DOCUMENT_TEMPLATE,
+    LOGO_MODEL_TAG,
+    acoular_logo_html,
     client_theme_switch_code,
     document_template_variables,
     get_theme,
@@ -41,6 +43,7 @@ class BaseApp:
         self._data_theme_ready_callback = CustomJS(code='')
         self.doc.js_on_event('document_ready', self._data_theme_ready_callback)
         self._header = None
+        self._logo = None
         self._title = None
 
     def build_root(self):
@@ -50,12 +53,15 @@ class BaseApp:
     def _build_action_frame(self, *controls):
         return column(row(*controls), width=CONTROL_WIDTH, styles=CONTROL_STYLES)
 
+    def _build_logo(self):
+        self._logo = Div(text=acoular_logo_html(self.theme_mode), tags=[LOGO_MODEL_TAG])
+        return self._logo
+
     def _build_header(self):
-        self._title = Div(text=f'<b>{self.title}</b>')
         spacer = Spacer(sizing_mode='stretch_width')
         actions = self._build_action_frame(self.theme_switch, self.exit_button)
         right_padding = Spacer(width=20)
-        return row(self._title, spacer, actions, right_padding, sizing_mode='stretch_width')
+        return row(self._build_logo(), spacer, actions, right_padding, sizing_mode='stretch_width')
 
     def _build_root_layout(self, app_content):
         self._header = self._build_header()
@@ -76,6 +82,8 @@ class BaseApp:
             self.root.styles = theme.root_styles()
         if self._header is not None:
             self._header.styles = theme.root_styles()
+        if self._logo is not None:
+            self._logo.text = acoular_logo_html(theme.mode)
         if self._title is not None:
             self._title.styles = theme.root_styles()
 
@@ -115,7 +123,8 @@ class AudioStreamApp(BaseApp):
             mode='int',
             width=100,
             description=(
-                'Periodic view refresh interval in milliseconds. Lower values update the UI more often and may increase load.'
+                'Periodic view refresh interval in milliseconds. Lower values update the UI more often '
+                'and may increase load.'
             ),
         )
         self.update_period_input.on_change('value', self._update_period_changed)
@@ -159,14 +168,13 @@ class AudioStreamApp(BaseApp):
         return int(value)
 
     def _update_period_changed(self, _attr, _old, _new):
-        self.update_period_ms
+        _ = self.update_period_ms
 
     def _build_header(self):
-        self._title = Div(text=f'<b>{self.title}</b>')
         spacer = Spacer(sizing_mode='stretch_width')
         actions = self._build_action_frame(self.update_period_input, self.theme_switch, self.exit_button)
         right_padding = Spacer(width=20)
-        return row(self._title, spacer, actions, right_padding, sizing_mode='stretch_width')
+        return row(self._build_logo(), spacer, actions, right_padding, sizing_mode='stretch_width')
 
     def _activate_control(self, control_id):
         control = None

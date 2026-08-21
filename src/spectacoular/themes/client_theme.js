@@ -36,6 +36,7 @@ document.documentElement.setAttribute('data-theme', mode);
  * canvas/SVG plot properties are Bokeh model attributes, not normal DOM CSS.
  */
 const themes = __SPECTACOULAR_PLOT_THEME_COLORS__;
+const logo_html = __SPECTACOULAR_LOGO_HTML__;
 
 /*
  * Set several Bokeh model properties only if that model supports them.
@@ -105,6 +106,8 @@ function apply_plot_theme(mode) {
       });
     } else if (model.tags != null && model.tags.includes('spectacoular-beamforming-colormap')) {
       set_if_present(model, {palette: colors.beamforming_palette});
+    } else if (model.tags != null && model.tags.includes('spectacoular-app-logo')) {
+      set_if_present(model, {text: logo_html[mode]});
     }
   }
 }

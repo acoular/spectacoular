@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import tomllib
+from base64 import b64encode
 from dataclasses import dataclass
 from importlib.resources import files
 from typing import Literal
@@ -17,6 +18,29 @@ ThemeMode = Literal['dark', 'light']
 MODELS_WITH_THEME_CSS = ('Widget', 'Tooltip')
 BEAMFORMING_COLORMAP_TAG = 'spectacoular-beamforming-colormap'
 PLOT_THEME_COLORS_PLACEHOLDER = '__SPECTACOULAR_PLOT_THEME_COLORS__'
+LOGO_HTML_PLACEHOLDER = '__SPECTACOULAR_LOGO_HTML__'
+LOGO_MODEL_TAG = 'spectacoular-app-logo'
+LOGO_RESOURCE_CANDIDATES = {
+    DARK: (
+        ('acoular_brand.assets', 'acoular_logo_dark.svg'),
+        ('acoular_brand.assets', 'acoular_logo_dark_inverted.svg'),
+        ('acoular_brand.assets', 'acoular_logo_dark.png'),
+        ('acoular_sphinx._static', 'acoular_logo_dark.png'),
+    ),
+    LIGHT: (
+        ('acoular_brand.assets', 'acoular_logo.svg'),
+        ('acoular_brand.assets', 'acoular_logo_light.svg'),
+        ('acoular_brand.assets', 'acoular_logo_light.png'),
+        ('acoular_sphinx._static', 'acoular_logo_light.png'),
+    ),
+}
+LOGO_MIME_TYPES = {
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+}
 MODE_COLOR_NAMES = {
     LIGHT: {
         'background': 'background-light',
@@ -86,9 +110,9 @@ def _load_brand_theme_colors(mode: ThemeMode) -> dict[str, str]:
 
 def beamforming_colormap_palette(mode: ThemeMode, size: int = 256) -> list[str]:
     """Return the Acoular Beamforming colormap for *mode* as Bokeh hex colors."""
-    from acoular_brand.colormaps import register_colormaps
-    from matplotlib import colormaps
-    from matplotlib.colors import to_hex
+    from acoular_brand.colormaps import register_colormaps  # noqa: PLC0415
+    from matplotlib import colormaps  # noqa: PLC0415
+    from matplotlib.colors import to_hex  # noqa: PLC0415
 
     register_colormaps()
     name = 'acoular_r' if mode == LIGHT else 'acoular'
@@ -147,6 +171,41 @@ def _load_brand_css() -> str:
     return files('acoular_brand.assets').joinpath('acoular.css').read_text()
 
 
+def _logo_mime_type(filename: str) -> str:
+    for suffix, mime_type in LOGO_MIME_TYPES.items():
+        if filename.endswith(suffix):
+            return mime_type
+    return 'application/octet-stream'
+
+
+def _load_logo_data_uri(mode: ThemeMode) -> str | None:
+    for package, filename in LOGO_RESOURCE_CANDIDATES[mode]:
+        try:
+            logo_bytes = files(package).joinpath(filename).read_bytes()
+        except (FileNotFoundError, ModuleNotFoundError):
+            continue
+        encoded_logo = b64encode(logo_bytes).decode('ascii')
+        return f'data:{_logo_mime_type(filename)};base64,{encoded_logo}'
+    return None
+
+
+def _logo_html(mode: ThemeMode) -> str:
+    data_uri = _load_logo_data_uri(mode)
+    if data_uri is None:
+        return '<span class="spectacoular-app-logo-fallback">acoular</span>'
+    return f'<img class="spectacoular-app-logo-image" src="{data_uri}" alt="Acoular logo">'
+
+
+def acoular_logo_html(mode: ThemeMode = DARK) -> str:
+    """Return single-logo HTML for the Acoular application header."""
+    return f'<div class="spectacoular-app-logo" aria-label="Acoular">{_logo_html(mode)}</div>'
+
+
+def client_logo_html() -> dict[ThemeMode, str]:
+    """Return per-theme logo HTML for browser-side theme switching."""
+    return {mode: acoular_logo_html(mode) for mode in (DARK, LIGHT)}
+
+
 def _load_page_css() -> str:
     return files('spectacoular.themes').joinpath('page.css').read_text()
 
@@ -157,9 +216,10 @@ def _load_client_theme_js() -> str:
 
 def client_theme_switch_code() -> str:
     """Return runtime theme-switch JavaScript with concrete plot colors injected."""
-    return _load_client_theme_js().replace(
-        PLOT_THEME_COLORS_PLACEHOLDER,
-        json.dumps(client_plot_theme_colors()),
+    return (
+        _load_client_theme_js()
+        .replace(PLOT_THEME_COLORS_PLACEHOLDER, json.dumps(client_plot_theme_colors()))
+        .replace(LOGO_HTML_PLACEHOLDER, json.dumps(client_logo_html()))
     )
 
 

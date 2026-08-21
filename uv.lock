@@ -40,7 +40,7 @@ wheels = [
 [[package]]
 name = "acoular-brand"
 version = "0.1.0"
-source = { git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-brand&rev=main#5f3ac17bb8b3d5531a57697edd8fa6fb139657c5" }
+source = { git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-brand&rev=brand-v1.0#e121d29f3f89e0ceef30f0971e38f650bdaf0ea8" }
 
 [[package]]
 name = "acoular-ruff"
@@ -2445,7 +2445,7 @@ tests = [
 [package.metadata]
 requires-dist = [
     { name = "acoular", specifier = ">=26.8" },
-    { name = "acoular-brand", git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-brand&rev=main" },
+    { name = "acoular-brand", git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-brand&rev=brand-v1.0" },
     { name = "bokeh", specifier = ">=3.0" },
     { name = "matplotlib" },
     { name = "opencv-python", marker = "extra == 'full'" },

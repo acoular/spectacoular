@@ -104,6 +104,28 @@ samp {
   font-family: var(--spectacoular-font-family-monospace);
 }
 
+/* Header logo shown in place of the app title. */
+.spectacoular-app-logo {
+  align-items: center;
+  display: flex;
+  min-height: 42px;
+  padding-left: 8px;
+}
+
+.spectacoular-app-logo-image {
+  height: 24px;
+  max-width: 150px;
+  object-fit: contain;
+  width: auto;
+}
+
+.spectacoular-app-logo-fallback {
+  font-family: var(--spectacoular-font-family-sans);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 /*
  * Initial/light background fallback.
  *
