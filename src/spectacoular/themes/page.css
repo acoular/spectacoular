@@ -29,6 +29,16 @@
  * page-level theme and Bokeh's widget internals.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Roboto:wght@400;500;600;700&family=Source+Code+Pro:wght@300;400&display=swap");
+
+/* Acoular brand font stacks from acoular_brand/assets/acoular.mplstyle. */
+:root {
+  --spectacoular-font-family-sans: Roboto, "Roboto Condensed", "DejaVu Sans", Arial, sans-serif;
+  --spectacoular-font-family-monospace: "Source Code Pro", "DejaVu Sans Mono", monospace;
+  --bokeh-base-font: var(--spectacoular-font-family-sans);
+  --bokeh-mono-font: var(--spectacoular-font-family-monospace);
+}
+
 /* Semantic color values used while the page is in light mode. */
 html[data-theme="light"] {
   --spectacoular-widget-color: var(--acoular-color-background-dark);
@@ -84,6 +94,14 @@ html[data-theme="dark"] {
 html,
 body {
   min-height: 100%;
+  font-family: var(--spectacoular-font-family-sans);
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--spectacoular-font-family-monospace);
 }
 
 /*
