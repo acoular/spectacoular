@@ -11,6 +11,8 @@ import spectacoular as sp
 from acoular import MaskedTimeOut
 from spectacoular.apps.base import AudioStreamApp
 from spectacoular.apps.controls import CONTROL_STYLES, CONTROL_WIDTH
+from spectacoular.themes import get_acoular_color
+from spectacoular.themes.themes import BEAMFORMING_COLORMAP_TAG, beamforming_colormap_palette
 
 from .cam import CameraComponent
 from .log import LogHandler
@@ -18,7 +20,7 @@ from .threads import EventThread, SamplesThread, StreamDrain
 
 import numpy as np
 from bokeh.layouts import Spacer, column, layout, row
-from bokeh.models import ColorBar, ColumnDataSource, FactorRange, LinearColorMapper, Select, Tabs, Toggle
+from bokeh.models import CategoricalSlider, ColorBar, ColumnDataSource, FactorRange, LinearColorMapper, Select, Tabs, Toggle
 from bokeh.models import TabPanel as Panel
 from bokeh.models.glyphs import Scatter
 from bokeh.models.widgets import (
@@ -33,22 +35,71 @@ from bokeh.models.widgets import (
     TableColumn,
     TextInput,
 )
-from bokeh.palettes import Spectral11, Viridis256
+from bokeh.palettes import Spectral11
 from bokeh.plotting import figure
 
 COLOR = Spectral11
+AMP_BAR_COLOR = get_acoular_color('brand')
+RECORDING_AMP_BAR_COLOR = get_acoular_color('secondary-dark')
+MIC_GLYPH_SIZE_MIN = 8
+MIC_GLYPH_SIZE_MAX = 35
+MIC_GLYPH_SIZE_REFERENCE = 10
+BF_PEAK_LEVEL_RANGES = {
+    'dB(SPL)': (0, 140),
+    'dB(V)': (-120, 40),
+}
 BUTTON_HEIGHT = 40
 ACTION_BUTTON_HEIGHT = 40
 ACTION_BUTTON_WIDTH = 80
-ACTION_BUTTON_STYLESHEET = '.bk-btn { font-weight: 700; }'
+SECTION_TITLE_FONT_SIZE_PX = 14
+OCTAVE_BAND_CENTER_FREQUENCIES = (
+    50,
+    63,
+    80,
+    100,
+    125,
+    160,
+    200,
+    250,
+    315,
+    400,
+    500,
+    630,
+    800,
+    1000,
+    1250,
+    1600,
+    2000,
+    2500,
+    3150,
+    4000,
+    5000,
+    6300,
+    8000,
+    10000,
+    12500,
+    16000,
+    20000,
+)
+TAB_TITLE_STYLESHEET = f'''
+.bk-tab {{
+    font-size: {SECTION_TITLE_FONT_SIZE_PX}px;
+}}
+'''
+
+
+def _section_title(title):
+    return Div(text=f'<b style="font-size:{SECTION_TITLE_FONT_SIZE_PX}px;">{title}</b>')
 
 
 class MeasurementApp(AudioStreamApp):
     """Measurement display and recording application."""
 
     title = 'Measurement App'
+    CONTROL_GROUP_SPACING = 25
+    TAB_CONTENT_TOP_SPACING = 12
 
-    def __init__(self, doc, logger=None):
+    def __init__(self, doc, logger=None, controls=None):
         self.blocksize = 512
         self.mics = sp.MicGeom(file=Path(__file__).parent / 'micgeom' / 'tub_vogel64.xml')
         self.grid = sp.RectGrid(x_min=-0.75, x_max=0.75, y_min=-0.75, y_max=0.75, z=0.75, increment=0.05)
@@ -58,15 +109,15 @@ class MeasurementApp(AudioStreamApp):
         self._beamform_worker = None
         self._record_state_listener = None
         self._periodic_callback = None
+        self._beamforming_locked_disabled_states = None
         self._stream_active = False
         self._updating_toggles = False
         self.stream_toggle = Toggle(
-            label='Stream',
-            button_type='success',
+            label='▶ Stream',
+            button_type='primary',
             sizing_mode='stretch_width',
             height=BUTTON_HEIGHT,
             disabled=True,
-            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.filename = TextInput(
             value='',
@@ -77,23 +128,18 @@ class MeasurementApp(AudioStreamApp):
         )
         self.current_time_checkbox = CheckboxGroup(labels=['use current time'], active=[0])
         self.measurement_time = TextInput(value='10', title='Measurement Time [s]:', sizing_mode='stretch_width')
-        self.update_period = Select(
-            title='Select Update Period [ms]',
-            value='50',
-            options=['25', '50', '100', '200', '400', '800'],
-            sizing_mode='stretch_width',
-        )
         self._measurement_controls = column(Spacer(width=0, height=0), width=CONTROL_WIDTH)
         self._measurement_panel = column(
-            Div(text='<b>Measurement control</b>'),
+            _section_title('Measurement Control'),
             self._measurement_controls,
             width=CONTROL_WIDTH,
             styles=CONTROL_STYLES,
         )
+        self._camera_panel = column(Spacer(width=0, height=0), width=CONTROL_WIDTH)
         self.current_time_checkbox.on_change('active', self._toggle_filename)
         self.filename.on_change('value', self._set_filename)
         self.stream_toggle.on_click(self._stream_toggled)
-        super().__init__(doc, logger)
+        super().__init__(doc, logger, controls=controls)
 
     @staticmethod
     def _filename_description():
@@ -105,26 +151,77 @@ class MeasurementApp(AudioStreamApp):
         return [str(index) for index in range(start, source.num_channels + start)]
 
     @staticmethod
+    def _max_octave_band_center_frequency(sample_freq):
+        """Highest octave-band center frequency whose upper band edge is at or below Nyquist."""
+        return max(1, int(np.floor(sample_freq / (2 * np.sqrt(2)))))
+
+    @classmethod
+    def _octave_band_center_frequency_options(cls, sample_freq):
+        """Preferred logarithmic octave-band center-frequency choices for a source sample rate."""
+        max_center_frequency = cls._max_octave_band_center_frequency(sample_freq)
+        frequencies = [frequency for frequency in OCTAVE_BAND_CENTER_FREQUENCIES if frequency <= max_center_frequency]
+        if not frequencies:
+            frequencies = [max_center_frequency]
+        return [str(frequency) for frequency in frequencies]
+
+    @staticmethod
+    def _nearest_frequency_option(options, target):
+        """Return the option nearest to target, preferring the lower option on ties."""
+        return str(min((int(option) for option in options), key=lambda frequency: (abs(frequency - target), frequency)))
+
+    @staticmethod
     def _level(mean_square, reference):
         mean_square = np.asarray(mean_square, dtype=float)
         return 10 * np.log10(np.maximum(mean_square / reference**2, np.finfo(mean_square.dtype).eps))
 
+    def _selected_level_reference(self):
+        return 2e-5 if self.level_label_select.value == 'dB(SPL)' else 1.0
+
+    def _display_levels(self, mean_square):
+        return self._level(mean_square, reference=self._selected_level_reference())
+
     def _channel_levels(self, mean_square):
-        if self.level_label_select.value == 'dB_SPL':
-            return ac.L_p(mean_square)
-        return self._level(mean_square, reference=1.0)
+        return self._display_levels(mean_square)
 
     def _set_amplitude_plot_labels(self):
         level_label = self.level_label_select.value
-        self.amp_fig.title.text = 'SPL/dB' if level_label == 'dB_SPL' else 'Voltage Level/dB'
+        self.amp_fig.title.text = 'SPL/dB' if level_label == 'dB(SPL)' else 'Voltage Level/dB'
         self.amp_fig.yaxis[0].axis_label = level_label
         self.amp_fig.hover[0].tooltips = [(level_label, '@level'), ('Channel', '@channels')]
         self.clip_level.title = f'Clip Level/{level_label}'
 
+    def _set_beamforming_plot_labels(self):
+        level_label = self.level_label_select.value
+        self.mics_beamf_fig.hover[0].tooltips = [
+            (level_label, '@level'),
+            ('Channel Index', '@channels'),
+            ('(x,y)', '(@x, @y)'),
+        ]
+        self.bf_colorbar.title = level_label
+        self.bf_max_level.title = f'Peak Level/{level_label}'
+        self._set_beamforming_peak_level_range(level_label)
+
+    def _set_beamforming_peak_level_range(self, level_label):
+        start, end = BF_PEAK_LEVEL_RANGES[level_label]
+        self.bf_max_level.start = start
+        self.bf_max_level.end = end
+        self.bf_max_level.value = min(max(self.bf_max_level.value, start), end)
+
     def _amplitude_colors(self, levels):
         if getattr(self, 'record_toggle', None) is not None and self.record_toggle.active:
-            return np.full(len(levels), COLOR[8])
-        return np.where(levels < self.clip_level.value, COLOR[1], COLOR[8])
+            return np.full(len(levels), RECORDING_AMP_BAR_COLOR)
+        return np.where(levels < self.clip_level.value, AMP_BAR_COLOR, COLOR[8])
+
+    def _microphone_sizes(self, levels):
+        levels = np.asarray(levels, dtype=float)
+        level_min = self.amp_min_level.value
+        level_max = self.amp_max_level.value
+        mic_size = self.mics_widgets['mic_size'].value if hasattr(self, 'mics_widgets') else MIC_GLYPH_SIZE_REFERENCE
+        size_scale = mic_size / MIC_GLYPH_SIZE_REFERENCE
+        if level_min is None or level_max is None or level_max <= level_min:
+            return np.full(len(levels), MIC_GLYPH_SIZE_MIN * size_scale)
+        fraction = np.clip((levels - level_min) / (level_max - level_min), 0, 1)
+        return (MIC_GLYPH_SIZE_MIN + fraction * (MIC_GLYPH_SIZE_MAX - MIC_GLYPH_SIZE_MIN)) * size_scale
 
     def build_stream_content(self, source):  # noqa: PLR0915
         """Build the legacy measurement layout for the selected source."""
@@ -152,7 +249,7 @@ class MeasurementApp(AudioStreamApp):
 
         labels = self._labels(source)
         self.amp_data = ColumnDataSource(
-            {'channels': labels, 'level': np.zeros(len(labels)), 'colors': [COLOR[1]] * len(labels)}
+            {'channels': labels, 'level': np.zeros(len(labels)), 'colors': [AMP_BAR_COLOR] * len(labels)}
         )
         self.beamf_data = ColumnDataSource({'level': []})
         self.grid_data = ColumnDataSource(
@@ -166,12 +263,12 @@ class MeasurementApp(AudioStreamApp):
 
         self.amp_fig = figure(
             title='SPL/dB',
-            tooltips=[('dB_SPL', '@level'), ('Channel', '@channels')],
+            tooltips=[('dB(SPL)', '@level'), ('Channel', '@channels')],
             tools='',
             x_range=FactorRange(*labels),
             y_range=(0, 120),
-            y_axis_label='dB_SPL',
-            height=750,
+            y_axis_label='dB(SPL)',
+            height=900,
             sizing_mode='stretch_width',
         )
         self.amp_fig.xgrid.visible = False
@@ -180,13 +277,20 @@ class MeasurementApp(AudioStreamApp):
         self.amp_fig.vbar(x='channels', width=0.5, bottom=0, top='level', color='colors', source=self.amp_data)
 
         self.mics_beamf_fig = figure(
-            tooltips=[('Lp/dB', '@level'), ('Channel Index', '@channels'), ('(x,y)', '(@x, @y)')],
+            tooltips=[('dB(SPL)', '@level'), ('Channel Index', '@channels'), ('(x,y)', '(@x, @y)')],
             tools='pan,wheel_zoom,reset',
             match_aspect=True,
             aspect_ratio=1,
             width=1400,
+            height=900,
         )
-        mapper = LinearColorMapper(palette=Viridis256, low=70, high=90, low_color=(1, 1, 1, 0))
+        mapper = LinearColorMapper(
+            palette=beamforming_colormap_palette(self.theme_mode),
+            low=70,
+            high=90,
+            low_color=(1, 1, 1, 0),
+            tags=[BEAMFORMING_COLORMAP_TAG],
+        )
         self.bf_image = self.mics_beamf_fig.image(
             image='level',
             x=self.grid.x_min,
@@ -196,11 +300,10 @@ class MeasurementApp(AudioStreamApp):
             color_mapper=mapper,
             source=self.beamf_data,
         )
-        self.mics_beamf_fig.add_layout(
-            ColorBar(color_mapper=mapper, location=(0, 0), title='dB', title_standoff=10), 'right'
-        )
+        self.bf_colorbar = ColorBar(color_mapper=mapper, location=(0, 0), title='dB(SPL)', title_standoff=10)
+        self.mics_beamf_fig.add_layout(self.bf_colorbar, 'right')
 
-        mic_presenter = sp.MicGeomPresenter(source=self.mics, auto_update=True)
+        self.mic_presenter = sp.MicGeomPresenter(source=self.mics, auto_update=True)
         self.camera = CameraComponent(doc=self.doc, figure=self.mics_beamf_fig)
         mic_layout = sp.layouts.MicGeomComponent(
             mic_alpha=0.4,
@@ -214,10 +317,10 @@ class MeasurementApp(AudioStreamApp):
                 line_alpha='alpha',
             ),
             figure=self.mics_beamf_fig,
-            presenter=mic_presenter,
+            presenter=self.mic_presenter,
             allow_point_draw=True,
         )
-        mic_presenter.update(
+        self.mic_presenter.update(
             sizes=np.full(self.mics.pos_total.shape[1], 20), colors=[COLOR[1]] * self.mics.pos_total.shape[1]
         )
         self.mics_beamf_fig.rect(alpha=1.0, color='black', fill_alpha=0, line_width=2, source=self.grid_data)
@@ -236,15 +339,18 @@ class MeasurementApp(AudioStreamApp):
             }
         )
         self.mics_widgets = mic_layout.widgets
-        self.all_mics_valid = Button(label='All Valid', button_type='success', sizing_mode='stretch_width')
+        self.all_mics_valid = Button(label='All Mics Valid', button_type='primary', sizing_mode='stretch_width')
         self.all_mics_valid.on_click(lambda: setattr(self.mics, 'invalid_channels', []))
 
         self.invalid_input_channels = MultiSelect(title='Not-Array Channels', height=150, value=[])
-        self.invalid_input_channels.description = 'Select which input channels should not be used for beamforming'
+        self.invalid_input_channels.description = (
+            'Extra non-array input channels that are not part of the microphone array, e.g. trigger, tacho, '
+            'reference, or unused ADC channels. These channels are ignored for beamforming.'
+        )
         self.beamforming_input.set_widgets(invalid_channels=self.invalid_input_channels)
-        self.all_bf_valid = Button(label='All Valid', button_type='success', sizing_mode='stretch_width')
+        self.all_bf_valid = Button(label='Use All Channels', button_type='primary', sizing_mode='stretch_width')
         self.all_bf_valid.on_click(lambda: setattr(self.beamforming_input, 'invalid_channels', []))
-        self.auto_level_toggle = Toggle(label='Auto Level', button_type='success', active=True)
+        self.auto_level_toggle = Toggle(label='Auto Level', button_type='primary', active=True)
         self.dynamic_range = NumericInput(value=10, title='Dynamic Range/dB')
         self.snapshot_avg = NumericInput(value=1, title='Snapshots to Average')
         self.bf_max_level = Slider(start=0, end=140, value=100, step=1, title='Peak Level/dB')
@@ -253,37 +359,44 @@ class MeasurementApp(AudioStreamApp):
         z_slider = Slider(start=0.01, end=10.0, value=self.grid.z, step=0.02, title='z')
         self.grid.set_widgets(z=z_slider)
         grid_widgets['z'] = z_slider
-        freq_slider = Slider(start=50, end=10000, value=4000, step=1, title='Frequency')
-        self.beamf.source.source.source.set_widgets(band=freq_slider)
-        self.clip_level = NumericInput(value=120, title='Clip Level/dB_SPL', width=100)
+        frequency_options = self._octave_band_center_frequency_options(source.sample_freq)
+        center_frequency = self._nearest_frequency_option(frequency_options, 4000)
+        self.beamforming_frequency_slider = CategoricalSlider(
+            categories=frequency_options,
+            value=center_frequency,
+            title='Octave-band center frequency [Hz]',
+        )
+        octave_filter = self.beamf.source.source.source
+        octave_filter.band = int(center_frequency)
+        self.beamforming_frequency_slider.on_change(
+            'value', lambda _attr, _old, new: setattr(octave_filter, 'band', int(new))
+        )
+        self.clip_level = NumericInput(value=120, title='Clip Level/dB(SPL)', width=100)
         self.amp_min_level = NumericInput(value=0, title='Bar Min/dB', width=100)
         self.amp_max_level = NumericInput(value=120, title='Bar Max/dB', width=100)
         self.label_select = Select(title='Select Channel Labeling:', value='Number', options=['Number', 'Index'])
-        self.level_label_select = Select(title='Select Level Labeling:', value='dB_SPL', options=['dB_SPL', 'dB_V'])
+        self.level_label_select = Select(title='Select Level Labeling:', value='dB(SPL)', options=['dB(SPL)', 'dB(V)'])
 
         self.display_toggle = Toggle(
-            label='Display',
+            label='▮▮ Display',
             button_type='primary',
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,
-            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.record_toggle = Toggle(
-            label='Measure',
+            label='● Rec',
             button_type='danger',
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,
-            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.beamform_toggle = Toggle(
-            label='Beamf',
-            button_type='warning',
+            label='⚡︎ Beamf',
+            button_type='primary',
             width=ACTION_BUTTON_WIDTH,
             height=ACTION_BUTTON_HEIGHT,
             disabled=True,
-            stylesheets=[ACTION_BUTTON_STYLESHEET],
         )
         self.display_toggle.on_click(self._display_toggled)
         self.record_toggle.on_click(self._record_toggled)
@@ -304,7 +417,6 @@ class MeasurementApp(AudioStreamApp):
             self.current_time_checkbox,
             self.measurement_time,
             action_buttons,
-            self.update_period,
         ]
 
         def update_channel_labels(_attr, _old, _new):
@@ -312,7 +424,7 @@ class MeasurementApp(AudioStreamApp):
             self.amp_data.data = {
                 'channels': channel_labels,
                 'level': np.zeros(len(channel_labels)),
-                'colors': [COLOR[1]] * len(channel_labels),
+                'colors': [AMP_BAR_COLOR] * len(channel_labels),
             }
             self.amp_fig.x_range.factors = channel_labels
             self.invalid_input_channels.options = [(str(index), label) for index, label in enumerate(channel_labels)]
@@ -336,11 +448,14 @@ class MeasurementApp(AudioStreamApp):
                 levels = self._channel_levels(self.disp.cdsource.data['data'][0])
                 self.amp_data.data['level'] = levels
                 self.amp_data.data['colors'] = self._amplitude_colors(levels)
+                self.mic_presenter.cdsource.data['sizes'] = self._microphone_sizes(levels)
             if self.beamform_toggle.active and self.beamf.cdsource.data['data'].size:
-                image = ac.L_p(self.beamf.cdsource.data['data'].reshape(self.grid.shape)).T
+                image = self._display_levels(self.beamf.cdsource.data['data'].reshape(self.grid.shape)).T
                 self.beamf_data.data = {'level': [image]}
                 if self.auto_level_toggle.active:
-                    mapper.high, mapper.low = image.max(), image.max() - self.dynamic_range.value
+                    peak_level = image.max()
+                    mapper.high, mapper.low = peak_level, peak_level - self.dynamic_range.value
+                    self.bf_max_level.value = peak_level
 
         def update_amplitude_range(_attr, _old, _new):
             if self.amp_min_level.value is not None:
@@ -350,8 +465,10 @@ class MeasurementApp(AudioStreamApp):
 
         def update_level_label(_attr, _old, _new):
             self._set_amplitude_plot_labels()
+            self._set_beamforming_plot_labels()
             update_levels()
 
+        update_channel_labels(None, None, None)
         self.label_select.on_change('value', update_channel_labels)
         self.level_label_select.on_change('value', update_level_label)
         self.amp_min_level.on_change('value', update_amplitude_range)
@@ -365,20 +482,37 @@ class MeasurementApp(AudioStreamApp):
         self.bf_alpha.on_change('value', lambda _a, _o, new: setattr(self.bf_image.glyph, 'global_alpha', new))
         for name in ('x_min', 'x_max', 'y_min', 'y_max'):
             grid_widgets[name].on_change('value', update_grid)
+        self._beamforming_locked_widgets = [
+            self.snapshot_avg,
+            grid_widgets['x_min'],
+            grid_widgets['x_max'],
+            grid_widgets['y_min'],
+            grid_widgets['y_max'],
+            grid_widgets['increment'],
+            grid_widgets['z'],
+            grid_widgets['size'],
+        ]
 
+        self._amplitude_controls = column(
+            row(
+                self.clip_level,
+                self.amp_min_level,
+                self.amp_max_level,
+                self.label_select,
+                self.level_label_select,
+                spacing=25,
+            ),
+            width=760,
+            styles=CONTROL_STYLES,
+        )
         amplitudes_tab = Panel(
             child=column(
+                Spacer(height=self.TAB_CONTENT_TOP_SPACING),
                 row(
-                    Spacer(width=25),
-                    self.clip_level,
-                    Spacer(width=25),
-                    self.amp_min_level,
-                    Spacer(width=25),
-                    self.amp_max_level,
-                    Spacer(width=25),
-                    self.label_select,
-                    Spacer(width=25),
-                    self.level_label_select,
+                    Spacer(sizing_mode='stretch_width'),
+                    self._amplitude_controls,
+                    Spacer(sizing_mode='stretch_width'),
+                    sizing_mode='stretch_width',
                 ),
                 self.amp_fig,
                 sizing_mode='stretch_both',
@@ -387,48 +521,81 @@ class MeasurementApp(AudioStreamApp):
         )
         self.mics_widgets['invalid_channels'].title = 'Invalid Mics'
         self.mics_widgets['invalid_channels'].height = 150
-        mic_control = layout(
+        self.mics_widgets['invalid_channels'].description = (
+            'Select broken microphones from the microphone geometry. These microphones stay in the array layout, '
+            'but are ignored by the steering vector and beamforming.'
+        )
+        self._mic_control = layout(
             [
-                [Div(text='<b style="font-size:15px;">Microphone Setup</b>')],
+                [_section_title('Microphone Control')],
                 [self.mics_widgets['file'], self.mics_widgets['mic_size'], self.mics_widgets['num_mics']],
                 [
-                    column(self.all_mics_valid, self.mics_widgets['invalid_channels']),
-                    column(self.all_bf_valid, self.invalid_input_channels),
+                    column(self.mics_widgets['invalid_channels'], self.all_mics_valid),
+                    column(self.invalid_input_channels, self.all_bf_valid),
                 ],
                 [self.mics_widgets['pos_total']],
             ],
+            width=CONTROL_WIDTH,
             sizing_mode='stretch_width',
+            styles=CONTROL_STYLES,
         )
-        bf_control = layout(
+        self._bf_control = layout(
             [
-                [Div(text='<b style="font-size:15px;">Beamforming Setup</b>')],
-                [freq_slider],
+                [_section_title('Beamforming Control')],
+                [self.beamforming_frequency_slider],
                 [self.bf_alpha, self.snapshot_avg],
                 [self.auto_level_toggle, self.dynamic_range, self.bf_max_level],
                 [grid_widgets['x_min'], grid_widgets['x_max'], grid_widgets['y_min'], grid_widgets['y_max']],
                 [grid_widgets['increment'], grid_widgets['z']],
                 [grid_widgets['size']],
             ],
+            width=CONTROL_WIDTH,
             sizing_mode='stretch_width',
+            styles=CONTROL_STYLES,
         )
-        camera_widgets = list(self.camera.widgets.values())
-        camera_control = layout(
+        camera_widgets = self.camera.widgets
+        for widget in camera_widgets.values():
+            widget.width = 130
+        self._camera_control = layout(
             [
-                [Div(text='<b style="font-size:15px;">Camera Setup</b>')],
-                [Spacer(width=10), *camera_widgets[:6], Spacer(width=10)],
-                [Spacer(width=10), *camera_widgets[6:], Spacer(width=10)],
+                [_section_title('Camera Control')],
+                [camera_widgets['active'], camera_widgets['flip_horizontal']],
+                [camera_widgets['image_type'], camera_widgets['camera_index']],
+                [camera_widgets['framerate'], camera_widgets['alpha']],
+                [camera_widgets['width'], camera_widgets['height']],
+                [camera_widgets['extent_x'], camera_widgets['extent_y']],
+                [camera_widgets['extent_width'], camera_widgets['extent_height']],
             ],
+            width=CONTROL_WIDTH,
             sizing_mode='stretch_width',
+            styles=CONTROL_STYLES,
         )
+        self._camera_panel.children = [self._camera_control]
         mics_tab = Panel(
-            child=row(
-                column(camera_control, self.mics_beamf_fig),
-                column(mic_control, Spacer(height=25), bf_control, sizing_mode='stretch_width'),
+            child=column(
+                Spacer(height=self.TAB_CONTENT_TOP_SPACING),
+                row(
+                    column(self.mics_beamf_fig),
+                    column(
+                        self._mic_control,
+                        Spacer(height=self.CONTROL_GROUP_SPACING),
+                        self._bf_control,
+                        width=CONTROL_WIDTH,
+                        sizing_mode='stretch_width',
+                    ),
+                ),
+                sizing_mode='stretch_both',
             ),
             title='Microphone Geometry / Beamforming',
         )
         self._update_levels = update_levels
-        return Tabs(tabs=[amplitudes_tab, mics_tab], sizing_mode='inherit', width=1700, height=800)
+        return Tabs(
+            tabs=[amplitudes_tab, mics_tab],
+            sizing_mode='inherit',
+            width=1700,
+            height=800,
+            stylesheets=[TAB_TITLE_STYLESHEET],
+        )
 
     def _set_bf_levels(self, mapper):
         if not self.auto_level_toggle.active:
@@ -438,13 +605,13 @@ class MeasurementApp(AudioStreamApp):
     def build_root(self):
         """Keep the original sidebar-and-tabs arrangement around stream controls."""
         sidebar = column(
-            self.exit_button,
-            Spacer(height=10),
             self.control_select,
             self._error,
             self._control_content,
-            Spacer(height=10),
+            Spacer(height=self.CONTROL_GROUP_SPACING),
             self._measurement_panel,
+            Spacer(height=self.CONTROL_GROUP_SPACING),
+            self._camera_panel,
             width=300,
         )
         return column(row(Spacer(width=10), sidebar, Spacer(width=20), self._stream_content))
@@ -469,6 +636,22 @@ class MeasurementApp(AudioStreamApp):
         ):
             if toggle is not None:
                 toggle.disabled = not enabled
+
+    def _set_beamforming_settings_enabled(self, *, enabled):
+        locked_widgets = getattr(self, '_beamforming_locked_widgets', ())
+        if enabled:
+            disabled_states = self._beamforming_locked_disabled_states
+            if disabled_states is None:
+                return
+            for widget in locked_widgets:
+                widget.disabled = disabled_states.get(widget, widget.disabled)
+            self._beamforming_locked_disabled_states = None
+            return
+
+        if self._beamforming_locked_disabled_states is None:
+            self._beamforming_locked_disabled_states = {widget: widget.disabled for widget in locked_widgets}
+        for widget in locked_widgets:
+            widget.disabled = True
 
     def _start_consumer(self, generator, register, args, *, finished_event=None):
         worker = SamplesThread(generator, self.splitter, register, args, finished_event or Event())
@@ -503,7 +686,7 @@ class MeasurementApp(AudioStreamApp):
 
     def _start_updates(self):
         if self._periodic_callback is None:
-            self._periodic_callback = self.doc.add_periodic_callback(self._update_levels, int(self.update_period.value))
+            self._periodic_callback = self.doc.add_periodic_callback(self._update_levels, self.update_period_ms)
 
     def _stop_updates_if_idle(self):
         display_active = getattr(self, 'display_toggle', None) is not None and self.display_toggle.active
@@ -598,9 +781,11 @@ class MeasurementApp(AudioStreamApp):
                     {'buffer_size': 1, 'buffer_overflow_treatment': 'none'},
                 )
             self._set_toggle_active(self.beamform_toggle, active=True)
+            self._set_beamforming_settings_enabled(enabled=False)
             self._start_updates()
         else:
             self._set_toggle_active(self.beamform_toggle, active=False)
+            self._set_beamforming_settings_enabled(enabled=True)
             self.beamf_data.data = {'level': []}
             self._stop_worker('_beamform_worker')
             self._stop_updates_if_idle()
@@ -614,6 +799,7 @@ class MeasurementApp(AudioStreamApp):
             self._set_toggle_active(self.display_toggle, active=False)
         if getattr(self, 'beamform_toggle', None) is not None:
             self._set_toggle_active(self.beamform_toggle, active=False)
+            self._set_beamforming_settings_enabled(enabled=True)
             self.beamf_data.data = {'level': []}
         for worker_name in ('_display_worker', '_beamform_worker', '_record_worker', '_stream_worker'):
             self._stop_worker(worker_name)

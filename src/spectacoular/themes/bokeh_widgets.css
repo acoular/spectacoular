@@ -1,0 +1,179 @@
+/*
+ * Bokeh widget stylesheet used by Spectacoular themes.
+ *
+ * This file is not a normal global page stylesheet.  `themes.py` adds it to
+ * the Bokeh theme attribute `Widget.stylesheets` and `Tooltip.stylesheets`.
+ * BokehJS then places this CSS inside each widget's shadow DOM.
+ *
+ * Bokeh/shadow-DOM quick guide:
+ * - Bokeh widgets such as Button, Select, Slider, DataTable, and Tooltip are
+ *   web components with their own private DOM tree (a "shadow DOM").
+ * - Global selectors from `page.css` usually cannot reach inside that private
+ *   tree.
+ * - `:host` means "the Bokeh widget element that owns this shadow DOM".
+ * - CSS custom properties are inherited by the host and are visible inside the
+ *   shadow DOM.  This is why most values below read from
+ *   `--spectacoular-*` variables defined in `page.css`.
+ *
+ * Why this file exists:
+ * Bokeh's built-in themes are applied as model properties and stylesheets.  A
+ * full runtime `Document.theme` replacement is visually slow in large apps.  We
+ * keep the initial Bokeh theme stable and let this stylesheet react to the
+ * browser-side `html[data-theme]` switch through inherited CSS variables.
+ */
+
+/*
+ * Map Spectacoular/Acoular theme variables to the variable names expected by
+ * Bokeh's widget CSS.
+ *
+ * Many Bokeh widgets use generic names such as `--primary`, `--success`,
+ * `--default`, `--active-bg`, or `--tooltip-color`.  By defining those names on
+ * `:host`, every widget receives Acoular-branded colors while Bokeh's internal
+ * CSS can stay unchanged.
+ */
+:host {
+  color: var(--spectacoular-widget-color);
+  --color: var(--spectacoular-widget-color);
+  --icon-color: var(--spectacoular-widget-color);
+  --inverted-color: var(--spectacoular-widget-inverted-color);
+  --background-color: var(--spectacoular-widget-background-color);
+  --tooltip-text: var(--spectacoular-tooltip-text);
+  --tooltip-color: var(--spectacoular-tooltip-color);
+
+  /* Default/neutral widgets, e.g. default buttons and unclassified controls. */
+  --default: var(--spectacoular-widget-default);
+  --default-border: var(--spectacoular-widget-default-border);
+  --default-hover: var(--spectacoular-widget-default-hover);
+  --default-hover-border: var(--acoular-color-highlight);
+  --default-active: var(--spectacoular-widget-default-active);
+  --default-active-border: var(--acoular-color-highlight);
+  --default-disabled: var(--acoular-color-muted);
+  --default-disabled-border: var(--acoular-color-muted);
+
+  /* Bokeh `button_type="primary"`. */
+  --primary: var(--acoular-color-brand);
+  --primary-border: var(--acoular-color-muted-light);
+  --primary-hover: var(--acoular-color-brand);
+  --primary-hover-border: var(--acoular-color-highlight);
+  --primary-active: color-mix(in srgb, var(--acoular-color-brand) 85%, black);
+  --primary-active-border: var(--acoular-color-highlight);
+  --primary-disabled: var(--acoular-color-muted);
+  --primary-disabled-border: var(--acoular-color-muted);
+
+  /* Bokeh `button_type="success"`, used for positive/start/display actions. */
+  --success: var(--acoular-color-success);
+  --success-border: var(--acoular-color-muted-light);
+  --success-hover: var(--acoular-color-success);
+  --success-hover-border: var(--acoular-color-highlight);
+  --success-active: color-mix(in srgb, var(--acoular-color-success) 85%, black);
+  --success-active-border: var(--acoular-color-highlight);
+  --success-disabled: var(--acoular-color-muted);
+  --success-disabled-border: var(--acoular-color-muted);
+
+  /* Bokeh `button_type="warning"`. */
+  --warning: var(--acoular-color-warning);
+  --warning-border: var(--acoular-color-muted-light);
+  --warning-hover: var(--acoular-color-warning);
+  --warning-hover-border: var(--acoular-color-highlight);
+  --warning-active: color-mix(in srgb, var(--acoular-color-warning) 85%, black);
+  --warning-active-border: var(--acoular-color-highlight);
+  --warning-disabled: var(--acoular-color-muted);
+  --warning-disabled-border: var(--acoular-color-muted);
+
+  /* Bokeh `button_type="danger"`, used for destructive/stop/exit actions. */
+  --danger: var(--acoular-color-secondary-dark);
+  --danger-border: var(--acoular-color-muted-light);
+  --danger-hover: var(--acoular-color-secondary-dark);
+  --danger-hover-border: var(--acoular-color-highlight);
+  --danger-active: color-mix(in srgb, var(--acoular-color-secondary-dark) 85%, black);
+  --danger-active-border: var(--acoular-color-highlight);
+  --danger-disabled: var(--acoular-color-muted);
+  --danger-disabled-border: var(--acoular-color-muted);
+
+  /* Bokeh `button_type="light"`. */
+  --light: var(--spectacoular-widget-light);
+  --light-border: var(--acoular-color-muted-light);
+  --light-hover: var(--spectacoular-widget-light-hover);
+  --light-hover-border: var(--acoular-color-highlight);
+  --light-active: var(--spectacoular-widget-light-active);
+  --light-active-border: var(--acoular-color-highlight);
+  --light-disabled: var(--acoular-color-muted);
+  --light-disabled-border: var(--acoular-color-muted);
+
+  /* Toggle/switch state colors used by Bokeh controls. */
+  --active-bg: var(--spectacoular-widget-active-bg);
+  --active-fg: var(--spectacoular-widget-active-fg);
+  --inactive-bg: var(--spectacoular-widget-inactive-bg);
+  --inactive-fg: var(--spectacoular-widget-inactive-fg);
+}
+
+/* Highlight the whole Bokeh widget host when the mouse is over it. */
+:host(:hover) {
+  border-color: var(--acoular-color-highlight);
+  outline-color: var(--acoular-color-highlight);
+}
+
+/*
+ * Highlight common internal controls on hover.
+ *
+ * The `.bk-*`, `.choices*`, and `.noUi-*` class names are Bokeh/third-party
+ * implementation details used inside widgets such as inputs, selects, sliders,
+ * color pickers, and range sliders.  They are intentionally grouped here so a
+ * user sees one consistent Acoular highlight color when hovering over controls.
+ */
+:host(:hover) input,
+:host(:hover) textarea,
+:host(:hover) select,
+:host(:hover) .bk-input,
+:host(:hover) .bk-input-group,
+:host(:hover) .bk-spin-wrapper,
+:host(:hover) .bk-bar,
+:host(:hover) .bk-swatch,
+.choices:hover .choices__inner,
+.noUi-target:hover,
+.noUi-handle:hover {
+  border-color: var(--acoular-color-highlight);
+  outline-color: var(--acoular-color-highlight);
+}
+
+/* Make Bokeh buttons visually stronger against both light and dark backgrounds. */
+:host .bk-btn {
+  color: var(--spectacoular-widget-button-color);
+  font-weight: 600;
+}
+
+/* Text inputs should keep light readable fields even inside a dark app shell. */
+:host .bk-input {
+  background-color: var(--spectacoular-widget-input-background);
+  color: var(--spectacoular-widget-input-color);
+}
+
+:host .bk-input:disabled {
+  background-color: var(--acoular-color-muted);
+}
+
+/*
+ * DataTable styling.
+ *
+ * Bokeh's DataTable uses the SlickGrid library internally, hence the `slick-*`
+ * class names.  These selectors recolor both normal cells and active cell
+ * editors so tables remain readable after a browser-side theme switch.
+ */
+:host .bk-data-table,
+:host .slick-row,
+:host .slick-cell,
+:host .slick-header-column,
+:host .bk-cell-editor input,
+:host .bk-cell-editor select {
+  background: var(--spectacoular-table-background);
+  color: var(--spectacoular-table-color);
+}
+
+/* Special DataTable rows/cells that Bokeh/SlickGrid gives separate classes. */
+:host .slick-row.odd,
+:host .slick-cell.bk-cell-index,
+:host .bk-cell-special-defaults,
+:host .bk-cell-select {
+  background: var(--spectacoular-table-background);
+  color: var(--spectacoular-table-color);
+}

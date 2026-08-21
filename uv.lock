@@ -38,6 +38,11 @@ wheels = [
 ]
 
 [[package]]
+name = "acoular-brand"
+version = "0.1.0"
+source = { git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-brand&rev=brand-v1.0#e121d29f3f89e0ceef30f0971e38f650bdaf0ea8" }
+
+[[package]]
 name = "acoular-ruff"
 version = "0.1.0"
 source = { git = "https://github.com/acoular/ci.git?rev=ruff-v1.0#ef0c12875d745c965b7ca2fd3145cce72889a5ef" }
@@ -2400,7 +2405,9 @@ name = "spectacoular"
 source = { editable = "." }
 dependencies = [
     { name = "acoular" },
+    { name = "acoular-brand" },
     { name = "bokeh" },
+    { name = "matplotlib" },
     { name = "sounddevice" },
 ]
 
@@ -2438,7 +2445,9 @@ tests = [
 [package.metadata]
 requires-dist = [
     { name = "acoular", specifier = ">=26.8" },
+    { name = "acoular-brand", git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-brand&rev=brand-v1.0" },
     { name = "bokeh", specifier = ">=3.0" },
+    { name = "matplotlib" },
     { name = "opencv-python", marker = "extra == 'full'" },
     { name = "sounddevice" },
 ]

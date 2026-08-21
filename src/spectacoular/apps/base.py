@@ -5,10 +5,19 @@ from __future__ import annotations
 import logging
 from threading import Thread
 
-from .controls import available_controls
+from spectacoular.themes.themes import (
+    DOCUMENT_TEMPLATE,
+    LOGO_MODEL_TAG,
+    acoular_logo_html,
+    client_theme_switch_code,
+    document_template_variables,
+    get_theme,
+)
 
-from bokeh.layouts import Spacer, column
-from bokeh.models import CustomJS, Div, Select
+from .controls import CONTROL_STYLES, CONTROL_WIDTH, available_controls
+
+from bokeh.layouts import Spacer, column, row
+from bokeh.models import CustomJS, Div, NumericInput, Select, Switch
 from bokeh.models.widgets import Button
 
 
@@ -16,27 +25,85 @@ class BaseApp:
     """Base class for Bokeh applications."""
 
     title = 'SpectAcoular'
+    default_theme = 'dark'
 
     def __init__(self, doc, logger=None):
         self.doc = doc
+        self.doc.template = DOCUMENT_TEMPLATE
+        self.doc.template_variables.update(document_template_variables())
         self.logger = logger or logging.getLogger(__name__)
         self.root = None
-        self.exit_button = Button(label='Exit', button_type='danger', sizing_mode='stretch_width')
+        self.app_content = None
+        self.theme_mode = self.default_theme
+        self.exit_button = Button(label='⏻', button_type='danger', width=40)
         self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
+        self.theme_switch = Switch(active=False, off_icon='dark_theme', on_icon='light_theme', width=60)
+        self.theme_switch.js_on_change('active', self._client_theme_switch_callback())
+        self.theme_switch.on_change('active', self._theme_switched)
+        self._data_theme_ready_callback = CustomJS(code='')
+        self.doc.js_on_event('document_ready', self._data_theme_ready_callback)
+        self._header = None
+        self._logo = None
+        self._title = None
 
     def build_root(self):
         """Build and return this application's root Bokeh layout."""
         raise NotImplementedError
 
+    def _build_action_frame(self, *controls):
+        return column(row(*controls), width=CONTROL_WIDTH, styles=CONTROL_STYLES)
+
+    def _build_logo(self):
+        self._logo = Div(text=acoular_logo_html(self.theme_mode), tags=[LOGO_MODEL_TAG])
+        return self._logo
+
+    def _build_header(self):
+        spacer = Spacer(sizing_mode='stretch_width')
+        actions = self._build_action_frame(self.theme_switch, self.exit_button)
+        right_padding = Spacer(width=20)
+        return row(self._build_logo(), spacer, actions, right_padding, sizing_mode='stretch_width')
+
+    def _build_root_layout(self, app_content):
+        self._header = self._build_header()
+        return column(self._header, app_content, sizing_mode='stretch_width')
+
+    @staticmethod
+    def _client_theme_switch_callback():
+        return CustomJS(code=client_theme_switch_code())
+
+    def _apply_theme(self, mode, *, update_bokeh_theme=False):
+        theme = get_theme(mode)
+        self.theme_mode = theme.mode
+        if update_bokeh_theme:
+            self.doc.theme = theme.bokeh_theme
+        self._data_theme_ready_callback.code = theme.data_theme_script()
+        self.theme_switch.active = theme.mode == 'light'
+        if self.root is not None:
+            self.root.styles = theme.root_styles()
+        if self._header is not None:
+            self._header.styles = theme.root_styles()
+        if self._logo is not None:
+            self._logo.text = acoular_logo_html(theme.mode)
+        if self._title is not None:
+            self._title.styles = theme.root_styles()
+
+    def _theme_switched(self, _attr, _old, active):
+        self._apply_theme('light' if active else 'dark')
+
     def server_doc(self):
         """Attach the application to its Bokeh document."""
-        self.root = self.build_root()
+        self.app_content = self.build_root()
+        self.root = self._build_root_layout(self.app_content)
         self.doc.add_root(self.root)
+        self._apply_theme(self.default_theme, update_bokeh_theme=True)
         self.doc.title = self.title
 
 
 class AudioStreamApp(BaseApp):
     """Base app that consumes a configurable audio stream control."""
+
+    DEFAULT_UPDATE_PERIOD_MS = 50
+    MIN_UPDATE_PERIOD_MS = 8
 
     def __init__(self, doc, logger=None, controls=None):
         super().__init__(doc, logger)
@@ -49,6 +116,18 @@ class AudioStreamApp(BaseApp):
         self._stream_content = column(Spacer(width=0, height=0))
         self._control_content = column(Spacer(width=0, height=0))
         self._error = Div()
+        self.update_period_input = NumericInput(
+            title='Update [ms]',
+            value=self.DEFAULT_UPDATE_PERIOD_MS,
+            low=self.MIN_UPDATE_PERIOD_MS,
+            mode='int',
+            width=100,
+            description=(
+                'Periodic view refresh interval in milliseconds. Lower values update the UI more often '
+                'and may increase load.'
+            ),
+        )
+        self.update_period_input.on_change('value', self._update_period_changed)
         self.control_select = Select(
             title='Audio stream',
             options=[('', 'Select audio stream'), *[(key, control.label) for key, control in self.controls.items()]],
@@ -78,6 +157,24 @@ class AudioStreamApp(BaseApp):
 
     def _clear_error(self):
         self._error.text = ''
+
+    @property
+    def update_period_ms(self):
+        """Validated periodic view update interval in milliseconds."""
+        value = self.update_period_input.value
+        if value is None or value < self.MIN_UPDATE_PERIOD_MS:
+            value = self.MIN_UPDATE_PERIOD_MS
+            self.update_period_input.value = value
+        return int(value)
+
+    def _update_period_changed(self, _attr, _old, _new):
+        _ = self.update_period_ms
+
+    def _build_header(self):
+        spacer = Spacer(sizing_mode='stretch_width')
+        actions = self._build_action_frame(self.update_period_input, self.theme_switch, self.exit_button)
+        right_padding = Spacer(width=20)
+        return row(self._build_logo(), spacer, actions, right_padding, sizing_mode='stretch_width')
 
     def _activate_control(self, control_id):
         control = None
