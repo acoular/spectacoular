@@ -103,6 +103,8 @@ function apply_plot_theme(mode) {
         major_tick_line_color: colors.border,
         border_line_color: colors.border,
       });
+    } else if (model.tags != null && model.tags.includes('spectacoular-beamforming-colormap')) {
+      set_if_present(model, {palette: colors.beamforming_palette});
     }
   }
 }

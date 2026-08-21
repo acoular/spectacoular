@@ -84,7 +84,7 @@ class CameraComponent(BaseSpectacoular):
     trait_widget_args = Dict(
         {
             'active': {
-                'label': 'Display',
+                'label': '▣ Camera',
                 'active': False,
                 'disabled': not HAVE_CV2,
                 'button_type': 'primary',
@@ -128,7 +128,7 @@ class CameraComponent(BaseSpectacoular):
             },
             'alpha': {'title': 'Image Alpha', 'start': 0, 'end': 1, 'step': 0.05},
             'flip_horizontal': {
-                'label': 'Mirror',
+                'label': '⇄ Mirror',
                 'active': False,
                 'disabled': not HAVE_CV2,
                 'button_type': 'primary',

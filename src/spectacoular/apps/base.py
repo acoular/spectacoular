@@ -12,10 +12,10 @@ from spectacoular.themes.themes import (
     get_theme,
 )
 
-from .controls import available_controls
+from .controls import CONTROL_STYLES, CONTROL_WIDTH, available_controls
 
 from bokeh.layouts import Spacer, column, row
-from bokeh.models import CustomJS, Div, Select, Switch
+from bokeh.models import CustomJS, Div, NumericInput, Select, Switch
 from bokeh.models.widgets import Button
 
 
@@ -33,7 +33,7 @@ class BaseApp:
         self.root = None
         self.app_content = None
         self.theme_mode = self.default_theme
-        self.exit_button = Button(label='Exit', button_type='danger', width=40)
+        self.exit_button = Button(label='⏻', button_type='danger', width=40)
         self.exit_button.js_on_click(CustomJS(code='window.location.href = "about:blank";'))
         self.theme_switch = Switch(active=False, off_icon='dark_theme', on_icon='light_theme', width=60)
         self.theme_switch.js_on_change('active', self._client_theme_switch_callback())
@@ -47,10 +47,13 @@ class BaseApp:
         """Build and return this application's root Bokeh layout."""
         raise NotImplementedError
 
+    def _build_action_frame(self, *controls):
+        return column(row(*controls), width=CONTROL_WIDTH, styles=CONTROL_STYLES)
+
     def _build_header(self):
         self._title = Div(text=f'<b>{self.title}</b>')
         spacer = Spacer(sizing_mode='stretch_width')
-        actions = row(self.theme_switch, self.exit_button, width=100)
+        actions = self._build_action_frame(self.theme_switch, self.exit_button)
         right_padding = Spacer(width=20)
         return row(self._title, spacer, actions, right_padding, sizing_mode='stretch_width')
 
@@ -91,6 +94,9 @@ class BaseApp:
 class AudioStreamApp(BaseApp):
     """Base app that consumes a configurable audio stream control."""
 
+    DEFAULT_UPDATE_PERIOD_MS = 50
+    MIN_UPDATE_PERIOD_MS = 8
+
     def __init__(self, doc, logger=None, controls=None):
         super().__init__(doc, logger)
         self.controls = available_controls if controls is None else controls
@@ -102,6 +108,17 @@ class AudioStreamApp(BaseApp):
         self._stream_content = column(Spacer(width=0, height=0))
         self._control_content = column(Spacer(width=0, height=0))
         self._error = Div()
+        self.update_period_input = NumericInput(
+            title='Update [ms]',
+            value=self.DEFAULT_UPDATE_PERIOD_MS,
+            low=self.MIN_UPDATE_PERIOD_MS,
+            mode='int',
+            width=100,
+            description=(
+                'Periodic view refresh interval in milliseconds. Lower values update the UI more often and may increase load.'
+            ),
+        )
+        self.update_period_input.on_change('value', self._update_period_changed)
         self.control_select = Select(
             title='Audio stream',
             options=[('', 'Select audio stream'), *[(key, control.label) for key, control in self.controls.items()]],
@@ -131,6 +148,25 @@ class AudioStreamApp(BaseApp):
 
     def _clear_error(self):
         self._error.text = ''
+
+    @property
+    def update_period_ms(self):
+        """Validated periodic view update interval in milliseconds."""
+        value = self.update_period_input.value
+        if value is None or value < self.MIN_UPDATE_PERIOD_MS:
+            value = self.MIN_UPDATE_PERIOD_MS
+            self.update_period_input.value = value
+        return int(value)
+
+    def _update_period_changed(self, _attr, _old, _new):
+        self.update_period_ms
+
+    def _build_header(self):
+        self._title = Div(text=f'<b>{self.title}</b>')
+        spacer = Spacer(sizing_mode='stretch_width')
+        actions = self._build_action_frame(self.update_period_input, self.theme_switch, self.exit_button)
+        right_padding = Spacer(width=20)
+        return row(self._title, spacer, actions, right_padding, sizing_mode='stretch_width')
 
     def _activate_control(self, control_id):
         control = None

@@ -15,6 +15,7 @@ DARK = 'dark'
 LIGHT = 'light'
 ThemeMode = Literal['dark', 'light']
 MODELS_WITH_THEME_CSS = ('Widget', 'Tooltip')
+BEAMFORMING_COLORMAP_TAG = 'spectacoular-beamforming-colormap'
 PLOT_THEME_COLORS_PLACEHOLDER = '__SPECTACOULAR_PLOT_THEME_COLORS__'
 MODE_COLOR_NAMES = {
     LIGHT: {
@@ -64,8 +65,8 @@ class SpectacoularTheme:
         return f'document.documentElement.setAttribute("data-theme", "{self.mode}");'
 
 
-def _load_brand_bokeh_theme_json() -> dict[str, object]:
-    return json.loads(files('acoular_brand.assets').joinpath('acoular.bokeh.json').read_text())
+def _brand_bokeh_theme_json() -> dict[str, object]:
+    return {'attrs': {'Figure': {}, 'Axis': {}, 'Grid': {'grid_line_alpha': 0.7}, 'Title': {}}}
 
 
 def _load_brand_color_tokens() -> dict[str, str]:
@@ -83,15 +84,33 @@ def _load_brand_theme_colors(mode: ThemeMode) -> dict[str, str]:
     return {name: color_tokens[token_name] for name, token_name in MODE_COLOR_NAMES[mode].items()}
 
 
-def client_plot_theme_colors() -> dict[ThemeMode, dict[str, str]]:
+def beamforming_colormap_palette(mode: ThemeMode, size: int = 256) -> list[str]:
+    """Return the Acoular Beamforming colormap for *mode* as Bokeh hex colors."""
+    from acoular_brand.colormaps import register_colormaps
+    from matplotlib import colormaps
+    from matplotlib.colors import to_hex
+
+    register_colormaps()
+    name = 'acoular_r' if mode == LIGHT else 'acoular'
+    return [to_hex(colormaps[name](index / (size - 1)), keep_alpha=False) for index in range(size)]
+
+
+def client_plot_theme_colors() -> dict[ThemeMode, dict[str, object]]:
     """Return concrete plot colors for the client-side theme switcher.
 
-    Bokeh plot colors are model properties used by canvas/SVG renderers, not
-    normal DOM CSS.  They cannot reliably be represented as inherited CSS
-    variables, so the runtime switch callback patches those properties directly
-    in the browser while keeping ``Document.theme`` stable.
+    Bokeh plot colors and color-mapper palettes are model properties used by
+    canvas/SVG renderers, not normal DOM CSS.  They cannot reliably be
+    represented as inherited CSS variables, so the runtime switch callback
+    patches those properties directly in the browser while keeping
+    ``Document.theme`` stable.
     """
-    return {mode: _load_brand_theme_colors(mode) for mode in (DARK, LIGHT)}
+    return {
+        mode: {
+            **_load_brand_theme_colors(mode),
+            'beamforming_palette': beamforming_colormap_palette(mode),
+        }
+        for mode in (DARK, LIGHT)
+    }
 
 
 def _apply_plot_theme_colors(theme_json: dict[str, object], mode: ThemeMode) -> None:
@@ -104,15 +123,15 @@ def _apply_plot_theme_colors(theme_json: dict[str, object], mode: ThemeMode) -> 
     }
     for model_name in ('Figure', 'figure', 'Plot'):
         attrs.setdefault(model_name, {}).update(figure_attrs)
-    attrs['Axis'].update(
+    attrs.setdefault('Axis', {}).update(
         {
             'axis_line_color': colors['border'],
             'major_label_text_color': colors['muted'],
             'axis_label_text_color': colors['text'],
         }
     )
-    attrs['Grid'].update({'grid_line_color': colors['border']})
-    attrs['Title'].update({'text_color': colors['text']})
+    attrs.setdefault('Grid', {}).update({'grid_line_color': colors['border']})
+    attrs.setdefault('Title', {}).update({'text_color': colors['text']})
     attrs.setdefault('ColorBar', {}).update(
         {
             'background_fill_color': colors['background'],
@@ -162,7 +181,7 @@ def _add_widget_theme_attrs(theme_json: dict[str, object], mode: ThemeMode) -> N
 
 
 def _load_bokeh_theme_json(mode: ThemeMode) -> dict[str, object]:
-    theme_json = _load_brand_bokeh_theme_json()
+    theme_json = _brand_bokeh_theme_json()
     _apply_plot_theme_colors(theme_json, mode)
     _add_widget_theme_attrs(theme_json, mode)
     return theme_json

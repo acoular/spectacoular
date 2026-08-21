@@ -148,6 +148,10 @@
   color: var(--spectacoular-widget-input-color);
 }
 
+:host .bk-input:disabled {
+  background-color: var(--acoular-color-muted);
+}
+
 /*
  * DataTable styling.
  *
