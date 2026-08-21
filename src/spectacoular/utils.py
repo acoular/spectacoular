@@ -1,4 +1,3 @@
-
 # ------------------------------------------------------------------------------
 # Copyright (c), Acoular Development Team.
 # ------------------------------------------------------------------------------
@@ -12,9 +11,9 @@
     json_read
 """
 
-import importlib
 import json
 import math
+from contextlib import suppress
 from datetime import UTC, datetime
 from numbers import Real
 from pathlib import Path
@@ -35,149 +34,157 @@ JSON_FIELDS = {
     'Calibration',
 }
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-DEFAULT_DESCRIPTION = (
-    'Single-point calibration measurements for the specified channels.'
-)
+DEFAULT_DESCRIPTION = 'Single-point calibration measurements for the specified channels.'
 
 
-def _get_channel_count(audio_interface):
-    """Return the maximum input channel count reported by SoundDevice."""
-    try:
-        sounddevice = importlib.import_module('sounddevice')
-    except ModuleNotFoundError as error:
-        msg = 'sounddevice is required to query the audio interface.'
-        raise RuntimeError(msg) from error
+def json_validation(json_file):
+    """Validate calibration data against the multi-channel JSON schema.
 
-    device = getattr(audio_interface, 'device', audio_interface)
-    return sounddevice.query_devices(device)['max_input_channels']
+    Parameters
+    ----------
+    json_file : str, pathlib.Path or dict
+        Calibration file to validate, or an already loaded calibration dictionary.
 
+    Returns
+    -------
+    bool
+        ``True`` when the calibration data is valid.
 
-def _load_json(json_file):
-    """Load a JSON object and report file and syntax errors clearly."""
-    path = Path(json_file)
-    try:
-        with path.open(encoding='utf-8') as stream:
-            return json.load(stream)
-    except FileNotFoundError as error:
-        msg = f'Calibration file not found: {path}.'
-        raise ValueError(msg) from error
-    except json.JSONDecodeError as error:
-        msg = f'Invalid JSON in {path}: {error.msg} at line {error.lineno}.'
-        raise ValueError(msg) from error
+    Raises
+    ------
+    TypeError
+        If a value does not have the expected type.
+    ValueError
+        If the calibration data does not match the schema.
 
+    """
+    if isinstance(json_file, dict):
+        data = json_file
+    else:
+        path = Path(json_file)
+        try:
+            with path.open(encoding='utf-8') as stream:
+                data = json.load(stream)
+        except FileNotFoundError as error:
+            msg = f'Calibration file not found: {path}.'
+            raise ValueError(msg) from error
+        except json.JSONDecodeError as error:
+            msg = f'Invalid JSON in {path}: {error.msg} at line {error.lineno}.'
+            raise ValueError(msg) from error
 
-def _validate_data(data, expected_channel_count):
-    """Validate already-loaded calibration data against the exact schema."""
     if not isinstance(data, dict):
         msg = 'The JSON root must be an object.'
+        raise TypeError(msg)
+
+    missing_fields, extra_fields = JSON_FIELDS - data.keys(), data.keys() - JSON_FIELDS
+    if missing_fields or extra_fields:
+        issue, fields = ('Missing', missing_fields) if missing_fields else ('Unexpected', extra_fields)
+        msg = f'{issue} top-level fields: {", ".join(sorted(fields))}.'
         raise ValueError(msg)
 
-    missing_fields = JSON_FIELDS - data.keys()
-    extra_fields = data.keys() - JSON_FIELDS
-    if missing_fields:
-        msg = f"Missing top-level fields: {', '.join(sorted(missing_fields))}."
-        raise ValueError(msg)
-    if extra_fields:
-        msg = f"Unexpected top-level fields: {', '.join(sorted(extra_fields))}."
-        raise ValueError(msg)
-
-    for field in ('Name', 'Description', 'Date', 'Source'):
-        if not isinstance(data[field], str):
-            msg = f'{field} must be a string.'
-            raise ValueError(msg)
-    if not data['Name']:
-        msg = 'Name must not be empty.'
-        raise ValueError(msg)
-    if not data['Source']:
-        msg = 'Source must not be empty.'
-        raise ValueError(msg)
-    try:
-        parsed_date = datetime.strptime(data['Date'], DATE_FORMAT)
-    except ValueError as error:
-        msg = f'Date must use the format {DATE_FORMAT}.'
-        raise ValueError(msg) from error
-    if parsed_date.strftime(DATE_FORMAT) != data['Date']:
-        msg = f'Date must use the format {DATE_FORMAT}.'
-        raise ValueError(msg)
-
-    channel_count = data['ChannelCount']
-    if (
-        not isinstance(channel_count, int)
-        or isinstance(channel_count, bool)
-        or channel_count < 1
-    ):
-        msg = 'ChannelCount must be a positive integer.'
-        raise ValueError(msg)
-    if channel_count != expected_channel_count:
-        msg = (
-            f'Channel count mismatch: JSON contains {channel_count}, '
-            f'audio interface exposes {expected_channel_count}.'
-        )
-        raise ValueError(msg)
-
-    calibration = data['Calibration']
+    invalid_metadata = next(
+        (field for field in ('Name', 'Description', 'Date', 'Source') if not isinstance(data[field], str)),
+        None,
+    )
+    empty_metadata = next((field for field in ('Name', 'Source') if not data[field]), None)
+    parsed_date = None
+    with suppress(TypeError, ValueError):
+        parsed_date = datetime.strptime(data['Date'], DATE_FORMAT).replace(tzinfo=UTC)
+    channel_count, calibration = data['ChannelCount'], data['Calibration']
+    valid_channel_count = isinstance(channel_count, int) and not isinstance(channel_count, bool) and channel_count > 0
     if not isinstance(calibration, dict):
         msg = 'Calibration must be an object.'
-        raise ValueError(msg)
-    calibration_fields = set(CALIBRATION_FIELDS)
-    missing_fields = calibration_fields - calibration.keys()
-    extra_fields = calibration.keys() - calibration_fields
-    if missing_fields:
-        msg = f"Missing calibration fields: {', '.join(sorted(missing_fields))}."
-        raise ValueError(msg)
-    if extra_fields:
-        msg = f"Unexpected calibration fields: {', '.join(sorted(extra_fields))}."
-        raise ValueError(msg)
-
-    for field in CALIBRATION_FIELDS:
-        values = calibration[field]
-        if not isinstance(values, list):
-            msg = f'Calibration.{field} must be a list.'
-            raise ValueError(msg)
-        if len(values) != channel_count:
-            msg = f'Calibration.{field} must contain {channel_count} values, got {len(values)}.'
-            raise ValueError(msg)
-        for channel, value in enumerate(values, start=1):
-            if (
-                not isinstance(value, Real)
-                or isinstance(value, bool)
-                or not math.isfinite(value)
-            ):
-                msg = f'Calibration.{field} for channel {channel} must be a finite number.'
-                raise ValueError(msg)
-
-    for field in ('CalibFrequency', 'CalibFactor', 'CalibTime'):
-        if any(value <= 0 for value in calibration[field]):
-            msg = f'Calibration.{field} values must be greater than zero.'
-            raise ValueError(msg)
-    if any(value < 0 for value in calibration['StabilityTolerance']):
-        msg = 'Calibration.StabilityTolerance values must be greater than or equal to zero.'
+        raise TypeError(msg)
+    missing_fields, extra_fields = (
+        set(CALIBRATION_FIELDS) - calibration.keys(),
+        calibration.keys() - set(CALIBRATION_FIELDS),
+    )
+    if missing_fields or extra_fields:
+        issue, fields = ('Missing', missing_fields) if missing_fields else ('Unexpected', extra_fields)
+        msg = f'{issue} calibration fields: {", ".join(sorted(fields))}.'
         raise ValueError(msg)
 
+    invalid_list = next((field for field in CALIBRATION_FIELDS if not isinstance(calibration[field], list)), None)
+    invalid_length = next(
+        (
+            field
+            for field in CALIBRATION_FIELDS
+            if isinstance(calibration[field], list) and valid_channel_count and len(calibration[field]) != channel_count
+        ),
+        None,
+    )
+    invalid_length_value = len(calibration[invalid_length]) if invalid_length else 0
+    invalid_number = next(
+        (
+            (field, channel)
+            for field in CALIBRATION_FIELDS
+            if isinstance(calibration[field], list)
+            for channel, value in enumerate(calibration[field], 1)
+            if not isinstance(value, Real) or isinstance(value, bool) or not math.isfinite(value)
+        ),
+        None,
+    )
+    invalid_number_field, invalid_number_channel = invalid_number or ('', 0)
+    invalid_positive = next(
+        (
+            field
+            for field in ('CalibFrequency', 'CalibFactor', 'CalibTime')
+            if isinstance(calibration[field], list)
+            and any(
+                isinstance(value, Real) and not isinstance(value, bool) and value <= 0 for value in calibration[field]
+            )
+        ),
+        None,
+    )
+    invalid_tolerance = isinstance(calibration['StabilityTolerance'], list) and any(
+        isinstance(value, Real) and not isinstance(value, bool) and value < 0
+        for value in calibration['StabilityTolerance']
+    )
+    errors = (
+        (invalid_metadata, TypeError, f'{invalid_metadata} must be a string.'),
+        (empty_metadata, ValueError, f'{empty_metadata} must not be empty.'),
+        (
+            parsed_date is None or parsed_date.strftime(DATE_FORMAT) != data['Date'],
+            ValueError,
+            f'Date must use the format {DATE_FORMAT}.',
+        ),
+        (not valid_channel_count, ValueError, 'ChannelCount must be a positive integer.'),
+        (invalid_list, TypeError, f'Calibration.{invalid_list} must be a list.'),
+        (
+            invalid_length,
+            ValueError,
+            f'Calibration.{invalid_length} must contain {channel_count} values, got {invalid_length_value}.',
+        ),
+        (
+            invalid_number,
+            ValueError,
+            f'Calibration.{invalid_number_field} for channel {invalid_number_channel} must be a finite number.',
+        ),
+        (invalid_positive, ValueError, f'Calibration.{invalid_positive} values must be greater than zero.'),
+        (
+            invalid_tolerance,
+            ValueError,
+            'Calibration.StabilityTolerance values must be greater than or equal to zero.',
+        ),
+    )
+    error = next(((error_type, message) for condition, error_type, message in errors if condition), None)
+    if error:
+        error_type, message = error
+        raise error_type(message)
+    return True
 
-def json_write(
-    json_file,
-    source,
-    channel_data,
-    *,
-    audio_interface=None,
-    description=DEFAULT_DESCRIPTION,
-    date=None,
-):
-    """Write calibration values using the compact multi-channel JSON schema.
+
+def json_write(json_file, source, channel_data, description=DEFAULT_DESCRIPTION, date=None):
+    """Write multi-channel calibration data with :func:`json.dump`.
 
     Parameters
     ----------
     json_file : str or pathlib.Path
         Path of the JSON file to write.
     source : str
-        Name of the audio source used for calibration.
+        Name of the source used for calibration.
     channel_data : dict
-        Calibration values indexed by one-based channel numbers. Each channel
-        contains the fields listed in :data:`CALIBRATION_FIELDS`.
-    audio_interface : int, str or object, optional
-        SoundDevice device index/name or object exposing a ``device`` attribute.
-        If omitted, the channel count is inferred from ``channel_data``.
+        Calibration values indexed by one-based channel numbers.
     description : str, optional
         Description stored in the JSON file.
     date : datetime.datetime or str, optional
@@ -188,14 +195,12 @@ def json_write(
     dict
         Data written to the JSON file.
 
-    Raises
-    ------
-    ValueError
-        If the calibration data does not match the expected schema.
-
     """
-    if not isinstance(channel_data, dict) or not channel_data:
-        msg = 'channel_data must be a non-empty dictionary indexed by channel number.'
+    if not isinstance(channel_data, dict):
+        msg = 'channel_data must be a dictionary indexed by channel number.'
+        raise TypeError(msg)
+    if not channel_data:
+        msg = 'channel_data must not be empty.'
         raise ValueError(msg)
 
     channels = sorted(channel_data)
@@ -209,14 +214,14 @@ def json_write(
         values = channel_data[channel]
         if not isinstance(values, dict):
             msg = f'Channel {channel} calibration data must be a dictionary.'
-            raise ValueError(msg)
+            raise TypeError(msg)
         missing_fields = expected_fields - values.keys()
         extra_fields = values.keys() - expected_fields
-        if missing_fields:
-            msg = f"Channel {channel} is missing: {', '.join(sorted(missing_fields))}."
-            raise ValueError(msg)
-        if extra_fields:
-            msg = f"Channel {channel} has unexpected fields: {', '.join(sorted(extra_fields))}."
+        if missing_fields or extra_fields:
+            fields = missing_fields or extra_fields
+            issue = 'missing' if missing_fields else 'has unexpected fields'
+            separator = ': ' if missing_fields else ' '
+            msg = f'Channel {channel} {issue}{separator}{", ".join(sorted(fields))}.'
             raise ValueError(msg)
         for field in CALIBRATION_FIELDS:
             calibration[field].append(values[field])
@@ -235,73 +240,32 @@ def json_write(
         'ChannelCount': len(channels),
         'Calibration': calibration,
     }
-    expected_channel_count = (
-        len(channels)
-        if audio_interface is None
-        else _get_channel_count(audio_interface)
-    )
-    _validate_data(data, expected_channel_count)
-
+    json_validation(data)
     with path.open('w', encoding='utf-8') as stream:
         json.dump(data, stream, indent=2, ensure_ascii=False)
         stream.write('\n')
     return data
 
 
-def json_validation(json_file, audio_interface):
-    """Validate a calibration JSON file and its channel count.
-
-    Parameters
-    ----------
-    json_file : str or pathlib.Path
-        Path of the JSON file to validate.
-    audio_interface : int, str or object
-        SoundDevice device index/name or object exposing a ``device`` attribute.
-
-    Returns
-    -------
-    bool
-        ``True`` when the file is valid.
-
-    Raises
-    ------
-    ValueError
-        If the file does not match the calibration schema or device channel count.
-
-    """
-    data = _load_json(json_file)
-    _validate_data(data, _get_channel_count(audio_interface))
-    return True
-
-
-def json_read(json_file, audio_interface):
+def json_read(json_file):
     """Read validated calibration data into a channel-indexed dictionary.
 
     Parameters
     ----------
     json_file : str or pathlib.Path
         Path of the JSON file to read.
-    audio_interface : int, str or object
-        SoundDevice device index/name or object exposing a ``device`` attribute.
 
     Returns
     -------
     dict
         File metadata and calibration values indexed by channel number.
 
-    Raises
-    ------
-    ValueError
-        If the file does not match the calibration schema or device channel count.
-
     """
-    data = _load_json(json_file)
-    _validate_data(data, _get_channel_count(audio_interface))
-
+    json_validation(json_file)
+    with Path(json_file).open(encoding='utf-8') as stream:
+        data = json.load(stream)
     channel_data = {
-        channel: {
-            field: data['Calibration'][field][index] for field in CALIBRATION_FIELDS
-        }
+        channel: {field: data['Calibration'][field][index] for field in CALIBRATION_FIELDS}
         for index, channel in enumerate(range(1, data['ChannelCount'] + 1))
     }
     return {
