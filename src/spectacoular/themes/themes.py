@@ -265,5 +265,5 @@ def get_theme(mode: str) -> SpectacoularTheme:
     try:
         return _THEMES[mode]
     except KeyError as exc:
-        msg = f"Unknown SpectAcoular theme {mode!r}; expected one of: {', '.join(_THEMES)}"
+        msg = f'Unknown SpectAcoular theme {mode!r}; expected one of: {", ".join(_THEMES)}'
         raise ValueError(msg) from exc
