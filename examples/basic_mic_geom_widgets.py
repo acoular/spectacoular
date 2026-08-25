@@ -3,6 +3,8 @@
 # ------------------------------------------------------------------------------
 """Creating widgets with SpectAcoular.
 
+===================================
+
 .. _basic_mic_geom_widgets:
 
 This example creates an interactive plot of a microphone array geometry
@@ -20,7 +22,7 @@ with additional control widgets using the SpectAcoular package.
 # Set up the microphone geometry plot
 # -----------------------------------
 #
-# Similar to the :ref:`basic_mic_geom_plot`, we will first import the necessary modules and set up
+# Similar to :doc:`basic_mic_geom_plot`, we will first import the necessary modules and set up
 # the microphone geometry plot.
 
 from pathlib import Path

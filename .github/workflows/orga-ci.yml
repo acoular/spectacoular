@@ -30,6 +30,8 @@ jobs:
 
   pypi:
     uses: acoular/ci/.github/workflows/pypi.yml@main
+    with:
+      setup_portaudio: true
 
   tests:
     uses: acoular/ci/.github/workflows/tests.yml@main

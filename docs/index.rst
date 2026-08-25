@@ -22,6 +22,7 @@ We welcome your feedback, suggestions, or reports of success using SpectAcoular 
    Overview <self>
    Installation <install/index.rst>
    User Guide <user_guide/index.rst>
+   Applications <apps/index.rst>
    API Reference <api_ref/index_apiref.rst>
    What's new <news/index.rst>
 

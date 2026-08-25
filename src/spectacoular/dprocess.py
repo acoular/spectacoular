@@ -75,9 +75,8 @@ class MicGeomPresenter(BasePresenter):
     The data of its ``ColumnDataSource`` fits different Bokeh glyphs, for
     example ``circle``.
 
-    Example
-    -------
-
+    Examples
+    --------
     >>> import spectacoular
     >>> mg = spectacoular.MicGeom(file='/path/to/file.xml')  # doctest: +SKIP
     >>> mv = spectacoular.MicGeomPresenter(source=mg)  # doctest: +SKIP
@@ -240,9 +239,8 @@ class TimeSamplesPresenter(BasePresenter):
 
     The data of its ``ColumnDataSource`` fits Bokeh's ``MultiLine`` glyph.
 
-    Example
-    -------
-
+    Examples
+    --------
     >>> import spectacoular
     >>> ts = spectacoular.TimeSamples(file='/path/to/file.h5')  # doctest: +SKIP
     >>> tv = spectacoular.TimeSamplesPresenter(source=ts)  # doctest: +SKIP

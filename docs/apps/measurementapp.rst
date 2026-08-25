@@ -1,62 +1,68 @@
 :orphan:
 
-Microphone Array Measurement App
-================================
+Measurement App
+===============
 
-This application can be used to record audio signals from multiple input channels and to perform live beamforming. Channel levels are displayed in a bar graph, and the app offers different operating modes.
+This application records multichannel audio, displays channel levels, and can
+perform live beamforming. For demonstration, it starts with a simulated **Phantom** audio stream,
+so it can be used without measurement hardware.
 
-The ``phantom`` mode serves as a demonstration of the application features. The ``sounddevice`` mode runs the app as measurement software capturing the audio stream provided by the PortAudio library.
+Start the app
+-------------
 
-This allows the use of USB interfaces such as the `miniDSP UMA16 MEMS <https://www.minidsp.com/products/usb-audio-interface/uma-16-microphone-array>`_ microphone array as measurement hardware.
+The Measurement App needs ``opencv-python`` for camera functionality. This is installed by the ``full`` extra.
+So ensure that it is available and run the app with your preferred environment manager:
 
-The ``sounddevice`` mode requires SpectAcoular's optional dependencies. Install them with one of the following commands:
+.. tab-set::
+    :sync-group: tool
 
-If you operate in an active environment:
+    .. tab-item:: ``uv``
+        :sync: uv
 
-.. code-block:: console
+        .. code-block:: console
 
-    $ pip install 'spectacoular[full]'
+            $ uv run --extra full msm_app
 
-or, with ``uv``:
+    .. tab-item:: ``pip``
+        :sync: pip
 
-.. code-block:: console
+        .. code-block:: console
 
-    $ uv pip install 'spectacoular[full]'
+            $ msm_app
 
-Starting the application in phantom mode
-----------------------------------------
+    .. tab-item:: ``mamba``
+        :sync: mamba
 
-If SpectAcoular is installed in an activated environment, run:
+        .. code-block:: console
 
-.. code-block:: console
+            $ msm_app
 
-    $ msm_app --device=phantom --blocksize=256
+    .. tab-item:: ``conda``
+        :sync: conda
 
-If you installed SpectAcoular with ``uv`` and did not activate the environment, run:
+        .. code-block:: console
 
-.. code-block:: console
+            $ msm_app
 
-    $ uv run msm_app --device=phantom --blocksize=256
+Selecting an audio stream
+-------------------------
 
-Starting the application with an UMA16 microphone array
--------------------------------------------------------
+Use the **Audio stream** dropdown at the top of the app to select a backend.
 
-If SpectAcoular is installed in an activated environment, run:
+* **Phantom** is the default backend. It provides a synthetic rotating source
+  for demonstrating the application's display, recording, and beamforming
+  features without measurement hardware.
+* **Sound device** captures a live input through PortAudio via the optional
+  ``sounddevice`` dependency.
 
-.. code-block:: console
+Choose the desired input device, channel count, sampling frequency, and sample
+format in the backend settings. Backend settings and the stream selector are disabled while a display,
+measurement, or beamforming workflow is running. Stop that workflow to change the stream backend or settings.
 
-    $ msm_app --device=sounddevice --blocksize=256
+.. admonition:: Info
 
-If you installed SpectAcoular with ``uv`` and did not activate the environment, run:
-
-.. code-block:: console
-
-    $ uv run msm_app --device=sounddevice --blocksize=256
-
-In the browser window, you can now select the UMA16 as the input device (named *nanoSHARC micArray16*).
-For beamforming, go to the *Microphone Geometry* tab and select the microphone geometry *minidsp_uma16.xml*. Then start the audio stream by pressing the *start display* button. Beamforming can be started by pressing the *start beamforming* button.
-
-Starting this application in phantom mode produces the following interactive interface in your browser:
+   For custom audio-stream controllers, see :ref:`the B.Y.O.B. section
+   <byob-audio-stream-controllers>`. They are discovered by every :class:`~spectacoular.apps.base.AudioStreamApp` automatically.
 
 .. figure:: measurementapp.mp4
     :align: center

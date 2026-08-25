@@ -1,507 +1,832 @@
-"""Measurement app document setup and Bokeh layout assembly."""
+"""Measurement Bokeh application."""
 
-# ------------------------------------------------------------------------------
-# Copyright (c) 2007-2020, Acoular Development Team.
-# ------------------------------------------------------------------------------
-import argparse
+from __future__ import annotations
+
+from datetime import UTC, datetime
 from pathlib import Path
+from threading import Event
 
 import acoular as ac
 import spectacoular as sp
+from acoular import MaskedTimeOut
+from spectacoular.apps.base import AudioStreamApp
+from spectacoular.apps.controls import CONTROL_STYLES, CONTROL_WIDTH
+from spectacoular.themes import get_acoular_color
+from spectacoular.themes.themes import BEAMFORMING_COLORMAP_TAG, beamforming_colormap_palette
 
-from .app import Calibration, PhantomControl, SoundDeviceControl, _get_channel_labels
 from .cam import CameraComponent
-from .layout import COLOR
 from .log import LogHandler
+from .threads import EventThread, SamplesThread, StreamDrain
 
 import numpy as np
-from bokeh.layouts import column, layout, row
+from bokeh.layouts import Spacer, column, layout, row
 from bokeh.models import (
+    CategoricalSlider,
     ColorBar,
     ColumnDataSource,
     FactorRange,
     LinearColorMapper,
-    Spacer,
+    Select,
     Tabs,
+    Toggle,
 )
 from bokeh.models import TabPanel as Panel
 from bokeh.models.glyphs import Scatter
 from bokeh.models.widgets import (
     Button,
+    CheckboxGroup,
     Div,
     MultiSelect,
     NumberEditor,
     NumberFormatter,
-    Select,
+    NumericInput,
     Slider,
     TableColumn,
-    Toggle,
+    TextInput,
 )
-from bokeh.models.widgets.inputs import NumericInput
-from bokeh.palettes import Viridis256
+from bokeh.palettes import Spectral11
 from bokeh.plotting import figure
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    '--device',
-    type=str,
-    default='phantom',
-    choices=['phantom', 'calib', 'sounddevice'],
-    help='Connected device.',
+COLOR = Spectral11
+AMP_BAR_COLOR = get_acoular_color('brand')
+RECORDING_AMP_BAR_COLOR = get_acoular_color('secondary-dark')
+MIC_GLYPH_SIZE_MIN = 8
+MIC_GLYPH_SIZE_MAX = 35
+MIC_GLYPH_SIZE_REFERENCE = 10
+BF_PEAK_LEVEL_RANGES = {
+    'dB(SPL)': (0, 140),
+    'dB(V)': (-120, 40),
+}
+BUTTON_HEIGHT = 40
+ACTION_BUTTON_HEIGHT = 40
+ACTION_BUTTON_WIDTH = 80
+SECTION_TITLE_FONT_SIZE_PX = 14
+OCTAVE_BAND_CENTER_FREQUENCIES = (
+    50,
+    63,
+    80,
+    100,
+    125,
+    160,
+    200,
+    250,
+    315,
+    400,
+    500,
+    630,
+    800,
+    1000,
+    1250,
+    1600,
+    2000,
+    2500,
+    3150,
+    4000,
+    5000,
+    6300,
+    8000,
+    10000,
+    12500,
+    16000,
+    20000,
 )
-parser.add_argument('--blocksize', type=int, default=512, help='Size of data blocks to be processed')
-parser.add_argument('--td_dir', type=str, default=None, help='Directory for saving HDF5 files')
-parser.add_argument(
-    '--mics_dir',
-    type=str,
-    default=Path(__file__).resolve().parent / 'micgeom',
-    help='Directory containing microphone geometry files',
-)
-parser.add_argument(
-    '--mics_name',
-    type=str,
-    default=None,
-    help='Name of microphone geometry file inside mics_dir',
-)
-args, _ = parser.parse_known_args()
+TAB_TITLE_STYLESHEET = f"""
+.bk-tab {{
+    font-size: {SECTION_TITLE_FONT_SIZE_PX}px;
+}}
+"""
 
 
-def server_doc(doc):  # noqa: PLR0915
-    """Populate a Bokeh document for the measurement app."""
-    mic_size = 20
+def _section_title(title):
+    return Div(text=f'<b style="font-size:{SECTION_TITLE_FONT_SIZE_PX}px;">{title}</b>')
 
-    # set up logging
-    log = LogHandler(doc=doc)
 
-    # directory containing microphone geometry files
-    mics_dir = Path(args.mics_dir)
-    log.logger.debug('mics_dir: %s', mics_dir)
+class MeasurementApp(AudioStreamApp):
+    """Measurement display and recording application."""
 
-    # microphone geometry file
-    mname = mics_dir / 'tub_vogel64.xml'
-    if args.mics_name is not None:
-        mname = mics_dir / args.mics_name
-    mics = sp.MicGeom(file=mname)
+    title = 'Measurement App'
+    CONTROL_GROUP_SPACING = 25
+    TAB_CONTENT_TOP_SPACING = 12
 
-    # set up directory for saving td files
-    td = args.td_dir
-    if td is None:
-        td = Path(__file__).resolve().parent / 'td'
-        if not td.exists():
-            td.mkdir()
-    ac.config.td_dir = td
-    log.logger.debug('td_dir: %s', td)
-
-    # =============================================================================
-    # load device
-    # =============================================================================
-    if args.device == 'sounddevice':
-        grid = sp.RectGrid(x_min=-0.5, x_max=0.5, y_min=-0.5, y_max=0.5, z=0.5, increment=0.025)
-        control = SoundDeviceControl(
-            doc=doc,
-            logger=log.logger,
-            blocksize=args.blocksize,
-            steer=ac.SteeringVector(grid=grid, mics=mics),
+    def __init__(self, doc, logger=None, controls=None):
+        self.blocksize = 512
+        self.mics = sp.MicGeom(file=Path(__file__).parent / 'micgeom' / 'tub_vogel64.xml')
+        self.grid = sp.RectGrid(x_min=-0.75, x_max=0.75, y_min=-0.75, y_max=0.75, z=0.75, increment=0.05)
+        self._stream_worker = None
+        self._display_worker = None
+        self._record_worker = None
+        self._beamform_worker = None
+        self._record_state_listener = None
+        self._periodic_callback = None
+        self._beamforming_locked_disabled_states = None
+        self._stream_active = False
+        self._updating_toggles = False
+        self.stream_toggle = Toggle(
+            label='▶ Stream',
+            button_type='primary',
+            sizing_mode='stretch_width',
+            height=BUTTON_HEIGHT,
+            disabled=True,
         )
-
-    elif args.device in ('phantom', 'calib'):
-        grid = sp.RectGrid(x_min=-0.75, x_max=0.75, y_min=-0.75, y_max=0.75, z=0.75, increment=0.05)
-        control = PhantomControl(
-            doc=doc,
-            logger=log.logger,
-            blocksize=args.blocksize,
-            steer=ac.SteeringVector(grid=grid, mics=mics),
-            initial_file='calib.h5' if args.device == 'calib' else 'rotating.h5',
+        self.filename = TextInput(
+            value='',
+            title='Filename:',
+            disabled=True,
+            description=self._filename_description(),
+            sizing_mode='stretch_width',
         )
+        self.current_time_checkbox = CheckboxGroup(labels=['use current time'], active=[0])
+        self.measurement_time = TextInput(value='10', title='Measurement Time [s]:', sizing_mode='stretch_width')
+        self._measurement_controls = column(Spacer(width=0, height=0), width=CONTROL_WIDTH)
+        self._measurement_panel = column(
+            _section_title('Measurement Control'),
+            self._measurement_controls,
+            width=CONTROL_WIDTH,
+            styles=CONTROL_STYLES,
+        )
+        self._camera_panel = column(Spacer(width=0, height=0), width=CONTROL_WIDTH)
+        self.current_time_checkbox.on_change('active', self._toggle_filename)
+        self.filename.on_change('value', self._set_filename)
+        self.stream_toggle.on_click(self._stream_toggled)
+        super().__init__(doc, logger, controls=controls)
 
-    # =============================================================================
-    # DEFINE FIGURES
-    # =============================================================================
+    @staticmethod
+    def _filename_description():
+        return f'Recordings are saved in: {Path(ac.config.td_dir).resolve()}'
 
-    # Amplitude Figure
-    amp_fig = figure(
-        title='SPL/dB',
-        tooltips=[
-            ('Lp/dB', '@level'),
-            ('Channel', '@channels'),
-        ],
-        tools='',
-        x_range=FactorRange(*_get_channel_labels(control.source)),
-        y_range=(0, 120),
-        height=750,
-        sizing_mode='stretch_width',
-    )
-    amp_fig.xgrid.visible = False
-    amp_fig.xaxis.major_label_orientation = np.pi / 2
-    amp_fig.toolbar.logo = None
+    @staticmethod
+    def _labels(source, label_type='Number'):
+        start = 0 if label_type == 'Index' else 1
+        return [str(index) for index in range(start, source.num_channels + start)]
 
-    # MicGeom / Sourcemap Figure
-    mics_beamf_fig = figure(
-        tooltips=[
-            ('Lp/dB', '@level'),
+    @staticmethod
+    def _max_octave_band_center_frequency(sample_freq):
+        """Highest octave-band center frequency whose upper band edge is at or below Nyquist."""
+        return max(1, int(np.floor(sample_freq / (2 * np.sqrt(2)))))
+
+    @classmethod
+    def _octave_band_center_frequency_options(cls, sample_freq):
+        """Preferred logarithmic octave-band center-frequency choices for a source sample rate."""
+        max_center_frequency = cls._max_octave_band_center_frequency(sample_freq)
+        frequencies = [frequency for frequency in OCTAVE_BAND_CENTER_FREQUENCIES if frequency <= max_center_frequency]
+        if not frequencies:
+            frequencies = [max_center_frequency]
+        return [str(frequency) for frequency in frequencies]
+
+    @staticmethod
+    def _nearest_frequency_option(options, target):
+        """Return the option nearest to target, preferring the lower option on ties."""
+        return str(min((int(option) for option in options), key=lambda frequency: (abs(frequency - target), frequency)))
+
+    @staticmethod
+    def _level(mean_square, reference):
+        mean_square = np.asarray(mean_square, dtype=float)
+        return 10 * np.log10(np.maximum(mean_square / reference**2, np.finfo(mean_square.dtype).eps))
+
+    def _selected_level_reference(self):
+        return 2e-5 if self.level_label_select.value == 'dB(SPL)' else 1.0
+
+    def _display_levels(self, mean_square):
+        return self._level(mean_square, reference=self._selected_level_reference())
+
+    def _channel_levels(self, mean_square):
+        return self._display_levels(mean_square)
+
+    def _set_amplitude_plot_labels(self):
+        level_label = self.level_label_select.value
+        self.amp_fig.title.text = 'SPL/dB' if level_label == 'dB(SPL)' else 'Voltage Level/dB'
+        self.amp_fig.yaxis[0].axis_label = level_label
+        self.amp_fig.hover[0].tooltips = [(level_label, '@level'), ('Channel', '@channels')]
+        self.clip_level.title = f'Clip Level/{level_label}'
+
+    def _set_beamforming_plot_labels(self):
+        level_label = self.level_label_select.value
+        self.mics_beamf_fig.hover[0].tooltips = [
+            (level_label, '@level'),
             ('Channel Index', '@channels'),
             ('(x,y)', '(@x, @y)'),
-        ],
-        tools='pan,wheel_zoom,reset',
-        match_aspect=True,
-        aspect_ratio=1,
-        width=1400,
-    )
+        ]
+        self.bf_colorbar.title = level_label
+        self.bf_max_level.title = f'Peak Level/{level_label}'
+        self._set_beamforming_peak_level_range(level_label)
 
-    # =============================================================================
-    # DEFINE COLUMN DATA SOURCES
-    # =============================================================================
+    def _set_beamforming_peak_level_range(self, level_label):
+        start, end = BF_PEAK_LEVEL_RANGES[level_label]
+        self.bf_max_level.start = start
+        self.bf_max_level.end = end
+        self.bf_max_level.value = min(max(self.bf_max_level.value, start), end)
 
-    amp_cds = ColumnDataSource({'channels': [], 'level': [], 'colors': []})
-    beamf_cds = ColumnDataSource({'level': []})
-    grid_data = ColumnDataSource(
-        data={  # x and y are the centers of the rectangle!
-            'x': [(grid.x_max + grid.x_min) / 2],
-            'y': [(grid.y_max + grid.y_min) / 2],
-            'width': [grid.x_max - grid.x_min],
-            'height': [grid.y_max - grid.y_min],
-        }
-    )
+    def _amplitude_colors(self, levels):
+        if getattr(self, 'record_toggle', None) is not None and self.record_toggle.active:
+            return np.full(len(levels), RECORDING_AMP_BAR_COLOR)
+        return np.where(levels < self.clip_level.value, AMP_BAR_COLOR, COLOR[8])
 
-    # =============================================================================
-    # DEFINE GLYPHS
-    # =============================================================================
+    def _microphone_sizes(self, levels):
+        levels = np.asarray(levels, dtype=float)
+        level_min = self.amp_min_level.value
+        level_max = self.amp_max_level.value
+        mic_size = self.mics_widgets['mic_size'].value if hasattr(self, 'mics_widgets') else MIC_GLYPH_SIZE_REFERENCE
+        size_scale = mic_size / MIC_GLYPH_SIZE_REFERENCE
+        if level_min is None or level_max is None or level_max <= level_min:
+            return np.full(len(levels), MIC_GLYPH_SIZE_MIN * size_scale)
+        fraction = np.clip((levels - level_min) / (level_max - level_min), 0, 1)
+        return (MIC_GLYPH_SIZE_MIN + fraction * (MIC_GLYPH_SIZE_MAX - MIC_GLYPH_SIZE_MIN)) * size_scale
 
-    mic_presenter = sp.MicGeomPresenter(source=mics, auto_update=True)
-    calibration = Calibration(doc=doc, control=control)
-    camera = CameraComponent(doc=doc, figure=mics_beamf_fig)
-
-    # Amplitude Bar Plot
-    amp_fig.vbar(x='channels', width=0.5, bottom=0, top='level', color='colors', source=amp_cds)
-
-    beamf_color_mapper = LinearColorMapper(palette=Viridis256, low=70, high=90, low_color=(1, 1, 1, 0))
-    bf_image = mics_beamf_fig.image(
-        image='level',
-        x=grid.x_min,
-        y=grid.y_min,
-        dw=grid.x_max - grid.x_min,
-        dh=grid.y_max - grid.y_min,
-        color_mapper=beamf_color_mapper,
-        source=beamf_cds,
-    )
-    mics_beamf_fig.add_layout(
-        ColorBar(
-            color_mapper=beamf_color_mapper,
-            location=(0, 0),
-            title='dB',
-            title_standoff=10,
-        ),
-        'right',
-    )
-
-    # Microphone Geometry Plot
-    mic_layout = sp.layouts.MicGeomComponent(
-        mic_alpha=0.4,
-        glyph=Scatter(
-            marker='circle_cross',
-            x='x',
-            y='y',
-            fill_color='colors',
-            size='sizes',
-            fill_alpha='alpha',
-            line_alpha='alpha',
-        ),
-        figure=mics_beamf_fig,
-        presenter=mic_presenter,
-        allow_point_draw=True,
-    )
-    mic_presenter.update(
-        sizes=np.array([mic_size] * mics.pos_total.shape[1]), colors=[COLOR[1]] * mics.pos_total.shape[1]
-    )
-
-    mics_beamf_fig.rect(  # draw rect grid bounds (dotted)
-        alpha=1.0, color='black', fill_alpha=0, line_width=2, source=grid_data
-    )  # line_color="#213447")
-
-    # =============================================================================
-    # DEFINE WIDGETS
-    # =============================================================================
-
-    # set up widgets for Microphone Geometry
-    editor = NumberEditor()
-    formatter = NumberFormatter(format='0.00')
-    mpos_columns = [
-        TableColumn(field='x', title='x/m', editor=editor, formatter=formatter),
-        TableColumn(field='y', title='y/m', editor=editor, formatter=formatter),
-        TableColumn(field='z', title='z/m', editor=editor, formatter=formatter),
-    ]
-    mic_layout.mics_trait_widget_args.update(
-        {
-            'pos_total': {
-                'height': 200,
-                'editable': True,
-                'transposed': True,
-                'columns': mpos_columns,
-            }
-        }
-    )
-    mics_widgets = mic_layout.widgets
-    # disable widgets on display tab
-    [control.widgets_disable['display'].append(w) for w in mics_widgets.values()]
-    all_mics_valid = Button(label='All Valid', button_type='success', sizing_mode='stretch_width')
-
-    def _all_mics_valid(_event):
-        mics.invalid_channels = []
-
-    all_mics_valid.on_click(_all_mics_valid)
-
-    # set up widgets for Beamforming
-    invalid_input_channels = MultiSelect(
-        title='Not-Array Channels',
-        height=150,
-        description='Select which input channels should not be used for beamforming',
-        value=[],
-    )
-    control.beamf.source.source.source.source.source.set_widgets(invalid_channels=invalid_input_channels)
-    auto_level_toggle = Toggle(label='Auto Level', button_type='success', active=True)
-    dynamic_range = NumericInput(value=10, title='Dynamic Range/dB')
-    snapshot_avg = NumericInput(value=1, title='Snapshots to Average')
-    bf_max_level = Slider(start=0, end=140, value=100, step=1, title='Peak Level/dB')
-    bf_alpha = Slider(start=0, end=1, step=0.05, value=1, title='Sourcemap Alpha')
-
-    rg_widgets = grid.get_widgets()
-    z_slider = Slider(start=0.01, end=10.0, value=grid.z, step=0.02, title='z', disabled=False)
-    grid.set_widgets(z=z_slider)
-    rg_widgets['z'] = z_slider  # replace textfield with slider
-    freq_slider = Slider(start=50, end=10000, value=4000, step=1, title='Frequency', disabled=False)
-    control.beamf.source.source.source.set_widgets(band=freq_slider)
-    all_bf_valid = Button(label='All Valid', button_type='success', sizing_mode='stretch_width')
-
-    def _all_valid(_event):
-        control.beamf.source.source.source.source.source.invalid_channels = []
-
-    all_bf_valid.on_click(_all_valid)
-
-    # set up widgets for Amplitude Bar
-    clip_level = NumericInput(value=120, title='Clip Level/dB', width=100)
-    label_options = ['Number', 'Index']
-    label_select = Select(title='Select Channel Labeling:', value=label_options[0], options=label_options)
-
-    for w in rg_widgets.values():
-        control.widgets_disable['beamf'].append(w)
-
-    control.widgets_disable['beamf'].append(auto_level_toggle)
-    control.widgets_enable['beamf'].append(auto_level_toggle)
-    control.widgets_disable['beamf'].append(bf_max_level)
-    control.widgets_enable['beamf'].append(bf_max_level)
-    control.widgets_disable['beamf'].append(dynamic_range)
-    control.widgets_enable['beamf'].append(dynamic_range)
-
-    # =============================================================================
-    # DEFINE CALLBACKS
-    # =============================================================================
-
-    def update_app():  # only update figure when tab is active
-        if tabs.active == 0:
-            update_amp_bar_plot()
-        if tabs.active == 1:
-            if control.beamf_toggle.active:
-                update_beamforming_plot()
-            else:
-                update_mic_geom_plot()
-
-    def update_amp_bar_plot():
-        if control.disp.cdsource.data['data'].size > 0:
-            levels = ac.L_p(control.disp.cdsource.data['data'][0])
-            amp_cds.data['level'] = levels
-            amp_cds.data['colors'] = np.where(levels < clip_level.value, control.modecolor, control.clipcolor)
-
-    def update_mic_geom_plot():
-        if mics.num_mics > 0 and control.disp.cdsource.data['data'].size > 0:
-            p2 = control.disp.cdsource.data['data'][0]
-            levels = ac.L_p(p2)
-            if mics_widgets['mic_size'].value > 0:
-                mic_presenter.cdsource.data['sizes'] = 20 * p2 / p2.max() + mics_widgets['mic_size'].value
-            else:
-                mic_presenter.cdsource.data['sizes'] = np.zeros(p2.shape[0])
-            mic_presenter.cdsource.data['colors'] = np.where(
-                levels < clip_level.value, control.modecolor, control.clipcolor
+    def build_stream_content(self, source):  # noqa: PLR0915
+        """Build the legacy measurement layout for the selected source."""
+        self.splitter = ac.SampleSplitter(source=source)
+        self.stream_drain = StreamDrain(source=self.splitter)
+        self.disp = sp.TimeOutPresenter(
+            source=ac.Average(source=ac.TimePower(source=self.splitter), num_per_average=self.blocksize)
+        )
+        self.msm = ac.WriteH5(source=self.splitter)
+        self.beamforming_input = MaskedTimeOut(source=self.splitter)
+        self.beamf = sp.TimeOutPresenter(
+            source=ac.Average(
+                source=ac.TimePower(
+                    source=sp.FiltOctave(
+                        source=ac.BeamformerTime(
+                            source=self.beamforming_input,
+                            steer=ac.SteeringVector(grid=self.grid, mics=self.mics),
+                        ),
+                        band=4000,
+                    )
+                ),
+                num_per_average=self.blocksize,
             )
+        )
 
-    def update_beamforming_plot():
-        if control.beamf.cdsource.data['data'].size > 0:
-            beamf_cds.data['level'] = [ac.L_p(control.beamf.cdsource.data['data'].reshape(grid.shape)).T]
-            if auto_level_toggle.active:
-                max_value = beamf_cds.data['level'][0].max()
-                beamf_color_mapper.high = max_value
-                beamf_color_mapper.low = max_value - dynamic_range.value
-
-    def update_view(arg):
-        if arg:
-            control._view_callback_id = doc.add_periodic_callback(update_app, int(control.update_period.value))  # noqa: SLF001
-        if not arg:
-            [thread.join() for thread in control._disp_threads]  # noqa: SLF001
-            doc.remove_periodic_callback(control._view_callback_id)  # noqa: SLF001
-
-    control.display_toggle.on_click(update_view)
-
-    def update_channel_labels(_attr, _old, _new):
-        log.logger.debug('update_channel_labels')
-        labels = _get_channel_labels(control.source, label_select.value)
-        # update amp bar
-        amp_cds.data.update(
+        labels = self._labels(source)
+        self.amp_data = ColumnDataSource(
+            {'channels': labels, 'level': np.zeros(len(labels)), 'colors': [AMP_BAR_COLOR] * len(labels)}
+        )
+        self.beamf_data = ColumnDataSource({'level': []})
+        self.grid_data = ColumnDataSource(
             {
-                'channels': labels,
-                'colors': [COLOR[1]] * control.source.num_channels,
-                'level': np.zeros(control.source.num_channels),
+                'x': [(self.grid.x_max + self.grid.x_min) / 2],
+                'y': [(self.grid.y_max + self.grid.y_min) / 2],
+                'width': [self.grid.x_max - self.grid.x_min],
+                'height': [self.grid.y_max - self.grid.y_min],
             }
         )
-        amp_fig.x_range.factors = labels  # Set x_range as categorical
-        amp_fig.xaxis.major_label_overrides = {label: label for label in labels}
-        # update calibration table
-        if label_select.value in ['Physical', 'Number']:
-            calibration.cal_table.source.data['channel'] = labels
-        # update invalid channels
-        invalid_input_channels.options = [
-            (index_label, display_label)
-            for index_label, display_label in zip(_get_channel_labels(control.source, 'Index'), labels, strict=False)
+
+        self.amp_fig = figure(
+            title='SPL/dB',
+            tooltips=[('dB(SPL)', '@level'), ('Channel', '@channels')],
+            tools='',
+            x_range=FactorRange(*labels),
+            y_range=(0, 120),
+            y_axis_label='dB(SPL)',
+            height=900,
+            sizing_mode='stretch_width',
+        )
+        self.amp_fig.xgrid.visible = False
+        self.amp_fig.xaxis.major_label_orientation = np.pi / 2
+        self.amp_fig.toolbar.logo = None
+        self.amp_fig.vbar(x='channels', width=0.5, bottom=0, top='level', color='colors', source=self.amp_data)
+
+        self.mics_beamf_fig = figure(
+            tooltips=[('dB(SPL)', '@level'), ('Channel Index', '@channels'), ('(x,y)', '(@x, @y)')],
+            tools='pan,wheel_zoom,reset',
+            match_aspect=True,
+            aspect_ratio=1,
+            width=1400,
+            height=900,
+        )
+        mapper = LinearColorMapper(
+            palette=beamforming_colormap_palette(self.theme_mode),
+            low=70,
+            high=90,
+            low_color=(1, 1, 1, 0),
+            tags=[BEAMFORMING_COLORMAP_TAG],
+        )
+        self.bf_image = self.mics_beamf_fig.image(
+            image='level',
+            x=self.grid.x_min,
+            y=self.grid.y_min,
+            dw=self.grid.x_max - self.grid.x_min,
+            dh=self.grid.y_max - self.grid.y_min,
+            color_mapper=mapper,
+            source=self.beamf_data,
+        )
+        self.bf_colorbar = ColorBar(color_mapper=mapper, location=(0, 0), title='dB(SPL)', title_standoff=10)
+        self.mics_beamf_fig.add_layout(self.bf_colorbar, 'right')
+
+        self.mic_presenter = sp.MicGeomPresenter(source=self.mics, auto_update=True)
+        self.camera = CameraComponent(doc=self.doc, figure=self.mics_beamf_fig)
+        mic_layout = sp.layouts.MicGeomComponent(
+            mic_alpha=0.4,
+            glyph=Scatter(
+                marker='circle_cross',
+                x='x',
+                y='y',
+                fill_color='colors',
+                size='sizes',
+                fill_alpha='alpha',
+                line_alpha='alpha',
+            ),
+            figure=self.mics_beamf_fig,
+            presenter=self.mic_presenter,
+            allow_point_draw=True,
+        )
+        self.mic_presenter.update(
+            sizes=np.full(self.mics.pos_total.shape[1], 20), colors=[COLOR[1]] * self.mics.pos_total.shape[1]
+        )
+        self.mics_beamf_fig.rect(alpha=1.0, color='black', fill_alpha=0, line_width=2, source=self.grid_data)
+
+        editor, formatter = NumberEditor(), NumberFormatter(format='0.00')
+        mic_layout.mics_trait_widget_args.update(
+            {
+                'pos_total': {
+                    'height': 200,
+                    'editable': True,
+                    'transposed': True,
+                    'columns': [
+                        TableColumn(field=axis, title=f'{axis}/m', editor=editor, formatter=formatter) for axis in 'xyz'
+                    ],
+                }
+            }
+        )
+        self.mics_widgets = mic_layout.widgets
+        self.all_mics_valid = Button(label='All Mics Valid', button_type='primary', sizing_mode='stretch_width')
+        self.all_mics_valid.on_click(lambda: setattr(self.mics, 'invalid_channels', []))
+
+        self.invalid_input_channels = MultiSelect(title='Not-Array Channels', height=150, value=[])
+        self.invalid_input_channels.description = (
+            'Extra non-array input channels that are not part of the microphone array, e.g. trigger, tacho, '
+            'reference, or unused ADC channels. These channels are ignored for beamforming.'
+        )
+        self.beamforming_input.set_widgets(invalid_channels=self.invalid_input_channels)
+        self.all_bf_valid = Button(label='Use All Channels', button_type='primary', sizing_mode='stretch_width')
+        self.all_bf_valid.on_click(lambda: setattr(self.beamforming_input, 'invalid_channels', []))
+        self.auto_level_toggle = Toggle(label='Auto Level', button_type='primary', active=True)
+        self.dynamic_range = NumericInput(value=10, title='Dynamic Range/dB')
+        self.snapshot_avg = NumericInput(value=1, title='Snapshots to Average')
+        self.bf_max_level = Slider(start=0, end=140, value=100, step=1, title='Peak Level/dB')
+        self.bf_alpha = Slider(start=0, end=1, step=0.05, value=1, title='Sourcemap Alpha')
+        grid_widgets = self.grid.get_widgets()
+        z_slider = Slider(start=0.01, end=10.0, value=self.grid.z, step=0.02, title='z')
+        self.grid.set_widgets(z=z_slider)
+        grid_widgets['z'] = z_slider
+        frequency_options = self._octave_band_center_frequency_options(source.sample_freq)
+        center_frequency = self._nearest_frequency_option(frequency_options, 4000)
+        self.beamforming_frequency_slider = CategoricalSlider(
+            categories=frequency_options,
+            value=center_frequency,
+            title='Octave-band center frequency [Hz]',
+        )
+        octave_filter = self.beamf.source.source.source
+        octave_filter.band = int(center_frequency)
+        self.beamforming_frequency_slider.on_change(
+            'value', lambda _attr, _old, new: setattr(octave_filter, 'band', int(new))
+        )
+        self.clip_level = NumericInput(value=120, title='Clip Level/dB(SPL)', width=100)
+        self.amp_min_level = NumericInput(value=0, title='Bar Min/dB', width=100)
+        self.amp_max_level = NumericInput(value=120, title='Bar Max/dB', width=100)
+        self.label_select = Select(title='Select Channel Labeling:', value='Number', options=['Number', 'Index'])
+        self.level_label_select = Select(title='Select Level Labeling:', value='dB(SPL)', options=['dB(SPL)', 'dB(V)'])
+
+        self.display_toggle = Toggle(
+            label='▮▮ Display',
+            button_type='primary',
+            width=ACTION_BUTTON_WIDTH,
+            height=ACTION_BUTTON_HEIGHT,
+            disabled=True,
+        )
+        self.record_toggle = Toggle(
+            label='● Rec',
+            button_type='danger',
+            width=ACTION_BUTTON_WIDTH,
+            height=ACTION_BUTTON_HEIGHT,
+            disabled=True,
+        )
+        self.beamform_toggle = Toggle(
+            label='⚡︎ Beamf',
+            button_type='primary',
+            width=ACTION_BUTTON_WIDTH,
+            height=ACTION_BUTTON_HEIGHT,
+            disabled=True,
+        )
+        self.display_toggle.on_click(self._display_toggled)
+        self.record_toggle.on_click(self._record_toggled)
+        self.beamform_toggle.on_click(self._beamform_toggled)
+        self.stream_toggle.disabled = False
+        self.stream_toggle.active = False
+        self._set_child_actions_enabled(enabled=False)
+        action_buttons = row(
+            self.display_toggle,
+            self.beamform_toggle,
+            self.record_toggle,
+            width=ACTION_BUTTON_WIDTH * 3,
+            spacing=0,
+        )
+        self._measurement_controls.children = [
+            self.stream_toggle,
+            self.filename,
+            self.current_time_checkbox,
+            self.measurement_time,
+            action_buttons,
         ]
 
-    update_channel_labels(None, None, None)
-    label_select.on_change('value', update_channel_labels)
-    control.source.on_trait_change(lambda: update_channel_labels(None, None, None), 'num_channels')
+        def update_channel_labels(_attr, _old, _new):
+            channel_labels = self._labels(source, self.label_select.value)
+            self.amp_data.data = {
+                'channels': channel_labels,
+                'level': np.zeros(len(channel_labels)),
+                'colors': [AMP_BAR_COLOR] * len(channel_labels),
+            }
+            self.amp_fig.x_range.factors = channel_labels
+            self.invalid_input_channels.options = [(str(index), label) for index, label in enumerate(channel_labels)]
 
-    def dynamic_slider_callback(_attr, _old, _new):
-        if not auto_level_toggle.active:
-            beamf_color_mapper.high = bf_max_level.value
-            beamf_color_mapper.low = bf_max_level.value - dynamic_range.value
+        def update_grid(_attr, _old, _new):
+            self.grid_data.data = {
+                'x': [(self.grid.x_max + self.grid.x_min) / 2],
+                'y': [(self.grid.y_max + self.grid.y_min) / 2],
+                'width': [self.grid.x_max - self.grid.x_min],
+                'height': [self.grid.y_max - self.grid.y_min],
+            }
+            self.bf_image.glyph.update(
+                x=self.grid.x_min,
+                y=self.grid.y_min,
+                dw=self.grid.x_max - self.grid.x_min,
+                dh=self.grid.y_max - self.grid.y_min,
+            )
 
-    dynamic_range.on_change('value', dynamic_slider_callback)
-    bf_max_level.on_change('value', dynamic_slider_callback)
+        def update_levels():
+            if self.disp.cdsource.data['data'].size:
+                levels = self._channel_levels(self.disp.cdsource.data['data'][0])
+                self.amp_data.data['level'] = levels
+                self.amp_data.data['colors'] = self._amplitude_colors(levels)
+                self.mic_presenter.cdsource.data['sizes'] = self._microphone_sizes(levels)
+            if self.beamform_toggle.active and self.beamf.cdsource.data['data'].size:
+                image = self._display_levels(self.beamf.cdsource.data['data'].reshape(self.grid.shape)).T
+                self.beamf_data.data = {'level': [image]}
+                if self.auto_level_toggle.active:
+                    peak_level = image.max()
+                    mapper.high, mapper.low = peak_level, peak_level - self.dynamic_range.value
+                    self.bf_max_level.value = peak_level
 
-    def snapshot_avg_callback(_attr, _old, new):
-        control.beamf.source.num_per_average = args.blocksize * new
+        def update_amplitude_range(_attr, _old, _new):
+            if self.amp_min_level.value is not None:
+                self.amp_fig.y_range.start = self.amp_min_level.value
+            if self.amp_max_level.value is not None:
+                self.amp_fig.y_range.end = self.amp_max_level.value
 
-    snapshot_avg.on_change('value', snapshot_avg_callback)
+        def update_level_label(_attr, _old, _new):
+            self._set_amplitude_plot_labels()
+            self._set_beamforming_plot_labels()
+            update_levels()
 
-    def update_bf_image_axis():
-        dx = grid.x_max - grid.x_min
-        dy = grid.y_max - grid.y_min
-        bf_image.glyph.x = grid.x_min
-        bf_image.glyph.y = grid.y_min
-        bf_image.glyph.dw = dx
-        bf_image.glyph.dh = dy
-        bf_image.glyph.update()
+        update_channel_labels(None, None, None)
+        self.label_select.on_change('value', update_channel_labels)
+        self.level_label_select.on_change('value', update_level_label)
+        self.amp_min_level.on_change('value', update_amplitude_range)
+        self.amp_max_level.on_change('value', update_amplitude_range)
+        source.on_trait_change(lambda: update_channel_labels(None, None, None), 'num_channels')
+        self.dynamic_range.on_change('value', lambda _attr, _old, _new: self._set_bf_levels(mapper))
+        self.bf_max_level.on_change('value', lambda _attr, _old, _new: self._set_bf_levels(mapper))
+        self.snapshot_avg.on_change(
+            'value', lambda _a, _o, new: setattr(self.beamf.source, 'num_per_average', self.blocksize * new)
+        )
+        self.bf_alpha.on_change('value', lambda _a, _o, new: setattr(self.bf_image.glyph, 'global_alpha', new))
+        for name in ('x_min', 'x_max', 'y_min', 'y_max'):
+            grid_widgets[name].on_change('value', update_grid)
+        self._beamforming_locked_widgets = [
+            self.snapshot_avg,
+            grid_widgets['x_min'],
+            grid_widgets['x_max'],
+            grid_widgets['y_min'],
+            grid_widgets['y_max'],
+            grid_widgets['increment'],
+            grid_widgets['z'],
+            grid_widgets['size'],
+        ]
 
-    def update_grid():
-        """Update the grid data source when grid settings change."""
-        grid_data.data = {
-            'x': [(grid.x_max + grid.x_min) / 2],
-            'y': [(grid.y_max + grid.y_min) / 2],
-            'width': [grid.x_max - grid.x_min],
-            'height': [grid.y_max - grid.y_min],
-        }
-
-    def update_bf_plot(_attr, _old, _new):
-        update_bf_image_axis()
-        update_grid()
-
-    def clear_beamforming_image(arg):
-        if not arg:
-            beamf_cds.data['level'] = []
-            control.beamf.cdsource.data['data'] = np.array([])
-
-    control.beamf_toggle.on_click(clear_beamforming_image)
-
-    def bf_alpha_callback(_attr, _old, new):
-        bf_image.glyph.global_alpha = new
-
-    bf_alpha.on_change('value', bf_alpha_callback)
-
-    rg_widgets['x_min'].on_change('value', update_bf_plot)
-    rg_widgets['x_max'].on_change('value', update_bf_plot)
-    rg_widgets['y_min'].on_change('value', update_bf_plot)
-    rg_widgets['y_max'].on_change('value', update_bf_plot)
-
-    # =============================================================================
-    #  Set Up Bokeh Document Layout
-    # =============================================================================
-
-    # Tabs
-    amplitudes_tab = Panel(
-        child=column(
-            row(Spacer(width=25), clip_level, Spacer(width=25), label_select),
-            amp_fig,
-            sizing_mode='stretch_both',
-        ),
-        title='Channel Levels',
-    )
-
-    mics_widgets['invalid_channels'].title = 'Invalid Mics'
-    mics_widgets['invalid_channels'].height = 150
-    mics_widgets['invalid_channels'].description = 'Select which input channel indices are not part of the array'
-    mic_control = layout(
-        [
-            [Div(text=r"""<b style="font-size:15px;">Microphone Setup</b>""")],
-            [mics_widgets['file'], mics_widgets['mic_size'], mics_widgets['num_mics']],
+        self._amplitude_controls = column(
+            row(
+                self.clip_level,
+                self.amp_min_level,
+                self.amp_max_level,
+                self.label_select,
+                self.level_label_select,
+                spacing=25,
+            ),
+            width=760,
+            styles=CONTROL_STYLES,
+        )
+        amplitudes_tab = Panel(
+            child=column(
+                Spacer(height=self.TAB_CONTENT_TOP_SPACING),
+                row(
+                    Spacer(sizing_mode='stretch_width'),
+                    self._amplitude_controls,
+                    Spacer(sizing_mode='stretch_width'),
+                    sizing_mode='stretch_width',
+                ),
+                self.amp_fig,
+                sizing_mode='stretch_both',
+            ),
+            title='Channel Levels',
+        )
+        self.mics_widgets['invalid_channels'].title = 'Invalid Mics'
+        self.mics_widgets['invalid_channels'].height = 150
+        self.mics_widgets['invalid_channels'].description = (
+            'Select broken microphones from the microphone geometry. These microphones stay in the array layout, '
+            'but are ignored by the steering vector and beamforming.'
+        )
+        self._mic_control = layout(
             [
-                column(all_mics_valid, mics_widgets['invalid_channels']),
-                column(all_bf_valid, invalid_input_channels),
+                [_section_title('Microphone Control')],
+                [self.mics_widgets['file'], self.mics_widgets['mic_size'], self.mics_widgets['num_mics']],
+                [
+                    column(self.mics_widgets['invalid_channels'], self.all_mics_valid),
+                    column(self.invalid_input_channels, self.all_bf_valid),
+                ],
+                [self.mics_widgets['pos_total']],
             ],
-            [mics_widgets['pos_total']],
-        ],
-        sizing_mode='stretch_width',
-    )
-
-    bf_control = layout(
-        [
-            [Div(text=r"""<b style="font-size:15px;">Beamforming Setup</b>""")],
-            [freq_slider],
-            [bf_alpha, snapshot_avg],
-            [auto_level_toggle, dynamic_range, bf_max_level],
+            width=CONTROL_WIDTH,
+            sizing_mode='stretch_width',
+            styles=CONTROL_STYLES,
+        )
+        self._bf_control = layout(
             [
-                rg_widgets['x_min'],
-                rg_widgets['x_max'],
-                rg_widgets['y_min'],
-                rg_widgets['y_max'],
+                [_section_title('Beamforming Control')],
+                [self.beamforming_frequency_slider],
+                [self.bf_alpha, self.snapshot_avg],
+                [self.auto_level_toggle, self.dynamic_range, self.bf_max_level],
+                [grid_widgets['x_min'], grid_widgets['x_max'], grid_widgets['y_min'], grid_widgets['y_max']],
+                [grid_widgets['increment'], grid_widgets['z']],
+                [grid_widgets['size']],
             ],
-            [rg_widgets['increment'], rg_widgets['z']],
-            [rg_widgets['size']],
-        ],
-        sizing_mode='stretch_width',
-    )
+            width=CONTROL_WIDTH,
+            sizing_mode='stretch_width',
+            styles=CONTROL_STYLES,
+        )
+        camera_widgets = self.camera.widgets
+        for widget in camera_widgets.values():
+            widget.width = 130
+        self._camera_control = layout(
+            [
+                [_section_title('Camera Control')],
+                [camera_widgets['active'], camera_widgets['flip_horizontal']],
+                [camera_widgets['image_type'], camera_widgets['camera_index']],
+                [camera_widgets['framerate'], camera_widgets['alpha']],
+                [camera_widgets['width'], camera_widgets['height']],
+                [camera_widgets['extent_x'], camera_widgets['extent_y']],
+                [camera_widgets['extent_width'], camera_widgets['extent_height']],
+            ],
+            width=CONTROL_WIDTH,
+            sizing_mode='stretch_width',
+            styles=CONTROL_STYLES,
+        )
+        self._camera_panel.children = [self._camera_control]
+        mics_tab = Panel(
+            child=column(
+                Spacer(height=self.TAB_CONTENT_TOP_SPACING),
+                row(
+                    column(self.mics_beamf_fig),
+                    column(
+                        self._mic_control,
+                        Spacer(height=self.CONTROL_GROUP_SPACING),
+                        self._bf_control,
+                        width=CONTROL_WIDTH,
+                        sizing_mode='stretch_width',
+                    ),
+                ),
+                sizing_mode='stretch_both',
+            ),
+            title='Microphone Geometry / Beamforming',
+        )
+        self._update_levels = update_levels
+        return Tabs(
+            tabs=[amplitudes_tab, mics_tab],
+            sizing_mode='inherit',
+            width=1700,
+            height=800,
+            stylesheets=[TAB_TITLE_STYLESHEET],
+        )
 
-    camera_control = layout(
-        [
-            [Div(text=r"""<b style="font-size:15px;">Camera Setup</b>""")],
-            [Spacer(width=10), *[*camera.widgets.values()][:6], Spacer(width=10)],
-            [Spacer(width=10), *[*camera.widgets.values()][6:], Spacer(width=10)],
-        ],
-        sizing_mode='stretch_width',
-    )
+    def _set_bf_levels(self, mapper):
+        if not self.auto_level_toggle.active:
+            mapper.high = self.bf_max_level.value
+            mapper.low = mapper.high - self.dynamic_range.value
 
-    mic_bf_control = column(mic_control, Spacer(height=25), bf_control, sizing_mode='stretch_width')
+    def build_root(self):
+        """Keep the original sidebar-and-tabs arrangement around stream controls."""
+        sidebar = column(
+            self.control_select,
+            self._error,
+            self._control_content,
+            Spacer(height=self.CONTROL_GROUP_SPACING),
+            self._measurement_panel,
+            Spacer(height=self.CONTROL_GROUP_SPACING),
+            self._camera_panel,
+            width=300,
+        )
+        return column(row(Spacer(width=10), sidebar, Spacer(width=20), self._stream_content))
 
-    mics_bf_tab = Panel(
-        child=row(column(camera_control, mics_beamf_fig), mic_bf_control),
-        title='Microphone Geometry / Beamforming',
-    )
+    def _toggle_filename(self, _attr, _old, active):
+        self.filename.disabled = active == [0]
 
-    control_tabs = [
-        amplitudes_tab,
-        mics_bf_tab,
-        calibration.get_tab(),
-    ]
+    def _set_filename(self, _attr, _old, value):
+        if hasattr(self, 'msm'):
+            self.msm.file = Path(ac.config.td_dir) / f'{value}.h5'
 
-    tabs = Tabs(tabs=control_tabs, sizing_mode='inherit', width=1700, height=800)
+    def _num_samples(self):
+        if self.measurement_time.value in {'', '-1'}:
+            return -1
+        return int(float(self.measurement_time.value) * self.msm.sample_freq)
 
-    control_column = control.get_widgets()
+    def _set_child_actions_enabled(self, *, enabled):
+        for toggle in (
+            getattr(self, 'display_toggle', None),
+            getattr(self, 'record_toggle', None),
+            getattr(self, 'beamform_toggle', None),
+        ):
+            if toggle is not None:
+                toggle.disabled = not enabled
 
-    root = column(
-        row(
-            Spacer(width=10),
-            control_column,
-            Spacer(width=20),
-            tabs,
-        ),
-    )
-    doc.add_root(root)
-    doc.title = 'Measurement App'
+    def _set_beamforming_settings_enabled(self, *, enabled):
+        locked_widgets = getattr(self, '_beamforming_locked_widgets', ())
+        if enabled:
+            disabled_states = self._beamforming_locked_disabled_states
+            if disabled_states is None:
+                return
+            for widget in locked_widgets:
+                widget.disabled = disabled_states.get(widget, widget.disabled)
+            self._beamforming_locked_disabled_states = None
+            return
+
+        if self._beamforming_locked_disabled_states is None:
+            self._beamforming_locked_disabled_states = {widget: widget.disabled for widget in locked_widgets}
+        for widget in locked_widgets:
+            widget.disabled = True
+
+    def _start_consumer(self, generator, register, args, *, finished_event=None):
+        worker = SamplesThread(generator, self.splitter, register, args, finished_event or Event())
+        worker.start()
+        return worker
+
+    def _start_record_listener(self, finished_event):
+        self._record_state_listener = EventThread(finished_event, self.doc, post_callback=self._record_finished)
+        self._record_state_listener.start()
+
+    def _record_finished(self):
+        self._set_toggle_active(self.record_toggle, active=False)
+        self._record_worker = None
+        self._record_state_listener = None
+        if hasattr(self, 'disp') and self.disp.cdsource.data['data'].size:
+            self._update_levels()
+
+    def _stop_worker(self, worker_name):
+        worker = getattr(self, worker_name)
+        if worker is not None:
+            worker.breakThread = True
+            worker.join()
+            setattr(self, worker_name, None)
+
+    def _set_toggle_active(self, toggle, *, active):
+        if toggle.active != active:
+            self._updating_toggles = True
+            try:
+                toggle.active = active
+            finally:
+                self._updating_toggles = False
+
+    def _start_updates(self):
+        if self._periodic_callback is None:
+            self._periodic_callback = self.doc.add_periodic_callback(self._update_levels, self.update_period_ms)
+
+    def _stop_updates_if_idle(self):
+        display_active = getattr(self, 'display_toggle', None) is not None and self.display_toggle.active
+        beamform_active = getattr(self, 'beamform_toggle', None) is not None and self.beamform_toggle.active
+        if self._periodic_callback is not None and not display_active and not beamform_active:
+            self.doc.remove_periodic_callback(self._periodic_callback)
+            self._periodic_callback = None
+
+    def _stream_toggled(self, active):
+        if self._updating_toggles:
+            return
+        if active:
+            self.start()
+            if self._stream_worker is None:
+                self._stream_worker = self._start_consumer(
+                    self.stream_drain.result(self.blocksize),
+                    self.stream_drain,
+                    {'buffer_size': 1, 'buffer_overflow_treatment': 'none'},
+                )
+            self._stream_active = True
+            self._set_toggle_active(self.stream_toggle, active=True)
+            self._set_child_actions_enabled(enabled=True)
+        else:
+            self.stop_consumers()
+            if self._running and self.control is not None:
+                try:
+                    self.control.stop()
+                finally:
+                    self.control.set_config_enabled(True)
+                    self.control_select.disabled = False
+                    self._running = False
+
+    def _require_stream(self, toggle):
+        if not self._stream_active:
+            self._set_toggle_active(toggle, active=False)
+            return False
+        return True
+
+    def _display_toggled(self, active):
+        if self._updating_toggles:
+            return
+        if active:
+            if not self._require_stream(self.display_toggle):
+                return
+            if self._display_worker is None:
+                self._display_worker = self._start_consumer(
+                    self.disp.result(1),
+                    self.disp.source.source,
+                    {'buffer_size': 400, 'buffer_overflow_treatment': 'none'},
+                )
+            self._set_toggle_active(self.display_toggle, active=True)
+            self._start_updates()
+        else:
+            self._set_toggle_active(self.display_toggle, active=False)
+            self._stop_worker('_display_worker')
+            self._stop_updates_if_idle()
+
+    def _record_toggled(self, active):
+        if self._updating_toggles:
+            return
+        if active:
+            if not self._require_stream(self.record_toggle):
+                return
+            if self.current_time_checkbox.active == [0]:
+                self.filename.value = datetime.now(tz=UTC).isoformat('_').replace(':', '-').replace('.', '_')
+            self.msm.num_samples_write = self._num_samples()
+            if self._record_worker is None:
+                finished_event = Event()
+                self._record_worker = self._start_consumer(
+                    self.msm.result(self.blocksize),
+                    self.msm,
+                    {'buffer_size': 400, 'buffer_overflow_treatment': 'error'},
+                    finished_event=finished_event,
+                )
+                self._start_record_listener(finished_event)
+            self._set_toggle_active(self.record_toggle, active=True)
+        else:
+            self.msm.write_flag = False
+            self._set_toggle_active(self.record_toggle, active=False)
+            self._stop_worker('_record_worker')
+
+    def _beamform_toggled(self, active):
+        if self._updating_toggles:
+            return
+        if active:
+            if not self._require_stream(self.beamform_toggle):
+                return
+            if self._beamform_worker is None:
+                self._beamform_worker = self._start_consumer(
+                    self.beamf.result(1),
+                    self.beamforming_input,
+                    {'buffer_size': 1, 'buffer_overflow_treatment': 'none'},
+                )
+            self._set_toggle_active(self.beamform_toggle, active=True)
+            self._set_beamforming_settings_enabled(enabled=False)
+            self._start_updates()
+        else:
+            self._set_toggle_active(self.beamform_toggle, active=False)
+            self._set_beamforming_settings_enabled(enabled=True)
+            self.beamf_data.data = {'level': []}
+            self._stop_worker('_beamform_worker')
+            self._stop_updates_if_idle()
+
+    def stop_consumers(self):
+        """Stop and join app-owned pipeline consumers."""
+        if getattr(self, 'record_toggle', None) is not None:
+            self.msm.write_flag = False
+            self._set_toggle_active(self.record_toggle, active=False)
+        if getattr(self, 'display_toggle', None) is not None:
+            self._set_toggle_active(self.display_toggle, active=False)
+        if getattr(self, 'beamform_toggle', None) is not None:
+            self._set_toggle_active(self.beamform_toggle, active=False)
+            self._set_beamforming_settings_enabled(enabled=True)
+            self.beamf_data.data = {'level': []}
+        for worker_name in ('_display_worker', '_beamform_worker', '_record_worker', '_stream_worker'):
+            self._stop_worker(worker_name)
+        if self._periodic_callback is not None:
+            self.doc.remove_periodic_callback(self._periodic_callback)
+            self._periodic_callback = None
+        self._stream_active = False
+        self._set_toggle_active(self.stream_toggle, active=False)
+        self._set_child_actions_enabled(enabled=False)
+
+
+def server_doc(doc):
+    """Populate a Bokeh document for the measurement app."""
+    log = LogHandler(doc=doc)
+    td = Path(__file__).parent / 'td'
+    td.mkdir(exist_ok=True)
+    ac.config.td_dir = td
+    MeasurementApp(doc, log.logger).server_doc()
 
 
 if __name__ == '__main__':
@@ -509,6 +834,5 @@ if __name__ == '__main__':
 
     server = Server({'/': server_doc})
     server.start()
-    print('Opening Measurement App on http://localhost:5006/')
     server.io_loop.add_callback(server.show, '/')
     server.io_loop.start()

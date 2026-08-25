@@ -1,4 +1,0 @@
-﻿layouts
-====================
-
-.. automodule:: spectacoular.layouts

@@ -30,8 +30,11 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    'acoular>=26.01',
-    'bokeh >=3.0',
+    "acoular>=26.08",
+    "acoular-brand @ git+https://github.com/acoular/ci.git@brand-v1.0#subdirectory=packages/acoular-brand",
+    "bokeh >=3.0",
+    "matplotlib",
+    "sounddevice",
 ]
 
 maintainers = [
@@ -47,7 +50,6 @@ maintainers = [
 [project.optional-dependencies]
 full = [
     "opencv-python", # only for msm_app
-    "sounddevice",
 ]
 
 [dependency-groups]
@@ -95,6 +97,9 @@ path = "src/spectacoular/version.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/spectacoular"]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 
 [[tool.uv.index]]
 name = "pypi"
@@ -129,3 +134,6 @@ banned-module-level-imports = ["sounddevice"]
 "src/spectacoular/version.py" = ["ALL"]
 "src/spectacoular/apps/**/*.py" = ["T201"]
 "src/spectacoular/apps/measurement_app/acoular_future/fastFuncs.py" = ["N999"]
+"tests/test_audio_stream_apps.py" = ["S101", "SLF001", "PLR2004", "FBT003"]
+
+

@@ -4,7 +4,9 @@ import importlib
 import logging
 from collections import deque
 
-from .layout import COLOR
+from bokeh.palettes import Spectral11
+
+COLOR = Spectral11
 
 # # Create Bokeh TextAreaInput widget for log display
 # self.log_text = TextAreaInput(title="App Log", value="", disabled=True, background=background,

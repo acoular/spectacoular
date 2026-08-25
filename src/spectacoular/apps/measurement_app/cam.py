@@ -84,10 +84,10 @@ class CameraComponent(BaseSpectacoular):
     trait_widget_args = Dict(
         {
             'active': {
-                'label': 'Display',
+                'label': '▣ Camera',
                 'active': False,
                 'disabled': not HAVE_CV2,
-                'button_type': 'success',
+                'button_type': 'primary',
             },
             'image_type': {
                 'title': 'Image Type',
@@ -128,10 +128,10 @@ class CameraComponent(BaseSpectacoular):
             },
             'alpha': {'title': 'Image Alpha', 'start': 0, 'end': 1, 'step': 0.05},
             'flip_horizontal': {
-                'label': 'Flip horizontal',
+                'label': '⇄ Mirror',
                 'active': False,
                 'disabled': not HAVE_CV2,
-                'button_type': 'default',
+                'button_type': 'primary',
             },
         }
     )
@@ -141,6 +141,7 @@ class CameraComponent(BaseSpectacoular):
     # private traits
     _glyph_renderer = Instance(bokeh.models.renderers.GlyphRenderer)
     _callback_id = None
+    _callback_kind = None
     _vc_stream = None
 
     @observe('figure')
@@ -174,12 +175,24 @@ class CameraComponent(BaseSpectacoular):
         self.height = int(vc.get(cv2.CAP_PROP_FRAME_HEIGHT))
         vc.release()
 
+    def _remove_camera_callback(self):
+        """Remove the scheduled camera callback, regardless of current image type."""
+        if self._callback_id is None:
+            return
+        if self._callback_id in self.doc.session_callbacks:
+            if self._callback_kind == 'periodic':
+                self.doc.remove_periodic_callback(self._callback_id)
+            elif self._callback_kind == 'next_tick':
+                self.doc.remove_next_tick_callback(self._callback_id)
+        self._callback_id = None
+        self._callback_kind = None
+
     def _stop_camera_stream(self, cds):
         """Stop the camera stream and clean up resources."""
         if self._vc_stream is not None:
             self._vc_stream.release()
-        if self.image_type == 'Stream' and self._callback_id is not None:
-            self.doc.remove_periodic_callback(self._callback_id)
+            self._vc_stream = None
+        self._remove_camera_callback()
         cds.data['image_data'] = []
 
     def _start_camera_stream(self, cds):
@@ -203,8 +216,10 @@ class CameraComponent(BaseSpectacoular):
         callback = partial(self._update_camera, cds=cds, img=img, view=view)
         if self.image_type == 'Stream':
             self._callback_id = self.doc.add_periodic_callback(callback, update_rate)
+            self._callback_kind = 'periodic'
         else:
             self._callback_id = self.doc.add_next_tick_callback(callback)
+            self._callback_kind = 'next_tick'
 
     def _camera_callback(self, _attr, _old, new, cds):
         if new:
@@ -212,13 +227,30 @@ class CameraComponent(BaseSpectacoular):
         else:
             self._stop_camera_stream(cds)
 
+    def _restart_camera_stream(self, cds):
+        """Restart active camera capture after mode or resolution changes."""
+        if self.active:
+            self._stop_camera_stream(cds)
+            self._start_camera_stream(cds)
+
+    def _image_type_callback(self, _attr, _old, _new, cds):
+        """Switch between one-shot snapshot and periodic stream while active."""
+        self._restart_camera_stream(cds)
+
     def _resolution_callback(self, _attr, _old, _new, cds):
         """Restart the camera stream after a resolution change when active."""
-        if self.active and self._vc_stream is not None:
-            # Stop current stream
-            self._stop_camera_stream(cds)
-            # Restart with new resolution
-            self._start_camera_stream(cds)
+        self._restart_camera_stream(cds)
+
+    def _extent_callback(self, _attr, _old, _new):
+        """Move and resize the image glyph when Camera Setup extent values change."""
+        if self._glyph_renderer is None:
+            return
+        self._glyph_renderer.glyph.update(
+            x=self.extent_x,
+            y=self.extent_y,
+            dw=self.extent_width,
+            dh=self.extent_height,
+        )
 
     def _global_alpha_callback(self, _attr, _old, new):
         # go through all image glyphs and change global alpha if above
@@ -238,10 +270,16 @@ class CameraComponent(BaseSpectacoular):
         if widgets.get('active') is not None:
             callback = partial(self._camera_callback, cds=self._glyph_renderer.data_source)
             widgets['active'].on_change('active', callback)
+        if widgets.get('image_type') is not None:
+            callback = partial(self._image_type_callback, cds=self._glyph_renderer.data_source)
+            widgets['image_type'].on_change('value', callback)
         if widgets.get('width') is not None:
             resolution_callback = partial(self._resolution_callback, cds=self._glyph_renderer.data_source)
             widgets['width'].on_change('value', resolution_callback)
         if widgets.get('height') is not None:
             resolution_callback = partial(self._resolution_callback, cds=self._glyph_renderer.data_source)
             widgets['height'].on_change('value', resolution_callback)
+        for name in ('extent_x', 'extent_y', 'extent_width', 'extent_height'):
+            if widgets.get(name) is not None:
+                widgets[name].on_change('value', self._extent_callback)
         return widgets

@@ -1,0 +1,148 @@
+/*
+ * Global Spectacoular page CSS.
+ *
+ * This file is inserted once into the HTML document <head> by
+ * `themes.DOCUMENT_TEMPLATE`.  It styles the ordinary page around Bokeh's
+ * models: the browser window, the app background, and the CSS variables that
+ * Bokeh widgets inherit.
+ *
+ * CSS quick guide for Python/Bokeh readers:
+ * - A CSS custom property is a named variable, e.g. `--spectacoular-widget-color`.
+ * - `var(--name)` means "use the current value of that variable".
+ * - `html[data-theme="dark"]` matches the top-level <html> element when its
+ *   `data-theme` attribute is set to "dark".  The theme switch toggles this
+ *   attribute in `client_theme.js`.
+ * - Child DOM elements inherit these variables automatically.  This is why we
+ *   can recolor many widgets instantly without asking the Python server to
+ *   rebuild a Bokeh theme.
+ *
+ * Acoular exposes fixed brand tokens such as `--acoular-color-brand-light` in
+ * `acoular.css`.  Spectacoular defines semantic aliases below whose values
+ * change with `html[data-theme]`.  For example, a widget can use
+ * `--spectacoular-widget-color` without knowing whether the current theme is
+ * light or dark.
+ *
+ * Bokeh detail: modern Bokeh widgets render their internals in shadow DOMs.
+ * The widget stylesheet in `bokeh_widgets.css` is loaded inside those shadow
+ * roots, but CSS custom properties still cross the shadow boundary through the
+ * widget host.  Therefore the variables defined here are the bridge between the
+ * page-level theme and Bokeh's widget internals.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Roboto:wght@400;500;600;700&family=Source+Code+Pro:wght@300;400&display=swap");
+
+/* Acoular brand font stacks from acoular_brand/assets/acoular.mplstyle. */
+:root {
+  --spectacoular-font-family-sans: Roboto, "Roboto Condensed", "DejaVu Sans", Arial, sans-serif;
+  --spectacoular-font-family-monospace: "Source Code Pro", "DejaVu Sans Mono", monospace;
+  --bokeh-base-font: var(--spectacoular-font-family-sans);
+  --bokeh-mono-font: var(--spectacoular-font-family-monospace);
+}
+
+/* Semantic color values used while the page is in light mode. */
+html[data-theme="light"] {
+  --spectacoular-widget-color: var(--acoular-color-background-dark);
+  --spectacoular-widget-inverted-color: var(--acoular-color-background-light);
+  --spectacoular-widget-background-color: var(--acoular-color-background-light);
+  --spectacoular-widget-default: var(--acoular-color-background-light);
+  --spectacoular-widget-default-border: var(--acoular-color-muted-light);
+  --spectacoular-widget-default-hover: var(--acoular-color-background-light);
+  /* `color-mix(... 85%, black)` makes a slightly darker pressed/active color. */
+  --spectacoular-widget-default-active: color-mix(in srgb, var(--acoular-color-background-light) 85%, black);
+  --spectacoular-widget-light: var(--acoular-color-brand-light);
+  --spectacoular-widget-light-hover: var(--acoular-color-brand-light);
+  --spectacoular-widget-light-active: color-mix(in srgb, var(--acoular-color-brand-light) 85%, black);
+  --spectacoular-widget-active-bg: var(--acoular-color-brand);
+  --spectacoular-widget-active-fg: var(--acoular-color-background-light);
+  --spectacoular-widget-inactive-bg: var(--acoular-color-muted-dark);
+  --spectacoular-widget-inactive-fg: var(--acoular-color-muted-light);
+  --spectacoular-widget-button-color: var(--acoular-color-brand-light);
+  --spectacoular-widget-input-background: var(--acoular-color-background-light);
+  --spectacoular-widget-input-color: var(--acoular-color-background-dark);
+  --spectacoular-table-background: var(--acoular-color-background-light);
+  --spectacoular-table-color: var(--acoular-color-background-dark);
+  --spectacoular-tooltip-text: var(--acoular-color-background-dark);
+  --spectacoular-tooltip-color: var(--acoular-color-background-light);
+}
+
+/* Semantic color values used while the page is in dark mode. */
+html[data-theme="dark"] {
+  --spectacoular-widget-color: var(--acoular-color-brand-light);
+  --spectacoular-widget-inverted-color: var(--acoular-color-brand-light);
+  --spectacoular-widget-background-color: var(--acoular-color-background-dark);
+  --spectacoular-widget-default: var(--acoular-color-background-dark);
+  --spectacoular-widget-default-border: var(--acoular-color-muted-dark);
+  --spectacoular-widget-default-hover: var(--acoular-color-background-dark);
+  --spectacoular-widget-default-active: color-mix(in srgb, var(--acoular-color-background-dark) 85%, black);
+  --spectacoular-widget-light: var(--acoular-color-background-dark);
+  --spectacoular-widget-light-hover: var(--acoular-color-background-dark);
+  --spectacoular-widget-light-active: color-mix(in srgb, var(--acoular-color-background-dark) 85%, black);
+  --spectacoular-widget-active-bg: var(--acoular-color-brand-light);
+  --spectacoular-widget-active-fg: var(--acoular-color-background-dark);
+  --spectacoular-widget-inactive-bg: var(--acoular-color-muted-dark);
+  --spectacoular-widget-inactive-fg: var(--acoular-color-muted-light);
+  --spectacoular-widget-button-color: var(--acoular-color-brand-light);
+  --spectacoular-widget-input-background: var(--acoular-color-background-light);
+  --spectacoular-widget-input-color: var(--acoular-color-background-dark);
+  --spectacoular-table-background: var(--acoular-color-background-light);
+  --spectacoular-table-color: var(--acoular-color-background-dark);
+  --spectacoular-tooltip-text: var(--acoular-color-brand-light);
+  --spectacoular-tooltip-color: var(--acoular-color-background-dark);
+}
+
+/* Ensure the theme background fills the whole browser window, not just content. */
+html,
+body {
+  min-height: 100%;
+  font-family: var(--spectacoular-font-family-sans);
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--spectacoular-font-family-monospace);
+}
+
+/* Header logo shown in place of the app title. */
+.spectacoular-app-logo {
+  align-items: center;
+  display: flex;
+  min-height: 42px;
+  padding-left: 8px;
+}
+
+.spectacoular-app-logo-image {
+  height: 24px;
+  max-width: 150px;
+  object-fit: contain;
+  width: auto;
+}
+
+.spectacoular-app-logo-fallback {
+  font-family: var(--spectacoular-font-family-sans);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/*
+ * Initial/light background fallback.
+ *
+ * `:root` is the same element as `html`, but without requiring a data-theme
+ * attribute.  This gives the page a sensible light background before Bokeh's
+ * document-ready callback sets the explicit theme.
+ */
+:root,
+html[data-theme="light"],
+html[data-theme="light"] body {
+  background-color: var(--acoular-color-background-light);
+  color: var(--acoular-color-background-dark);
+}
+
+/* Page background/text while the browser is in dark mode. */
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  background-color: var(--acoular-color-background-dark);
+  color: var(--acoular-color-brand-light);
+}

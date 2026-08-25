@@ -3,6 +3,8 @@
 # ------------------------------------------------------------------------------
 """Interactive server applications with SpectAcoular.
 
+===================================================
+
 .. _interactive_apps:
 
 Standalone HTML documents are often not sufficient for full interactivity,
@@ -17,7 +19,7 @@ real-time updates.
 
 This example creates an interactive application to visualize the
 beamforming result for Acoular's three sources example.
-See the `Acoular example documentation <https://www.acoular.org/auto_examples/introductory_examples/example_basic_beamforming.html>`_.
+See the `Acoular example documentation <https://acoular.org/acoular/auto_examples/introductory_examples/example_basic_beamforming.html>`_.
 As the HTML document below shows, changing the frequency or grid
 parameters will **not** update the plot because the document is static and
 cannot interact with the Python code. To get updates, the Python code must
