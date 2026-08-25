@@ -54,7 +54,7 @@ full = [
 
 [dependency-groups]
 docs = [
-    "acoular-sphinx @ git+https://github.com/acoular/ci.git@sphinx-v1.5#subdirectory=packages/acoular-sphinx",
+    "acoular-sphinx @ git+https://github.com/acoular/ci.git@sphinx-v1.6#subdirectory=packages/acoular-sphinx",
     "bokeh >=3.0",
 ]
 

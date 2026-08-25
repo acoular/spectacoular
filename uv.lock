@@ -53,7 +53,7 @@ dependencies = [
 [[package]]
 name = "acoular-sphinx"
 version = "0.1.5"
-source = { git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-sphinx&rev=sphinx-v1.5#18e3a7cc9f5725113be7a4cc650343987f40960b" }
+source = { git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-sphinx&rev=sphinx-v1.6#666dfe5bd1efcfb51ca94bfd16f7a0460abbdfd6" }
 dependencies = [
     { name = "acoular-brand" },
     { name = "graphviz" },
@@ -2484,7 +2484,7 @@ provides-extras = ["full"]
 [package.metadata.requires-dev]
 dev = [
     { name = "acoular-ruff", git = "https://github.com/acoular/ci.git?rev=ruff-v1.0" },
-    { name = "acoular-sphinx", git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-sphinx&rev=sphinx-v1.5" },
+    { name = "acoular-sphinx", git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-sphinx&rev=sphinx-v1.6" },
     { name = "bokeh", specifier = ">=3.0" },
     { name = "diff-cover" },
     { name = "hypothesis" },
@@ -2493,7 +2493,7 @@ dev = [
     { name = "spectacoular", extras = ["full"] },
 ]
 docs = [
-    { name = "acoular-sphinx", git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-sphinx&rev=sphinx-v1.5" },
+    { name = "acoular-sphinx", git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-sphinx&rev=sphinx-v1.6" },
     { name = "bokeh", specifier = ">=3.0" },
 ]
 lint = [{ name = "acoular-ruff", git = "https://github.com/acoular/ci.git?rev=ruff-v1.0" }]
