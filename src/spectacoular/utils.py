@@ -7,13 +7,12 @@
     :toctree: generated/
 
     json_write
-    json_validation
+    is_valid_json
     json_read
 """
 
 import json
 import math
-from contextlib import suppress
 from datetime import UTC, datetime
 from numbers import Real
 from pathlib import Path
@@ -37,12 +36,12 @@ DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 DEFAULT_DESCRIPTION = 'Single-point calibration measurements for the specified channels.'
 
 
-def json_validation(json_file):
+def is_valid_json(data_or_path):
     """Validate calibration data against the multi-channel JSON schema.
 
     Parameters
     ----------
-    json_file : str, pathlib.Path or dict
+    data_or_path : str, pathlib.Path or dict
         Calibration file to validate, or an already loaded calibration dictionary.
 
     Returns
@@ -58,28 +57,21 @@ def json_validation(json_file):
         If the calibration data does not match the schema.
 
     """
-    if isinstance(json_file, dict):
-        data = json_file
+    if isinstance(data_or_path, dict):
+        data = data_or_path
     else:
-        path = Path(json_file)
-        try:
-            with path.open(encoding='utf-8') as stream:
-                data = json.load(stream)
-        except FileNotFoundError as error:
-            msg = f'Calibration file not found: {path}.'
-            raise ValueError(msg) from error
-        except json.JSONDecodeError as error:
-            msg = f'Invalid JSON in {path}: {error.msg} at line {error.lineno}.'
-            raise ValueError(msg) from error
+        path = Path(data_or_path)
+        with path.open(encoding='utf-8') as stream:
+            data = json.load(stream)
 
     if not isinstance(data, dict):
-        msg = 'The JSON root must be an object.'
+        msg = 'The JSON root must be a dictionary.'
         raise TypeError(msg)
 
     missing_fields, extra_fields = JSON_FIELDS - data.keys(), data.keys() - JSON_FIELDS
     if missing_fields or extra_fields:
-        issue, fields = ('Missing', missing_fields) if missing_fields else ('Unexpected', extra_fields)
-        msg = f'{issue} top-level fields: {", ".join(sorted(fields))}.'
+        fields = missing_fields | extra_fields
+        msg = f'Missing or unexpected top level fields: {", ".join(sorted(fields))}.'
         raise ValueError(msg)
 
     invalid_metadata = next(
@@ -87,21 +79,19 @@ def json_validation(json_file):
         None,
     )
     empty_metadata = next((field for field in ('Name', 'Source') if not data[field]), None)
-    parsed_date = None
-    with suppress(TypeError, ValueError):
-        parsed_date = datetime.strptime(data['Date'], DATE_FORMAT).replace(tzinfo=UTC)
+    parsed_date = datetime.strptime(data['Date'], DATE_FORMAT).replace(tzinfo=UTC)
     channel_count, calibration = data['ChannelCount'], data['Calibration']
     valid_channel_count = isinstance(channel_count, int) and not isinstance(channel_count, bool) and channel_count > 0
     if not isinstance(calibration, dict):
-        msg = 'Calibration must be an object.'
+        msg = 'Calibration must be an dictionary.'
         raise TypeError(msg)
     missing_fields, extra_fields = (
         set(CALIBRATION_FIELDS) - calibration.keys(),
         calibration.keys() - set(CALIBRATION_FIELDS),
     )
     if missing_fields or extra_fields:
-        issue, fields = ('Missing', missing_fields) if missing_fields else ('Unexpected', extra_fields)
-        msg = f'{issue} calibration fields: {", ".join(sorted(fields))}.'
+        fields = missing_fields | extra_fields
+        msg = f'Missing or unexpected calibration fields: {", ".join(sorted(fields))}.'
         raise ValueError(msg)
 
     invalid_list = next((field for field in CALIBRATION_FIELDS if not isinstance(calibration[field], list)), None)
@@ -144,7 +134,7 @@ def json_validation(json_file):
         (invalid_metadata, TypeError, f'{invalid_metadata} must be a string.'),
         (empty_metadata, ValueError, f'{empty_metadata} must not be empty.'),
         (
-            parsed_date is None or parsed_date.strftime(DATE_FORMAT) != data['Date'],
+            parsed_date.strftime(DATE_FORMAT) != data['Date'],
             ValueError,
             f'Date must use the format {DATE_FORMAT}.',
         ),
@@ -174,12 +164,12 @@ def json_validation(json_file):
     return True
 
 
-def json_write(json_file, source, channel_data, description=DEFAULT_DESCRIPTION, date=None):
+def json_write(data_or_path, source, channel_data, description=DEFAULT_DESCRIPTION, date=None):
     """Write multi-channel calibration data with :func:`json.dump`.
 
     Parameters
     ----------
-    json_file : str or pathlib.Path
+    data_or_path : str or pathlib.Path
         Path of the JSON file to write.
     source : str
         Name of the source used for calibration.
@@ -231,7 +221,7 @@ def json_write(json_file, source, channel_data, description=DEFAULT_DESCRIPTION,
     elif date is None:
         date = datetime.now(tz=UTC).strftime(DATE_FORMAT)
 
-    path = Path(json_file)
+    path = Path(data_or_path)
     data = {
         'Name': path.name,
         'Description': description,
@@ -240,19 +230,19 @@ def json_write(json_file, source, channel_data, description=DEFAULT_DESCRIPTION,
         'ChannelCount': len(channels),
         'Calibration': calibration,
     }
-    json_validation(data)
+    is_valid_json(data)
     with path.open('w', encoding='utf-8') as stream:
         json.dump(data, stream, indent=2, ensure_ascii=False)
         stream.write('\n')
     return data
 
 
-def json_read(json_file):
+def json_read(data_or_path):
     """Read validated calibration data into a channel-indexed dictionary.
 
     Parameters
     ----------
-    json_file : str or pathlib.Path
+    data_or_path : str or pathlib.Path
         Path of the JSON file to read.
 
     Returns
@@ -261,8 +251,8 @@ def json_read(json_file):
         File metadata and calibration values indexed by channel number.
 
     """
-    json_validation(json_file)
-    with Path(json_file).open(encoding='utf-8') as stream:
+    is_valid_json(data_or_path)
+    with Path(data_or_path).open(encoding='utf-8') as stream:
         data = json.load(stream)
     channel_data = {
         channel: {field: data['Calibration'][field][index] for field in CALIBRATION_FIELDS}

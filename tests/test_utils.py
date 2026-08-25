@@ -5,7 +5,7 @@
 
 from pathlib import Path
 
-from spectacoular.utils import json_read, json_validation, json_write
+from spectacoular.utils import is_valid_json, json_read, json_write
 
 import pytest
 
@@ -13,7 +13,7 @@ import pytest
 def test_read_and_write_calibration_json(tmp_path):
     """Read and rewrite a reference calibration file without changing it."""
     reference_file = Path(__file__).parent / 'data' / 'calibration.json'
-    if json_validation(reference_file) is not True:
+    if not is_valid_json(reference_file) :
         pytest.fail('The reference calibration file is not valid.')
 
     calibration = json_read(reference_file)
