@@ -2,6 +2,7 @@
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
 """Basic plotting with Bokeh.
+
 ==========================
 
 .. _basic_mic_geom_plot:

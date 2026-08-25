@@ -20,7 +20,16 @@ from .threads import EventThread, SamplesThread, StreamDrain
 
 import numpy as np
 from bokeh.layouts import Spacer, column, layout, row
-from bokeh.models import CategoricalSlider, ColorBar, ColumnDataSource, FactorRange, LinearColorMapper, Select, Tabs, Toggle
+from bokeh.models import (
+    CategoricalSlider,
+    ColorBar,
+    ColumnDataSource,
+    FactorRange,
+    LinearColorMapper,
+    Select,
+    Tabs,
+    Toggle,
+)
 from bokeh.models import TabPanel as Panel
 from bokeh.models.glyphs import Scatter
 from bokeh.models.widgets import (
@@ -81,11 +90,11 @@ OCTAVE_BAND_CENTER_FREQUENCIES = (
     16000,
     20000,
 )
-TAB_TITLE_STYLESHEET = f'''
+TAB_TITLE_STYLESHEET = f"""
 .bk-tab {{
     font-size: {SECTION_TITLE_FONT_SIZE_PX}px;
 }}
-'''
+"""
 
 
 def _section_title(title):

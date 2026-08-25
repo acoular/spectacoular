@@ -2,6 +2,7 @@
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
 """Interactive server applications with SpectAcoular.
+
 ===================================================
 
 .. _interactive_apps:

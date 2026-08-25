@@ -77,7 +77,6 @@ class MicGeomPresenter(BasePresenter):
 
     Examples
     --------
-
     >>> import spectacoular
     >>> mg = spectacoular.MicGeom(file='/path/to/file.xml')  # doctest: +SKIP
     >>> mv = spectacoular.MicGeomPresenter(source=mg)  # doctest: +SKIP
@@ -242,7 +241,6 @@ class TimeSamplesPresenter(BasePresenter):
 
     Examples
     --------
-
     >>> import spectacoular
     >>> ts = spectacoular.TimeSamples(file='/path/to/file.h5')  # doctest: +SKIP
     >>> tv = spectacoular.TimeSamplesPresenter(source=ts)  # doctest: +SKIP

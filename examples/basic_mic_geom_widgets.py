@@ -2,6 +2,7 @@
 # Copyright (c) Acoular Development Team.
 # ------------------------------------------------------------------------------
 """Creating widgets with SpectAcoular.
+
 ===================================
 
 .. _basic_mic_geom_widgets:
