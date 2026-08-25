@@ -4,6 +4,9 @@ What's new
 Upcoming
 ------------------------
 
+26.08
+------------------------
+
 **New features**
 
     - reusable audio-stream controls with Phantom and SoundDevice inputs, including sampling-frequency and sample-format settings
