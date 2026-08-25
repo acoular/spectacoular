@@ -59,6 +59,8 @@ jobs:
 
   pypi_build:
     uses: acoular/ci/.github/workflows/pypi.yml@main
+    with:
+      setup_portaudio: true
 
   pypi_publish:
     needs: pypi_build
