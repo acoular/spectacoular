@@ -31,7 +31,7 @@ classifiers = [
 ]
 dependencies = [
     "acoular>=26.08",
-    "acoular-brand @ git+https://github.com/acoular/ci.git@brand-v1.0#subdirectory=packages/acoular-brand",
+    "acoular-brand @ git+https://github.com/acoular/ci.git@brand-v1.1#subdirectory=packages/acoular-brand",
     "bokeh >=3.0",
     "matplotlib",
     "sounddevice",
@@ -54,7 +54,7 @@ full = [
 
 [dependency-groups]
 docs = [
-    "acoular-sphinx @ git+https://github.com/acoular/ci.git@sphinx-v1.3#subdirectory=packages/acoular-sphinx",
+    "acoular-sphinx @ git+https://github.com/acoular/ci.git@sphinx-v1.5#subdirectory=packages/acoular-sphinx",
     "bokeh >=3.0",
 ]
 
