@@ -333,15 +333,15 @@ def test_measurement_app_document_constructs_with_stream_gate_after_selection():
 
     tabs = next(iter(app.doc.select({'type': Tabs})))
     assert [tab.title for tab in tabs.tabs] == ['Channel Levels', 'Microphone Geometry / Beamforming']
-    assert app.stream_toggle.label == 'Stream'
+    assert app.stream_toggle.label == '▶ Stream'
     assert not app.stream_toggle.disabled
     assert app.display_toggle.disabled
     assert app.record_toggle.disabled
     assert app.beamform_toggle.disabled
 
 
-def test_measurement_app_action_buttons_share_one_row_with_bold_labels():
-    """Display, Beamforming, and Measure stay grouped in one bold action row."""
+def test_measurement_app_action_buttons_share_one_row_with_styled_labels():
+    """Display, Beamforming, and recording actions stay grouped in one styled row."""
     app = MeasurementApp(Document())
     app.server_doc()
     _select_measurement_stream(app)
@@ -350,9 +350,9 @@ def test_measurement_app_action_buttons_share_one_row_with_bold_labels():
 
     assert isinstance(action_row, Row)
     assert list(action_row.children) == [app.display_toggle, app.beamform_toggle, app.record_toggle]
-    assert [button.label for button in action_row.children] == ['Display', 'Beamf', 'Measure']
+    assert [button.label for button in action_row.children] == ['▮▮ Display', '⚡︎ Beamf', '● Rec']
     assert all('.bk-btn' in ''.join(button.stylesheets) for button in action_row.children)
-    assert all('font-weight: 700' in ''.join(button.stylesheets) for button in action_row.children)
+    assert all('font-weight: 600' in ''.join(button.stylesheets) for button in action_row.children)
     assert [button.width for button in action_row.children] == [80, 80, 80]
     assert [button.height for button in action_row.children] == [40, 40, 40]
 
