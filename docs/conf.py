@@ -110,7 +110,7 @@ numpydoc_show_class_members = False
 numpydoc_show_inherited_class_members = False
 numpydoc_class_members_toctree = False
 
-html_css_files = ['css/sphinx_gallery.css', 'css/custom_pydata_sphinx_theme.css']
+html_css_files = ['css/sphinx_gallery.css']
 
 sphinx_gallery_conf = {
     'gallery_dirs': 'auto_examples',
