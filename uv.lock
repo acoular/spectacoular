@@ -2430,7 +2430,6 @@ name = "spectacoular"
 source = { editable = "." }
 dependencies = [
     { name = "acoular" },
-    { name = "acoular-brand" },
     { name = "bokeh", version = "3.9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "bokeh", version = "3.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "matplotlib" },
@@ -2473,7 +2472,6 @@ tests = [
 [package.metadata]
 requires-dist = [
     { name = "acoular", specifier = ">=26.8" },
-    { name = "acoular-brand", git = "https://github.com/acoular/ci.git?subdirectory=packages%2Facoular-brand&rev=brand-v1.1" },
     { name = "bokeh", specifier = ">=3.0" },
     { name = "matplotlib" },
     { name = "opencv-python", marker = "extra == 'full'" },

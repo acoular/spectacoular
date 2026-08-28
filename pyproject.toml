@@ -31,7 +31,6 @@ classifiers = [
 ]
 dependencies = [
     "acoular>=26.08",
-    "acoular-brand @ git+https://github.com/acoular/ci.git@brand-v1.1#subdirectory=packages/acoular-brand",
     "bokeh >=3.0",
     "matplotlib",
     "sounddevice",

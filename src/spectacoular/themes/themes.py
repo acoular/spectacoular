@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-import tomllib
+import re
 from base64 import b64encode
 from dataclasses import dataclass
 from importlib.resources import files
@@ -20,20 +20,9 @@ BEAMFORMING_COLORMAP_TAG = 'spectacoular-beamforming-colormap'
 PLOT_THEME_COLORS_PLACEHOLDER = '__SPECTACOULAR_PLOT_THEME_COLORS__'
 LOGO_HTML_PLACEHOLDER = '__SPECTACOULAR_LOGO_HTML__'
 LOGO_MODEL_TAG = 'spectacoular-app-logo'
-LOGO_RESOURCE_CANDIDATES = {
-    DARK: (
-        ('acoular_brand.assets', 'acoular_logo_dark.svg'),
-        ('acoular_brand.assets', 'acoular_logo_dark_inverted.svg'),
-        ('acoular_brand.assets', 'acoular_logo_dark.png'),
-        ('acoular_sphinx._static', 'acoular_logo_dark.png'),
-    ),
-    LIGHT: (
-        ('acoular_brand.assets', 'acoular_logo.svg'),
-        ('acoular_brand.assets', 'acoular_logo_light.svg'),
-        ('acoular_brand.assets', 'acoular_logo_light.png'),
-        ('acoular_sphinx._static', 'acoular_logo_light.png'),
-    ),
-}
+_ASSETS_DIR = files('spectacoular.themes').joinpath('assets')
+LOGO_FILENAMES = {DARK: 'acoular_logo_dark.svg', LIGHT: 'acoular_logo.svg'}
+COLORMAP_COLOR_NAMES = ('background-dark', 'brand', 'highlight', 'brand-light', 'background-light')
 LOGO_MIME_TYPES = {
     '.png': 'image/png',
     '.svg': 'image/svg+xml',
@@ -94,8 +83,7 @@ def _brand_bokeh_theme_json() -> dict[str, object]:
 
 
 def _load_brand_color_tokens() -> dict[str, str]:
-    theme_toml = tomllib.loads(files('acoular_brand').joinpath('theme.toml').read_text())
-    return theme_toml['colors']
+    return dict(re.findall(r'--acoular-color-([\w-]+):\s*(#[0-9a-fA-F]{6});', _load_brand_css()))
 
 
 def get_acoular_color(name: str) -> str:
@@ -110,13 +98,13 @@ def _load_brand_theme_colors(mode: ThemeMode) -> dict[str, str]:
 
 def beamforming_colormap_palette(mode: ThemeMode, size: int = 256) -> list[str]:
     """Return the Acoular Beamforming colormap for *mode* as Bokeh hex colors."""
-    from acoular_brand.colormaps import register_colormaps  # noqa: PLC0415
-    from matplotlib import colormaps  # noqa: PLC0415
-    from matplotlib.colors import to_hex  # noqa: PLC0415
+    from matplotlib.colors import LinearSegmentedColormap, to_hex  # noqa: PLC0415
 
-    register_colormaps()
-    name = 'acoular_r' if mode == LIGHT else 'acoular'
-    return [to_hex(colormaps[name](index / (size - 1)), keep_alpha=False) for index in range(size)]
+    colors = [_load_brand_color_tokens()[name] for name in COLORMAP_COLOR_NAMES]
+    if mode == DARK:
+        colors.reverse()
+    colormap = LinearSegmentedColormap.from_list('acoular', colors)
+    return [to_hex(colormap(index / (size - 1)), keep_alpha=False) for index in range(size)]
 
 
 def client_plot_theme_colors() -> dict[ThemeMode, dict[str, object]]:
@@ -168,7 +156,7 @@ def _apply_plot_theme_colors(theme_json: dict[str, object], mode: ThemeMode) -> 
 
 
 def _load_brand_css() -> str:
-    return files('acoular_brand.assets').joinpath('acoular.css').read_text()
+    return _ASSETS_DIR.joinpath('acoular.css').read_text()
 
 
 def _logo_mime_type(filename: str) -> str:
@@ -179,14 +167,13 @@ def _logo_mime_type(filename: str) -> str:
 
 
 def _load_logo_data_uri(mode: ThemeMode) -> str | None:
-    for package, filename in LOGO_RESOURCE_CANDIDATES[mode]:
-        try:
-            logo_bytes = files(package).joinpath(filename).read_bytes()
-        except (FileNotFoundError, ModuleNotFoundError):
-            continue
-        encoded_logo = b64encode(logo_bytes).decode('ascii')
-        return f'data:{_logo_mime_type(filename)};base64,{encoded_logo}'
-    return None
+    filename = LOGO_FILENAMES[mode]
+    try:
+        logo_bytes = _ASSETS_DIR.joinpath(filename).read_bytes()
+    except FileNotFoundError:
+        return None
+    encoded_logo = b64encode(logo_bytes).decode('ascii')
+    return f'data:{_logo_mime_type(filename)};base64,{encoded_logo}'
 
 
 def _logo_html(mode: ThemeMode) -> str:
