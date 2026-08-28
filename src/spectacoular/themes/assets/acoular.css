@@ -1,0 +1,18 @@
+/* Generated from acoular_brand/theme.toml; do not edit. */
+:root {
+  --acoular-color-black: #000000;
+  --acoular-color-brand: #0c3762;
+  --acoular-color-brand-light: #fbf4d7;
+  --acoular-color-success: #005b46;
+  --acoular-color-warning: #d9a21b;
+  --acoular-color-danger: #a81d1e;
+  --acoular-color-secondary-light: #935160;
+  --acoular-color-secondary-dark: #5e2132;
+  --acoular-color-accent: #3cc5d0;
+  --acoular-color-highlight: #ffa1d7;
+  --acoular-color-muted-light: #b6bdce;
+  --acoular-color-muted: #8b93a5;
+  --acoular-color-muted-dark: #626a7c;
+  --acoular-color-background-light: #f5f9ff;
+  --acoular-color-background-dark: #061525;
+}
