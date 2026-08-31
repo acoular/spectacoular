@@ -80,6 +80,7 @@ bf_example_app = "spectacoular.apps.bf_example_app:main"
 rotating_example_app = "spectacoular.apps.rotating_example_app:main"
 level_meter_app = "spectacoular.apps.level_meter_app:main"
 data_viewer_app = "spectacoular.apps.data_viewer_app:main"
+calib_app = "spectacoular.apps.calib_app:main"
 
 [project.urls]
 homepage = "https://acoular.org/spectacoular/"
