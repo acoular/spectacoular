@@ -101,7 +101,7 @@ def beamforming_colormap_palette(mode: ThemeMode, size: int = 256) -> list[str]:
     from matplotlib.colors import LinearSegmentedColormap, to_hex  # noqa: PLC0415
 
     colors = [_load_brand_color_tokens()[name] for name in COLORMAP_COLOR_NAMES]
-    if mode == DARK:
+    if mode == LIGHT:
         colors.reverse()
     colormap = LinearSegmentedColormap.from_list('acoular', colors)
     return [to_hex(colormap(index / (size - 1)), keep_alpha=False) for index in range(size)]

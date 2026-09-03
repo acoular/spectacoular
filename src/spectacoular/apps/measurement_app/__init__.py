@@ -1,16 +1,12 @@
 """Measurement app package."""
 
-from .main import server_doc
-
-from bokeh.application import Application
-from bokeh.application.handlers.function import FunctionHandler
-from bokeh.server.server import Server
+import subprocess
+import sys
+from pathlib import Path
 
 
 def main():
-    """Launch the measurement Bokeh app."""
-    server = Server({'/': Application(FunctionHandler(server_doc))})
-    server.start()
-    print('Opening Measurement App on http://localhost:5006/')
-    server.io_loop.add_callback(server.show, '/')
-    server.io_loop.start()
+    """Launch the measurement Bokeh app via the Bokeh CLI."""
+    command = ['bokeh', 'serve', Path(__file__).with_name('measurement_app.py')]
+    command.extend(sys.argv[1:])
+    subprocess.run(command, check=False)  # noqa: S603
