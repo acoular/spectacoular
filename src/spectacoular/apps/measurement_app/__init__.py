@@ -4,8 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .main import server_doc
-
 
 def main():
     """Launch the measurement Bokeh app via the Bokeh CLI."""
