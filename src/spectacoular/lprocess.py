@@ -186,8 +186,8 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     #: automatically generated from a time stamp.
     file = File(filter=['*.xml'], desc='name of data file')
 
-    #: calibration level (e. g. dB or Pa) of calibration device
-    magnitude = Float(114, desc='calibration level of calibration device')
+    #: calibration level in dB
+    magnitude = Float(114, desc='sound-pressure level produced by the calibration device in dB')
 
     #: calibration values determined during evaluation of :meth:`result`.
     #: array of floats with dimension (num_channels, 2)
@@ -203,7 +203,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
     #: channel-wise allowed standard deviation of calibration values in buffer
     calibstd = Float(0.5, desc='allowed standard deviation of calibration values in buffer')
 
-    #: minimum allowed difference in magnitude between the channel to be
+    #: minimum allowed difference of level in dB between the channel to be
     #: calibrated and remaining channels.
     delta = Float(
         10,
@@ -231,7 +231,7 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
 
     def to_pa(self, level):
         """Convert a sound level to pressure in pascal."""
-        return (10 ** (level / 10)) * (4e-10)
+        return (10 ** (level / 20)) * (2e-5)
 
     @cached_property
     def _get_digest(self):
@@ -286,19 +286,21 @@ class CalibHelper(ac.TimeOut, BaseSpectacoular):
             ns = temp.shape[0]
             bufferidx = self.buffer_size - ns
             buffer[0:bufferidx] = buffer[-bufferidx:]  # copy remaining samples in front of next block
-            buffer[-ns:, :] = ac.L_p(temp)
+            buffer[-ns:, :] = temp
+            level_buffer = ac.L_p(buffer)
             calibmask = np.logical_and(
-                buffer > (self.magnitude - self.delta),
-                buffer < (self.magnitude + self.delta),
+                level_buffer > (self.magnitude - self.delta),
+                level_buffer < (self.magnitude + self.delta),
             ).sum(0)
             # print(calibmask)
             if (calibmask.max() == self.buffer_size) and (calibmask.sum() == self.buffer_size):
                 idx = calibmask.argmax()
                 # print(buffer[:,idx].std())
-                if buffer[:, idx].std() < self.calibstd:
+                if level_buffer[:, idx].std() < self.calibstd:
+                    mean_power = np.mean(buffer[:, idx])
+                    measured_level_db = ac.L_p(mean_power)
                     calibdata = self.calibdata.copy()
-                    calibdata[idx, :] = [np.mean(buffer[:, idx]), self.magnitude]
-                    # self.calibdata[idx,:] = [mean(L_p(buffer[:,idx])), self.magnitude]
+                    calibdata[idx, :] = [measured_level_db, self.magnitude]
                     self.calibdata = calibdata
 
             for i in np.arange(self.num_channels):
