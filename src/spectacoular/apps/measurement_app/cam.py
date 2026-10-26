@@ -151,6 +151,8 @@ class CameraComponent(BaseSpectacoular):
             if self._glyph_renderer in self.figure.renderers:
                 self.figure.renderers.remove(self._glyph_renderer)
             self._glyph_renderer = self.figure.add_glyph(ColumnDataSource({'image_data': []}), self.glyph)
+            self.figure.renderers.remove(self._glyph_renderer)
+            self.figure.renderers.insert(0, self._glyph_renderer)
 
     def _update_camera(self, cds, img, view):
         rval, frame = self._vc_stream.read()
