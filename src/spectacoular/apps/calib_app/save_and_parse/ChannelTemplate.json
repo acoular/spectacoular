@@ -1,0 +1,32 @@
+{
+  "CalibLevel":
+    {
+      "Value": null,
+      "Unit": null,
+      "Description": "Root mean square value of the oscillating reference quantity."
+    },
+  "CalibFrequency":
+    {
+      "Value": null,
+      "Unit": "Hz",
+      "Description": "Frequency of the oscillating reference quantity."
+    },
+  "CalibFactor":
+    {
+      "Value": null,
+      "Unit": null,
+      "Description": "Calibration factor calculated by dividing CalibLevel by the measured voltage values that represent the oscillating physical quantity."
+    },
+  "CalibTime":
+    {
+      "Value": null,
+      "Unit": "s",
+      "Description": "Calibration time required to determine CalibFactor."
+    },
+  "StabilityTolerance":
+    {
+      "Value": null,
+      "Unit": "dB",
+      "Description": "Relative deviation of the standard deviation from the mean of the signal. Used to check the stability of the calibration. "
+    }
+}

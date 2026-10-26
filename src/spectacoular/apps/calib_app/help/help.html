@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calibration App Help</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: white;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 80%;
+            margin: 0 auto;
+            padding: 20px 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 0.125vw solid #3498db;
+            padding-bottom: 0.625vw;
+            margin-bottom: 1.25vw;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 1.5vw;
+            border-bottom: 0.0625vw solid #eee;
+            padding-bottom: 0.5vw;
+        }
+        h3 {
+            color: #7f8c8d;
+            margin-top: 1.25vw;
+        }
+        p {
+            margin: 0.625vw 0;
+        }
+        ul {
+            margin: 0.625vw 0;
+            padding-left: 1.25vw;
+        }
+        li {
+            margin: 0.5vw 0;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 0.125vw 0.375vw;
+            border-radius: 0.1875vw;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        strong {
+            font-weight: bold;
+        }
+        .tip {
+            background: #e8f4fc;
+            border-left: 0.25vw solid #3498db;
+            padding: 0.625vw 0.9375vw;
+            margin: 0.625vw 0;
+        }
+        .note {
+            margin: 0.625vw 0;
+        }
+        .warning {
+            background: #fdf2f2;
+            border-left: 0.25vw solid #e74c3c;
+            padding: 0.625vw 0.9375vw;
+            margin: 0.625vw 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+    <h1>Calibration App User Guide</h1>
+
+    <h2 id="overview">Overview</h2>
+    <img src="/help_static/images/overview.png" alt="Overview Image" width="100%">
+    <div class="legend">
+        <strong>Legend:</strong>
+        <span style="color: red;">■</span> Control Panel |
+        <span style="color: rgb(255, 251, 0);">■</span> Parameter Panel |
+        <span style="color: rgb(81, 255, 0);">■</span> Data Table |
+        <span style="color: rgb(242, 0, 255);">■</span> Notes |
+        <span style="color: rgb(0, 26, 255);">■</span> Frequency Spectrum |
+        <span style="color: rgb(98, 0, 255);">■</span> Logs
+    </div>
+
+    <h2>Getting Started</h2>
+    <div class="note">
+        <p><strong>Step 1: Select Source</strong><br>
+        First, in the control panel select the correct source in the source selector. The Phantom option replays a test file (used in development) and can be used to test the application when no microphone is connected. If your source doesn't appear, ensure you have installed the correct drivers and the microphone is connected.</p>
+        
+        <p><strong>Step 2: Configure Channels</strong><br>
+        Use the Parameter Panel to set values for each channel. Ensure all channels you will be using are configured with the correct parameters. You can use the "All" setter to configure all channels at once (this overwrites all channel settings!).</p>
+        
+        <p><strong>Step 3: Start Calibration</strong><br>
+        Once all channels are set, you can start calibration in two ways:</p>
+        <ul>
+            <li><strong>Manual:</strong> Switch to "Edit/Select" mode and click the "Start" button at the top to calibrate the currently selected channel.</li>
+            <li><strong>Automatic:</strong> Switch to "Automatic" mode and press "Start". The routine will select the loudest channel and calibrate it automatically.</li>
+        </ul>
+        
+        <p><strong>Step 4: Monitor Results</strong><br>
+        While calibration runs, you can see:</p>
+        <ul>
+            <li>The current calibration factor</li>
+            <li>The stability of the factor</li>
+            <li>Once stable, the final calibration value in the results section at the bottom of the Parameter Panel</li>
+        </ul>
+
+        <p><strong>Step 5: Save Results</strong></p>
+        <ul>
+            <li><strong>Click save:</strong>  Saves the current table configuration</li>
+            <li>Location and file name are specified in "Save Path" input <div class="warning">This may overwrite your specified file without confirmation</div></li>
+            
+        </ul>
+    </div>
+
+    <h2>Control Panel</h2>
+    <div class="note">
+        <p>The control panel has 4 functions: Starting and stopping the calibration process, saving and loading an experiment setup, selecting the correct audio source and modifying which panels are displayed.</p>
+        <p><strong>Start-Stop</strong><br>
+        The Start button starts the calibration process. The calibration mode is started in the mode and for the channel that is selected in the parameter panel.</p>
+        <p><strong>Save-Load</strong><br>
+        Save the current configuration (calibration values, filter and calibration settings, and the notes) to a json file. The location of the file can be specified in the Save Path field. You can also load a file by clicking on the browse field in the Load File section.</p>
+        <div class="warning">
+            This will overwrite your current configuration unless saved prior; your configuration may be lost.
+        </div>
+
+        <p><strong>Select Audio Source</strong><br>
+        The audio source selector allows you to choose which audio input device the calibration app will use. This is essential for ensuring the application receives audio from the correct microphone or input source.</p>
+
+        <p><strong>Available Options:</strong></p>
+        <ul>
+            <li><strong>Physical Microphones:</strong> Any connected USB, analog, or digital microphones will appear here once properly installed and recognized by your system.</li>
+            <li><strong>Phantom Source:</strong> A built-in test option that replays a pre-recorded test file. This is primarily used for development and testing purposes when no physical microphone is connected. It allows you to verify the application's functionality without requiring actual audio input.</li>
+        </ul>
+
+        <p><strong>Troubleshooting:</strong></p>
+        <ul>
+            <li>If your microphone does not appear in the list, first verify it is properly connected to your computer.</li>
+            <li>Ensure the correct drivers are installed for your audio device.</li>
+            <li>Try restarting the application after connecting or enabling your microphone.</li>
+        </ul>
+
+        <p><strong>Display Options</strong><br>
+        Toggle switches to show or hide the panels to the right of the Control Panel. This allows you to customize your workspace and focus on the information you need.</p>
+        <div class="tip">
+            Disabling panels such as the Graph (FFT) can improve performance.
+        </div>
+        
+    </div>
+
+    <h2>Parameter Panel</h2>
+    <div class="note">
+        <p>The Parameter Panel is the central hub for configuring calibration settings for each channel and monitoring calibration results in real-time.</p>
+
+        <p><strong>Operation Modes:</strong></p>
+        <ul>
+            <li><strong>Edit/Select Mode:</strong> Manually select and configure individual channels. Use the channel dropdown to pick a specific channel, set its parameters, and click "Set" to apply. To calibrate, ensure the channel is selected and click "Start" in the Control Panel.</li>
+            <li><strong>Automatic Mode:</strong> The system automatically detects the loudest (most active) channel and initiates calibration on that channel. The selected channel updates automatically during calibration.</li>
+        </ul>
+
+        <p><strong>Channel Selection:</strong></p>
+        <ul>
+            <li><strong>Individual Channels:</strong> Select "Channel 1", "Channel 2", etc. to configure a specific channel's parameters.</li>
+            <li><strong>All Channels:</strong> Select "All" to apply the same parameter values to every channel simultaneously. <div class="warning"><strong>Warning:</strong> This overwrites all existing channel configurations without confirmation. Use with caution.</div></li>
+        </ul>
+
+        <p><strong>Calibration Parameters:</strong></p>
+
+        <ul>
+            <li><strong>Calibration Level:</strong> The reference level of your calibrator device (e.g., 94 dB). This is the known output level that your calibrator produces, which the application uses as a reference point for calculating calibration factors.</li>
+
+            <li><strong>Level Unit:</strong> The unit of measurement for your calibration level. Select from:
+                <ul>
+                    <li><code>dB</code> - Decibels (sound pressure level)</li>
+                    <li><code>N</code> - Newtons (force)</li>
+                    <li><code>m/s²</code> - Meters per second squared (acceleration)</li>
+                </ul>
+            </li>
+        </ul>
+        <div class="tip">
+            These different units allow the application to work with various sensor types, such as microphones (using dB) and acceleration sensors (using m/s²).
+        </div>
+        <ul>
+            <li><strong>Calibration Frequency (Hz):</strong> The frequency at which your calibrator operates (e.g., 1000 Hz). This frequency is then used to filter only for the calibration signal</li>
+
+            <li><strong>Filter:</strong> The weighting filter applied to the audio signal. Currently supports:
+                <ul>
+                    <li><code>Octavefilter</code> - Standard octave band filtering for acoustic measurements</li>
+                </ul>
+            </li>
+
+            <li><strong>Calibration Time (s):</strong> The duration (in seconds) that the incoming signal must remain stable before the application considers the calibration complete and saves the final value.</li>
+
+            <li><strong>Stability Tolerance:</strong> The maximum allowed relative spread (standard deviation divided by mean) of measurement blocks to be considered stable. Lower values require more stable signals. The default is 5.8%.</li>
+        </ul>
+
+        <p><strong>Set Button:</strong> Click to apply the configured parameter values to the selected channel(s).</p>
+
+        <p><strong>Result Monitoring:</strong></p>
+        <ul>
+            <li><strong>Calibration Factor:</strong> Displays the currently computed calibration factor (calculated as: reference level ÷ mean measured value). This updates in real-time during calibration and allows the user to judge stability manually.</li>
+            <li><strong>SAVED:</strong> Shows the final, saved calibration value once the signal has stabilized and the calibration is complete.</li>
+            <li><strong>Stability Status:</strong> Indicates whether the current signal is STABLE (green) or UNSTABLE (orange). The signal is considered stable when the relative spread of the latest measurement blocks falls below the Stability Tolerance threshold. Once stable for the full Calibration Time duration, the calibration factor is saved.</li>
+        </ul>
+    </div>
+
+    <h2>Data Table</h2>
+    <div class="note">
+        <p>The Data Table provides a comprehensive overview of all channel configurations and calibration results in a tabular format.</p>
+
+        <p><strong>Columns:</strong></p>
+        <ul>
+            <li><strong>Channel:</strong> The channel identifier (e.g., CH 1, CH 2). Channels are displayed in numerical order with automatic padding for consistent alignment.</li>
+
+            <li><strong>Calib. Factor:</strong> The determined calibration factor for each channel, displayed with 4 decimal places precision. If uncalibrated, this value defaults to 0.</li>
+
+            <li><strong>Calib. Freq.:</strong> The calibration frequency configured for each channel, shown with 1 decimal place.</li>
+
+            <li><strong>Calib. Lvl.:</strong> The calibration level (magnitude) set for each channel, displayed with 4 decimal places precision.</li>
+
+            <li><strong>Calib. Lvl. Unit:</strong> The unit of measurement for the calibration level (dB, N, or m/s²).</li>
+
+            <li><strong>Calib. Time (s):</strong> The calibration time setting for each channel, indicating how long the signal must remain stable before calibration is considered complete.</li>
+
+             <li><strong>Stab. Tol. (dB):</strong> The stability tolerance in dB indicates how much the standard deviation can deviate from the mean for the calibration to still be considered stable.</li>
+        </ul>
+
+        <div class="warning">
+            As there is currently a bug in Bokeh's DataTable/DataSource interaction where the table does not update automatically, you can force a refresh by either scrolling entries on and off screen, or sorting the table twice by the Channel column.
+        </div>
+        <div class="tip">
+            For more information on each parameter see Parameter Panel above
+        </div>
+    </div>
+
+    <h2>Notes</h2>
+    <div class="note">    
+        <p>A dedicated text area for documenting experiment details, observations, and any additional information. Notes are saved along with the configuration when you use the Save function in the Control Panel, making it easy to keep a record of your calibration sessions.</p>
+    </div>
+
+    <h2>Logs</h2>
+    <div class="note">
+        <p>
+            The Logs panel displays real-time application messages, including system events, calibration progress, and error notifications. Each entry is timestamped to help track the sequence of operations. Use the logs for debugging issues or verifying that operations completed as expected. the logs are also saved to calibration.log in the root of the project</div>
+        </p>
+    </div>
+</body>
+</html>
